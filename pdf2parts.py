@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 """
-Lumber List Scanner and Parts Matcher
+PDF2Parts - Lumber List Scanner and Parts Matcher
 
-This program uses the Claude API to scan a handwritten lumber list image,
+This program uses the Claude API to scan handwritten lumber lists from PDF files or images,
 then iteratively searches through multiple parts databases to find matches.
+
+Supports:
+- PDF files (converts to images for processing)
+- Image files (.jpg, .png, .gif, .webp)
+- Multiple parts databases
+- Intelligent matching with Claude AI
 """
 
 import os
@@ -23,6 +29,7 @@ import shutil
 # PDF processing imports
 try:
     from pdf2image import convert_from_path
+    from PIL import Image
     PDF_SUPPORT = True
 except ImportError:
     PDF_SUPPORT = False
@@ -53,7 +60,7 @@ class LumberListMatcher:
         self.databases = {}
         self.scanned_items = []
         
-    def load_database(self, csv_path: str, database_name: str) -> bool:
+    def load_database(self, csv_path: str, database_name: str, output_dir: str = None) -> bool:
         """Load a parts database from CSV file"""
         try:
             parts = []
@@ -65,15 +72,41 @@ class LumberListMatcher:
                 delimiter = sniffer.sniff(sample).delimiter
                 
                 reader = csv.DictReader(file, delimiter=delimiter)
+                first_column_name = None
+                last_first_column_value = None
+                
                 for row in reader:
                     # Clean up whitespace in all fields
                     clean_row = {k.strip(): v.strip() if v else '' for k, v in row.items()}
+                    
+                    # Get the first column name and value
+                    if first_column_name is None:
+                        first_column_name = list(clean_row.keys())[0]
+                    
+                    first_column_value = clean_row.get(first_column_name, '')
+                    
+                    # If first column is empty, use the last non-empty value
+                    if not first_column_value and last_first_column_value:
+                        clean_row[first_column_name] = last_first_column_value
+                    elif first_column_value:
+                        last_first_column_value = first_column_value
+                    
                     parts.append(clean_row)
                     
             self.databases[database_name] = {
                 'parts': parts,
                 'headers': list(parts[0].keys()) if parts else []
             }
+            
+            # Save the fixed CSV to output directory if provided
+            if output_dir and parts:
+                output_path = Path(output_dir) / f"{database_name}_fixed.csv"
+                with open(output_path, 'w', newline='', encoding='utf-8') as outfile:
+                    writer = csv.DictWriter(outfile, fieldnames=parts[0].keys(), delimiter=delimiter)
+                    writer.writeheader()
+                    writer.writerows(parts)
+                print(f"✓ Saved fixed CSV to: {output_path}")
+            
             print(f"✓ Loaded {len(parts)} parts from {database_name}")
             return True
             
@@ -96,14 +129,56 @@ class LumberListMatcher:
         image_paths = []
         
         try:
-            # Convert PDF to images
-            images = convert_from_path(pdf_path, dpi=300)  # High DPI for better OCR
+            # Convert PDF to images with optimized DPI for API size limits
+            # Start with 200 DPI, reduce if still too large
+            dpi = 200
+            max_size_mb = 4.5  # Leave some buffer under 5MB limit
             
-            for i, image in enumerate(images):
-                # Save each page as a PNG image
-                image_path = os.path.join(temp_dir, f"page_{i+1}.png")
-                image.save(image_path, 'PNG')
-                image_paths.append(image_path)
+            for attempt in range(3):  # Try up to 3 different DPI settings
+                try:
+                    images = convert_from_path(pdf_path, dpi=dpi)
+                    
+                    for i, image in enumerate(images):
+                        # Save as JPEG with compression to reduce file size
+                        image_path = os.path.join(temp_dir, f"page_{i+1}.jpg")
+                        
+                        # Convert to RGB if necessary (JPEG doesn't support RGBA)
+                        if image.mode in ('RGBA', 'LA', 'P'):
+                            # Create white background
+                            background = Image.new('RGB', image.size, (255, 255, 255))
+                            if image.mode == 'P':
+                                image = image.convert('RGBA')
+                            background.paste(image, mask=image.split()[-1] if image.mode == 'RGBA' else None)
+                            image = background
+                        elif image.mode != 'RGB':
+                            image = image.convert('RGB')
+                        
+                        # Save with compression
+                        image.save(image_path, 'JPEG', quality=85, optimize=True)
+                        
+                        # Check file size
+                        file_size_mb = os.path.getsize(image_path) / (1024 * 1024)
+                        if file_size_mb > max_size_mb:
+                            print(f"  Page {i+1} too large ({file_size_mb:.1f}MB), retrying with lower DPI...")
+                            raise ValueError(f"Image too large: {file_size_mb:.1f}MB")
+                        
+                        image_paths.append(image_path)
+                        print(f"  Page {i+1} saved: {file_size_mb:.1f}MB")
+                    
+                    break  # Success, exit the retry loop
+                    
+                except ValueError as e:
+                    if attempt < 2:  # Not the last attempt
+                        dpi = int(dpi * 0.8)  # Reduce DPI by 20%
+                        print(f"  Retrying with DPI={dpi}...")
+                        # Clean up failed images
+                        for path in image_paths:
+                            if os.path.exists(path):
+                                os.remove(path)
+                        image_paths = []
+                        continue
+                    else:
+                        raise Exception(f"Could not compress images small enough: {e}")
                 
         except Exception as e:
             # Clean up temp directory on error
@@ -112,7 +187,7 @@ class LumberListMatcher:
         
         return image_paths, temp_dir
     
-    def scan_document(self, document_path: str, debug_output: bool = True) -> List[ScannedItem]:
+    def scan_document(self, document_path: str, debug_output: bool = True, output_dir: str = ".") -> List[ScannedItem]:
         """Use Claude API to scan and parse the lumber list with debug output"""
         try:
             file_ext = Path(document_path).suffix.lower()
@@ -139,7 +214,7 @@ class LumberListMatcher:
                         if debug_output:
                             print(f"Processing page {i+1}/{len(image_paths)}")
                         
-                        page_items = self._scan_single_image(image_path, debug_output)
+                        page_items = self._scan_single_image(image_path, debug_output, output_dir, verbose)
                         all_items.extend(page_items)
                         temp_files_to_cleanup.append(image_path)
                     
@@ -152,7 +227,7 @@ class LumberListMatcher:
             
             # Handle image files
             else:
-                items = self._scan_single_image(document_path, debug_output)
+                items = self._scan_single_image(document_path, debug_output, output_dir, verbose)
                 self.scanned_items = items
                 return items
                 
@@ -160,7 +235,7 @@ class LumberListMatcher:
             print(f"Error scanning document: {e}")
             return []
     
-    def _scan_single_image(self, image_path: str, debug_output: bool = True) -> List[ScannedItem]:
+    def _scan_single_image(self, image_path: str, debug_output: bool = True, output_dir: str = ".", verbose: bool = False) -> List[ScannedItem]:
         """Scan a single image file and return ScannedItems"""
         try:
             # Encode the image
@@ -218,7 +293,7 @@ class LumberListMatcher:
             # Create the message with image using the current model
             message = self.client.messages.create(
                 model="claude-sonnet-4-20250514",
-                max_tokens=3000,
+                max_tokens=8000,
                 messages=[
                     {
                         "role": "user",
@@ -245,7 +320,7 @@ class LumberListMatcher:
 
             # Debug: Save the raw response
             if debug_output:
-                debug_file = Path(image_path).stem + "_scan_debug.txt"
+                debug_file = Path(output_dir) / (Path(image_path).stem + "_scan_debug.txt")
                 with open(debug_file, 'w', encoding='utf-8') as f:
                     f.write("="*60 + "\n")
                     f.write("RAW CLAUDE RESPONSE FROM DOCUMENT SCAN\n")
@@ -263,16 +338,27 @@ class LumberListMatcher:
             if json_match:
                 json_text = json_match.group(1)
             else:
-                # Try to find JSON array directly
-                json_match = re.search(r'\[.*\]', response_text, re.DOTALL)
-                if json_match:
-                    json_text = json_match.group(0)
+                # Try to find JSON array - look for opening bracket and find matching closing bracket
+                start_pos = response_text.find('[')
+                if start_pos != -1:
+                    # Count brackets to find the matching closing bracket
+                    bracket_count = 0
+                    end_pos = start_pos
+                    for i, char in enumerate(response_text[start_pos:], start_pos):
+                        if char == '[':
+                            bracket_count += 1
+                        elif char == ']':
+                            bracket_count -= 1
+                            if bracket_count == 0:
+                                end_pos = i + 1
+                                break
+                    json_text = response_text[start_pos:end_pos]
                 else:
                     json_text = response_text
 
             # Debug: Save the extracted JSON
             if debug_output:
-                json_debug_file = Path(image_path).stem + "_extracted_json.json"
+                json_debug_file = Path(output_dir) / (Path(image_path).stem + "_extracted_json.json")
                 with open(json_debug_file, 'w', encoding='utf-8') as f:
                     f.write(json_text)
                 print(f"✓ Extracted JSON saved to: {json_debug_file}")
@@ -293,7 +379,7 @@ class LumberListMatcher:
 
             # Debug: Save parsed items in readable format
             if debug_output:
-                items_debug_file = Path(image_path).stem + "_parsed_items.txt"
+                items_debug_file = Path(output_dir) / (Path(image_path).stem + "_parsed_items.txt")
                 with open(items_debug_file, 'w', encoding='utf-8') as f:
                     f.write("PARSED ITEMS FROM DOCUMENT SCAN\n")
                     f.write("="*60 + "\n\n")
@@ -317,13 +403,25 @@ class LumberListMatcher:
                 low_conf = sum(1 for item in items_data if item.get('confidence') == 'low')
                 print(f"  Confidence: {high_conf} high, {medium_conf} medium, {low_conf} low")
 
-            # Print items to console for immediate visibility
-            print("\nSCANNED ITEMS:")
-            print("-" * 50)
-            for i, item in enumerate(scanned_items, 1):
-                print(f"[{i:2d}] {item.quantity:8s} | {item.description}")
-                if item.original_text != item.description:
-                    print(f"     Original: {item.original_text}")
+            # Print items to console only if verbose
+            if verbose:
+                print("\nSCANNED ITEMS:")
+                print("-" * 50)
+                for i, item in enumerate(scanned_items, 1):
+                    print(f"[{i:2d}] {item.quantity:8s} | {item.description}")
+                    if item.original_text != item.description:
+                        print(f"     Original: {item.original_text}")
+            else:
+                # Save detailed output to file instead
+                items_file = Path(output_dir) / "scanned_items.txt"
+                with open(items_file, 'w', encoding='utf-8') as f:
+                    f.write("SCANNED ITEMS:\n")
+                    f.write("-" * 50 + "\n")
+                    for i, item in enumerate(scanned_items, 1):
+                        f.write(f"[{i:2d}] {item.quantity:8s} | {item.description}\n")
+                        if item.original_text != item.description:
+                            f.write(f"     Original: {item.original_text}\n")
+                print(f"✓ Detailed item list saved to: {items_file}")
 
             return scanned_items
 
@@ -877,7 +975,7 @@ If no reasonable matches found, return []"""
         
         print(f"✓ CSV export saved to: {output_file}")
 
-    def scan_document_with_database_context(self, document_path: str, debug_output: bool = True) -> List[ScannedItem]:
+    def scan_document_with_database_context(self, document_path: str, debug_output: bool = True, output_dir: str = ".", verbose: bool = False) -> List[ScannedItem]:
         """Use Claude API to scan the lumber list with database context for better matching"""
         try:
             file_ext = Path(document_path).suffix.lower()
@@ -903,7 +1001,7 @@ If no reasonable matches found, return []"""
                         if debug_output:
                             print(f"Processing page {i+1}/{len(image_paths)}")
                         
-                        page_items = self._scan_single_image_with_database_context(image_path, debug_output)
+                        page_items = self._scan_single_image_with_database_context(image_path, debug_output, output_dir, verbose)
                         all_items.extend(page_items)
                     
                     self.scanned_items = all_items
@@ -915,7 +1013,7 @@ If no reasonable matches found, return []"""
             
             # Handle image files
             else:
-                items = self._scan_single_image_with_database_context(document_path, debug_output)
+                items = self._scan_single_image_with_database_context(document_path, debug_output, output_dir, verbose)
                 self.scanned_items = items
                 return items
                 
@@ -923,7 +1021,7 @@ If no reasonable matches found, return []"""
             print(f"Error scanning document: {e}")
             return []
     
-    def _scan_single_image_with_database_context(self, image_path: str, debug_output: bool = True) -> List[ScannedItem]:
+    def _scan_single_image_with_database_context(self, image_path: str, debug_output: bool = True, output_dir: str = ".", verbose: bool = False) -> List[ScannedItem]:
         """Scan a single image file with database context and return ScannedItems"""
         try:
             # Encode the image
@@ -973,7 +1071,7 @@ Focus on making descriptions that will match items in the provided database."""
             # Create the message with image using the current model
             message = self.client.messages.create(
                 model="claude-sonnet-4-20250514",
-                max_tokens=3000,
+                max_tokens=8000,
                 messages=[
                     {
                         "role": "user",
@@ -1000,7 +1098,7 @@ Focus on making descriptions that will match items in the provided database."""
 
             # Debug output
             if debug_output:
-                debug_file = Path(image_path).stem + "_scan_with_context_debug.txt"
+                debug_file = Path(output_dir) / (Path(image_path).stem + "_scan_with_context_debug.txt")
                 with open(debug_file, 'w', encoding='utf-8') as f:
                     f.write("="*60 + "\n")
                     f.write("CLAUDE RESPONSE WITH DATABASE CONTEXT\n")
@@ -1017,14 +1115,26 @@ Focus on making descriptions that will match items in the provided database."""
             if json_match:
                 json_text = json_match.group(1)
             else:
-                json_match = re.search(r'\[.*\]', response_text, re.DOTALL)
-                if json_match:
-                    json_text = json_match.group(0)
+                # Try to find JSON array - look for opening bracket and find matching closing bracket
+                start_pos = response_text.find('[')
+                if start_pos != -1:
+                    # Count brackets to find the matching closing bracket
+                    bracket_count = 0
+                    end_pos = start_pos
+                    for i, char in enumerate(response_text[start_pos:], start_pos):
+                        if char == '[':
+                            bracket_count += 1
+                        elif char == ']':
+                            bracket_count -= 1
+                            if bracket_count == 0:
+                                end_pos = i + 1
+                                break
+                    json_text = response_text[start_pos:end_pos]
                 else:
                     json_text = response_text
 
             if debug_output:
-                json_debug_file = Path(image_path).stem + "_context_extracted_json.json"
+                json_debug_file = Path(output_dir) / (Path(image_path).stem + "_context_extracted_json.json")
                 with open(json_debug_file, 'w', encoding='utf-8') as f:
                     f.write(json_text)
                 print(f"✓ Extracted JSON saved to: {json_debug_file}")
@@ -1042,16 +1152,27 @@ Focus on making descriptions that will match items in the provided database."""
                 )
                 scanned_items.append(item)
 
-            self.scanned_items = scanned_items
             print(f"✓ Scanned {len(scanned_items)} items with database context")
 
-            # Print items to console
-            print("\nSCANNED ITEMS (WITH DATABASE CONTEXT):")
-            print("-" * 50)
-            for i, item in enumerate(scanned_items, 1):
-                print(f"[{i:2d}] {item.quantity:8s} | {item.description}")
-                if item.original_text != item.description:
-                    print(f"     Original: {item.original_text}")
+            # Print items to console only if verbose
+            if verbose:
+                print("\nSCANNED ITEMS (WITH DATABASE CONTEXT):")
+                print("-" * 50)
+                for i, item in enumerate(scanned_items, 1):
+                    print(f"[{i:2d}] {item.quantity:8s} | {item.description}")
+                    if item.original_text != item.description:
+                        print(f"     Original: {item.original_text}")
+            else:
+                # Save detailed output to file instead
+                items_file = Path(output_dir) / "scanned_items.txt"
+                with open(items_file, 'w', encoding='utf-8') as f:
+                    f.write("SCANNED ITEMS (WITH DATABASE CONTEXT):\n")
+                    f.write("-" * 50 + "\n")
+                    for i, item in enumerate(scanned_items, 1):
+                        f.write(f"[{i:2d}] {item.quantity:8s} | {item.description}\n")
+                        if item.original_text != item.description:
+                            f.write(f"     Original: {item.original_text}\n")
+                print(f"✓ Detailed item list saved to: {items_file}")
 
             return scanned_items
 
@@ -1444,30 +1565,51 @@ Focus on making descriptions that will match items in the provided database."""
 
         return matches[:3]
 
-    def find_all_matches_hybrid(self, debug: bool = False) -> None:
+    def find_all_matches_hybrid(self, debug: bool = False, output_dir: str = ".") -> None:
         """Find matches using hybrid approach: lumber-specific + general matching"""
-        print("\n" + "="*60)
-        print("SEARCHING FOR MATCHES USING HYBRID MATCHING")
-        print("(Lumber-specific for lumber items, general for hardware/other)")
-        print("="*60)
+        if debug:
+            print("\n" + "="*60)
+            print("SEARCHING FOR MATCHES USING HYBRID MATCHING")
+            print("(Lumber-specific for lumber items, general for hardware/other)")
+            print("="*60)
+
+        # Create debug log file for detailed output
+        debug_log_file = Path(output_dir) / "matching_debug.log"
+        with open(debug_log_file, 'w', encoding='utf-8') as log_file:
+            log_file.write("DETAILED MATCHING DEBUG LOG\n")
+            log_file.write("=" * 60 + "\n\n")
 
         for i, item in enumerate(self.scanned_items, 1):
-            print(f"\n[{i:2d}] Searching for: {item.description}")
             if debug:
+                print(f"\n[{i:2d}] Searching for: {item.description}")
                 print(f"     Original: {item.original_text}")
                 print(f"     Quantity: {item.quantity}")
-            print("-" * 50)
+                print("-" * 50)
+            else:
+                print(f"  [{i:2d}] {item.description}")
 
             all_matches = []
             for db_name in self.databases:
                 if debug:
                     print(f"\n  Checking database: {db_name}")
 
+                # Run matching with appropriate debug level
                 matches = self.hybrid_match_item(item, db_name, debug=debug)
                 all_matches.extend(matches)
 
                 if debug:
                     print(f"    Found {len(matches)} matches in {db_name}")
+                
+                # Always write to debug log file for detailed analysis
+                with open(debug_log_file, 'a', encoding='utf-8') as log_file:
+                    log_file.write(f"\n=== ITEM {i}: {item.description} ===\n")
+                    log_file.write(f"Database: {db_name}\n")
+                    log_file.write(f"Original: {item.original_text}\n")
+                    log_file.write(f"Quantity: {item.quantity}\n")
+                    log_file.write(f"Matches found: {len(matches)}\n")
+                    for match in matches:
+                        log_file.write(f"  - {match.confidence}: {match.part_number} | {match.database_description}\n")
+                    log_file.write("-" * 50 + "\n")
 
             # Remove duplicates and sort by confidence
             unique_matches = []
@@ -1483,11 +1625,14 @@ Focus on making descriptions that will match items in the provided database."""
 
             item.matches = unique_matches[:3]  # Keep top 3 matches
 
-            if item.matches:
-                for match in item.matches:
-                    print(f"  ✓ {match.confidence.upper():8s} | {match.part_number:15s} | {match.database_description[:80]}...")
-            else:
-                print("  ✗ No matches found")
+            if debug:
+                if item.matches:
+                    for match in item.matches:
+                        print(f"  ✓ {match.confidence.upper():8s} | {match.part_number:15s} | {match.database_description[:80]}...")
+                else:
+                    print("  ✗ No matches found")
+        
+        print(f"\n✓ Detailed matching log saved to: {debug_log_file}")
 
 def parse_arguments():
     """Parse command line arguments"""
@@ -1499,6 +1644,9 @@ Examples:
   %(prog)s document.pdf parts1.csv parts2.csv
   %(prog)s -k YOUR_API_KEY photo.png lumber_db.csv hardware_db.csv
   %(prog)s --output-dir ./results lumber_list.pdf database.csv
+  
+Note: All output files (reports, debug files, CSV exports) will be saved in a 
+subdirectory named after the input file (e.g., 'document_results/', 'lumber_list_results/')
         """
     )
     
@@ -1513,7 +1661,7 @@ Examples:
     
     parser.add_argument('-o', '--output-dir',
                        default='.',
-                       help='Directory to save output files (default: current directory)')
+                       help='Base directory to save output files. A subdirectory named after the input file will be created (default: current directory)')
     
     parser.add_argument('--report-name',
                        default='lumber_match_report.txt',
@@ -1534,6 +1682,10 @@ Examples:
     parser.add_argument('--full-database',
                        action='store_true',
                        help='Send full database to Claude for matching (use with large SKU lists)')
+    
+    parser.add_argument('--verbose-matching',
+                       action='store_true',
+                       help='Show detailed matching debug output on console (default: save to files)')
     
     return parser.parse_args()
 
@@ -1558,9 +1710,13 @@ def main():
         print(f"Error: Document file not found: {args.document}")
         sys.exit(1)
     
-    # Create output directory if it doesn't exist
-    output_dir = Path(args.output_dir)
+    # Create output directory based on input file name
+    input_file_stem = Path(args.document).stem
+    output_dir = Path(args.output_dir) / f"{input_file_stem}_results"
     output_dir.mkdir(parents=True, exist_ok=True)
+    
+    if not args.quiet:
+        print(f"Output directory: {output_dir}")
     
     # Initialize matcher
     matcher = LumberListMatcher(api_key)
@@ -1578,7 +1734,7 @@ def main():
         # Use filename as database name
         db_name = Path(db_path).stem
         
-        if matcher.load_database(db_path, db_name):
+        if matcher.load_database(db_path, db_name, str(output_dir)):
             databases_loaded += 1
         elif not args.quiet:
             print(f"Failed to load database: {db_path}")
@@ -1590,15 +1746,15 @@ def main():
     # Scan document
     if not args.quiet:
         print(f"\nScanning document: {args.document}")
-    items = matcher.scan_document_with_database_context(args.document)
+    items = matcher.scan_document_with_database_context(args.document, output_dir=str(output_dir), verbose=args.verbose_matching)
     
     if not items:
         print("Error: No items found in document")
         sys.exit(1)
     
     # Find matches
-    if True:
-        matcher.find_all_matches_hybrid(debug=True)
+    if not args.quiet:
+        matcher.find_all_matches_hybrid(debug=args.verbose_matching, output_dir=str(output_dir))
     elif not args.quiet:
         matcher.find_all_matches(
             use_claude=args.use_claude_matching,
