@@ -1,0 +1,30 @@
+Please scan this handwritten lumber/materials list and extract each item with its quantity and description.
+
+`database_context`
+
+CRITICAL INSTRUCTIONS:
+1. Use the database examples above to format your descriptions to MATCH the database style
+2. For lumber: Use format like "2X4  16" not "2x4 x 16' lumber"
+3. For hardware: Use format like "#8 SCREWS" not "2x4 construction screws #8"
+4. Keep descriptions SHORT and match the database terminology
+5. When unsure, pick the closest database format
+
+IMPORTANT PATTERN RECOGNITION:
+- If a line is missing material specifications (like "4X8 16'" instead of "4X8 PT 16'"), look at the PREVIOUS non-empty line to see what material was specified
+- Carry forward the material specification from the most recent line that had one
+- For example: if you see "4X8 DFH2 20'" followed by "4X8 16'", the second item should be interpreted as "4X8 DFH2 16'"
+
+Examples of good matches:
+- Handwritten "2x12 20'" → Description: "2X12  20" (matches database format)
+- Handwritten "4x4 12 PT" → Description: "4X4  12  PT" (matches database style)
+- Handwritten "#8 screws" → Description: "#8 SCREWS" (matches database style)
+
+Format your response as a JSON array where each item has:
+{
+    "quantity": "the number/amount",
+    "description": "item description formatted to match database style",
+    "original_text": "the original handwritten text as you read it",
+    "confidence": "high|medium|low - how confident you are in the match"
+}
+
+Focus on making descriptions that will match items in the provided database.

@@ -36,6 +36,49 @@ except ImportError:
     print("Warning: pdf2image not installed. PDF support will be disabled.")
     print("Install with: pip install pdf2image")
 
+###############################################################################
+def load_prompt(name, **kwargs):
+    """
+    Read a file and replace all text enclosed in backquotes (`) with
+    corresponding values from kwargs.
+
+    Args:
+        file_path (str): Path to the file to process
+        **kwargs: Key-value pairs to substitute for backquoted fields
+
+    Returns:
+        str: The file content with all backquoted fields replaced
+    """
+
+    # Read the file content
+    script_dir = str(Path(__file__).parent)
+    fname = script_dir + "/" + name
+    print(f"Loading prompt {fname}")
+    try:
+        with open(fname, 'r') as file:
+            content = file.read()
+    except Exception as e:
+        print(f"Error reading {fname}: {e}", file=sys.stderr)
+        exit(1)
+
+    # Find all backquoted fields and replace them
+    import re
+
+    def replace_match(match):
+        field_name = match.group(1)
+        if field_name in kwargs:
+            return str(kwargs[field_name])
+        else:
+            print(f"Unable to replace {field_name} in template", file=sys.stderr)
+            exit(1)
+
+    # The pattern matches any text between backquotes
+    pattern = r"`([^`]+)`"
+    result = re.sub(pattern, replace_match, content)
+
+    return result
+
+###############################################################################
 @dataclass
 class PartMatch:
     """Represents a matched part"""
@@ -45,6 +88,7 @@ class PartMatch:
     database_description: str
     confidence: str  # "exact", "partial", "similar"
 
+###############################################################################
 @dataclass
 class ScannedItem:
     """Represents an item from the scanned list"""
@@ -53,12 +97,14 @@ class ScannedItem:
     original_text: str
     matches: List[PartMatch]
 
+###############################################################################
 class LumberListMatcher:
     def __init__(self, api_key: str):
         """Initialize with Claude API key"""
         self.client = anthropic.Anthropic(api_key=api_key)
         self.databases = {}
         self.scanned_items = []
+        self.training_data = []
         
     def load_database(self, csv_path: str, database_name: str, output_dir: str = None) -> bool:
         """Load a parts database from CSV file"""
@@ -113,6 +159,183 @@ class LumberListMatcher:
         except Exception as e:
             print(f"✗ Error loading {database_name}: {e}")
             return False
+    
+    def load_training_data(self, csv_path: str) -> bool:
+        """Load training data from CSV file (original_text, correct_sku columns)"""
+        try:
+            with open(csv_path, 'r', newline='', encoding='utf-8') as file:
+                # Try to detect the CSV format
+                sample = file.read(1024)
+                file.seek(0)
+                sniffer = csv.Sniffer()
+                delimiter = sniffer.sniff(sample).delimiter
+                
+                reader = csv.DictReader(file, delimiter=delimiter)
+                training_examples = []
+                
+                for row in reader:
+                    # Clean up whitespace in all fields
+                    clean_row = {k.strip(): v.strip() if v else '' for k, v in row.items()}
+                    
+                    # Check for required columns
+                    if 'original_text' not in clean_row or 'correct_sku' not in clean_row:
+                        print(f"Warning: Training file {csv_path} missing required columns (original_text, correct_sku)")
+                        continue
+                    
+                    original_text = clean_row['original_text']
+                    correct_sku = clean_row['correct_sku']
+                    
+                    if original_text and correct_sku:
+                        training_examples.append({
+                            'original_text': original_text,
+                            'correct_sku': correct_sku
+                        })
+                
+                self.training_data.extend(training_examples)
+                print(f"✓ Loaded {len(training_examples)} training examples from {Path(csv_path).name}")
+                return True
+                
+        except Exception as e:
+            print(f"✗ Error loading training data from {csv_path}: {e}")
+            return False
+    
+    def _build_training_examples_text(self, max_examples: int = None) -> str:
+        """Build training examples text for inclusion in prompts"""
+        if not self.training_data:
+            return ""
+        
+        examples = []
+        limit = max_examples if max_examples is not None else len(self.training_data)
+        for example in self.training_data[:limit]:
+            examples.append(f'  "{example["original_text"]}" -> {example["correct_sku"]}')
+        
+        return f"""
+TRAINING EXAMPLES (use these to understand common patterns and improve accuracy):
+======================================================================
+{chr(10).join(examples)}
+======================================================================
+"""
+    
+    def _count_tokens(self, text: str) -> int:
+        """Count tokens in text using Anthropic's tokenizer"""
+        try:
+            return self.client.count_tokens(text)
+        except Exception as e:
+            # Fallback to rough estimate if counting fails
+            return len(text) // 4
+    
+    def _fix_missing_specifications(self, scanned_items: List[ScannedItem]) -> List[ScannedItem]:
+        """Post-process scanned items to carry forward missing material specifications"""
+        if not scanned_items:
+            # Post-process to fix missing specifications
+            scanned_items = self._fix_missing_specifications(scanned_items)
+            return scanned_items
+        
+        fixed_items = []
+        last_material = None
+        
+        for item in scanned_items:
+            # Check if this looks like a lumber item missing material specs
+            desc = item.description.upper()
+            original = item.original_text.upper()
+            
+            # Pattern: dimension + length but no material (e.g., "4X8 16'" instead of "4X8 PT 16'")
+            lumber_pattern = r'^(\d+X\d+)\s+(\d+[\'"]?)$'
+            match = re.match(lumber_pattern, desc)
+            
+            if match and last_material:
+                # This looks like a lumber item missing material specs
+                dimension = match.group(1)
+                length = match.group(2)
+                
+                # Reconstruct with carried-forward material
+                fixed_desc = f"{dimension} {last_material} {length}"
+                fixed_original = f"{dimension} {last_material} {length}"
+                
+                # Create new item with fixed description
+                fixed_item = ScannedItem(
+                    quantity=item.quantity,
+                    description=fixed_desc,
+                    original_text=fixed_original,
+                    matches=item.matches
+                )
+                fixed_items.append(fixed_item)
+            else:
+                # Check if this item has material specs to carry forward
+                # Look for common lumber materials in the description
+                material_match = re.search(r'\b(PT|DF|CEDAR|PINE|POC|DFH2|DFHC|ADVANTAGE|GLU\s*LAM)\b', desc)
+                if material_match:
+                    last_material = material_match.group(1)
+                
+                fixed_items.append(item)
+        
+        return fixed_items
+    
+    def _should_skip_scanning(self, document_path: str, output_dir: str) -> bool:
+        """Check if we can skip scanning based on file modification times"""
+        try:
+            # Check if input file exists
+            if not os.path.exists(document_path):
+                return False
+            
+            # Get input file modification time
+            input_mtime = os.path.getmtime(document_path)
+            
+            # Check if scan_prompt file exists and get its modification time
+            script_dir = Path(__file__).parent
+            scan_prompt_path = script_dir / "scan_prompt"
+            if not os.path.exists(scan_prompt_path):
+                return False
+            prompt_mtime = os.path.getmtime(scan_prompt_path)
+            
+            # Check if we have cached results
+            output_path = Path(output_dir)
+            cached_files = list(output_path.glob("page_*_context_extracted_json.json"))
+            if not cached_files:
+                return False
+            
+            # Check if all cached files are newer than both input and prompt
+            for cached_file in cached_files:
+                if os.path.getmtime(cached_file) < input_mtime or os.path.getmtime(cached_file) < prompt_mtime:
+                    return False
+            
+            return True
+            
+        except Exception:
+            return False
+    
+    def _load_cached_scan_results(self, output_dir: str) -> List[ScannedItem]:
+        """Load previously scanned results from cache files"""
+        try:
+            all_items = []
+            output_path = Path(output_dir)
+            
+            # Find all cached JSON files
+            cached_files = sorted(output_path.glob("page_*_context_extracted_json.json"))
+            
+            for cached_file in cached_files:
+                with open(cached_file, 'r', encoding='utf-8') as f:
+                    json_text = f.read()
+                
+                if json_text.strip():
+                    items_data = json.loads(json_text)
+                    
+                    for item_data in items_data:
+                        item = ScannedItem(
+                            quantity=item_data.get('quantity', ''),
+                            description=item_data.get('description', ''),
+                            original_text=item_data.get('original_text', ''),
+                            matches=[]
+                        )
+                        all_items.append(item)
+            
+            self.scanned_items = all_items
+            print(f"✓ Loaded {len(all_items)} cached items from {len(cached_files)} pages")
+            return all_items
+            
+        except Exception as e:
+            print(f"Error loading cached results: {e}")
+            return []
     
     def encode_image(self, image_path: str) -> str:
         """Encode image to base64"""
@@ -187,248 +410,6 @@ class LumberListMatcher:
         
         return image_paths, temp_dir
     
-    def scan_document(self, document_path: str, debug_output: bool = True, output_dir: str = ".") -> List[ScannedItem]:
-        """Use Claude API to scan and parse the lumber list with debug output"""
-        try:
-            file_ext = Path(document_path).suffix.lower()
-            
-            # Handle PDF files
-            if file_ext == '.pdf':
-                if not PDF_SUPPORT:
-                    raise ImportError("PDF support requires pdf2image. Install with: pip install pdf2image")
-                
-                if debug_output:
-                    print(f"Converting PDF to images: {document_path}")
-                
-                image_paths, temp_dir = self.convert_pdf_to_images(document_path)
-                
-                if debug_output:
-                    print(f"PDF converted to {len(image_paths)} page(s)")
-                
-                all_items = []
-                temp_files_to_cleanup = []
-                
-                try:
-                    # Process each page
-                    for i, image_path in enumerate(image_paths):
-                        if debug_output:
-                            print(f"Processing page {i+1}/{len(image_paths)}")
-                        
-                        page_items = self._scan_single_image(image_path, debug_output, output_dir, verbose)
-                        all_items.extend(page_items)
-                        temp_files_to_cleanup.append(image_path)
-                    
-                    self.scanned_items = all_items
-                    return all_items
-                    
-                finally:
-                    # Clean up temporary files
-                    shutil.rmtree(temp_dir, ignore_errors=True)
-            
-            # Handle image files
-            else:
-                items = self._scan_single_image(document_path, debug_output, output_dir, verbose)
-                self.scanned_items = items
-                return items
-                
-        except Exception as e:
-            print(f"Error scanning document: {e}")
-            return []
-    
-    def _scan_single_image(self, image_path: str, debug_output: bool = True, output_dir: str = ".", verbose: bool = False) -> List[ScannedItem]:
-        """Scan a single image file and return ScannedItems"""
-        try:
-            # Encode the image
-            image_data = self.encode_image(image_path)
-
-            # Determine image format from file extension
-            file_ext = Path(image_path).suffix.lower()
-            media_type_map = {
-                '.jpg': 'image/jpeg',
-                '.jpeg': 'image/jpeg',
-                '.png': 'image/png',
-                '.gif': 'image/gif',
-                '.webp': 'image/webp'
-            }
-            media_type = media_type_map.get(file_ext, 'image/jpeg')
-
-            # Build context from loaded databases (if any)
-            parts_context = ""
-            if self.databases:
-                parts_context = self._build_parts_context()
-
-            # Create the prompt - simplified if no context available
-            if parts_context:
-                prompt_text = f"""Please scan this handwritten lumber/materials list and extract each item with its quantity and description.
-
-    {parts_context}
-
-    IMPORTANT: Use the parts reference above to help with:
-    1. Correcting OCR errors and typos in handwritten text
-    2. Standardizing lumber dimensions and terminology
-    3. Recognizing common abbreviations (PT=Pressure Treated, DF=Douglas Fir, etc.)
-    4. Matching similar items when handwriting is unclear
-
-    Format your response as a JSON array where each item has:
-    {{
-        "quantity": "the number/amount",
-        "description": "the item description (size, material, etc.) - corrected using parts reference",
-        "original_text": "the original handwritten text as you read it",
-        "confidence": "high|medium|low - how confident you are in the OCR reading"
-    }}
-
-    Focus on extracting all lumber, hardware, and construction materials. When handwriting is unclear, use the parts reference to make educated guesses about what the item likely is."""
-            else:
-                prompt_text = """Please scan this handwritten lumber/materials list and extract each item with its quantity and description.
-
-    Format your response as a JSON array where each item has:
-    {
-        "quantity": "the number/amount",
-        "description": "the item description (size, material, etc.)",
-        "original_text": "the original handwritten text as you read it"
-    }
-
-    Focus on extracting all lumber, hardware, and construction materials. Be as accurate as possible with dimensions and specifications."""
-
-            # Create the message with image using the current model
-            message = self.client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=8000,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "image",
-                                "source": {
-                                    "type": "base64",
-                                    "media_type": media_type,
-                                    "data": image_data
-                                }
-                            },
-                            {
-                                "type": "text",
-                                "text": prompt_text
-                            }
-                        ]
-                    }
-                ],
-            )
-
-            # Parse the response
-            response_text = message.content[0].text
-
-            # Debug: Save the raw response
-            if debug_output:
-                debug_file = Path(output_dir) / (Path(image_path).stem + "_scan_debug.txt")
-                with open(debug_file, 'w', encoding='utf-8') as f:
-                    f.write("="*60 + "\n")
-                    f.write("RAW CLAUDE RESPONSE FROM DOCUMENT SCAN\n")
-                    f.write("="*60 + "\n\n")
-                    f.write(response_text)
-                    f.write("\n\n" + "="*60 + "\n")
-                    f.write("PARTS CONTEXT SENT TO CLAUDE:\n")
-                    f.write("="*60 + "\n")
-                    f.write(parts_context if parts_context else "No parts context provided")
-                    f.write("\n")
-                print(f"✓ Debug info saved to: {debug_file}")
-
-            # Extract JSON from the response (it might be wrapped in markdown)
-            json_match = re.search(r'```json\s*(.*?)\s*```', response_text, re.DOTALL)
-            if json_match:
-                json_text = json_match.group(1)
-            else:
-                # Try to find JSON array - look for opening bracket and find matching closing bracket
-                start_pos = response_text.find('[')
-                if start_pos != -1:
-                    # Count brackets to find the matching closing bracket
-                    bracket_count = 0
-                    end_pos = start_pos
-                    for i, char in enumerate(response_text[start_pos:], start_pos):
-                        if char == '[':
-                            bracket_count += 1
-                        elif char == ']':
-                            bracket_count -= 1
-                            if bracket_count == 0:
-                                end_pos = i + 1
-                                break
-                    json_text = response_text[start_pos:end_pos]
-                else:
-                    json_text = response_text
-
-            # Debug: Save the extracted JSON
-            if debug_output:
-                json_debug_file = Path(output_dir) / (Path(image_path).stem + "_extracted_json.json")
-                with open(json_debug_file, 'w', encoding='utf-8') as f:
-                    f.write(json_text)
-                print(f"✓ Extracted JSON saved to: {json_debug_file}")
-
-            # Parse JSON
-            items_data = json.loads(json_text)
-
-            # Convert to ScannedItem objects
-            scanned_items = []
-            for item_data in items_data:
-                item = ScannedItem(
-                    quantity=item_data.get('quantity', ''),
-                    description=item_data.get('description', ''),
-                    original_text=item_data.get('original_text', ''),
-                    matches=[]
-                )
-                scanned_items.append(item)
-
-            # Debug: Save parsed items in readable format
-            if debug_output:
-                items_debug_file = Path(output_dir) / (Path(image_path).stem + "_parsed_items.txt")
-                with open(items_debug_file, 'w', encoding='utf-8') as f:
-                    f.write("PARSED ITEMS FROM DOCUMENT SCAN\n")
-                    f.write("="*60 + "\n\n")
-                    for i, item in enumerate(scanned_items, 1):
-                        f.write(f"[{i:2d}] ITEM:\n")
-                        f.write(f"     Quantity: '{item.quantity}'\n")
-                        f.write(f"     Description: '{item.description}'\n")
-                        f.write(f"     Original Text: '{item.original_text}'\n")
-                        if hasattr(item, 'confidence') or 'confidence' in item_data:
-                            confidence = item_data.get('confidence', 'unknown')
-                            f.write(f"     Confidence: {confidence}\n")
-                        f.write("\n")
-                print(f"✓ Parsed items saved to: {items_debug_file}")
-
-            print(f"✓ Scanned {len(scanned_items)} items from image")
-
-            # Report confidence levels if available
-            if items_data and 'confidence' in items_data[0]:
-                high_conf = sum(1 for item in items_data if item.get('confidence') == 'high')
-                medium_conf = sum(1 for item in items_data if item.get('confidence') == 'medium')
-                low_conf = sum(1 for item in items_data if item.get('confidence') == 'low')
-                print(f"  Confidence: {high_conf} high, {medium_conf} medium, {low_conf} low")
-
-            # Print items to console only if verbose
-            if verbose:
-                print("\nSCANNED ITEMS:")
-                print("-" * 50)
-                for i, item in enumerate(scanned_items, 1):
-                    print(f"[{i:2d}] {item.quantity:8s} | {item.description}")
-                    if item.original_text != item.description:
-                        print(f"     Original: {item.original_text}")
-            else:
-                # Save detailed output to file instead
-                items_file = Path(output_dir) / "scanned_items.txt"
-                with open(items_file, 'w', encoding='utf-8') as f:
-                    f.write("SCANNED ITEMS:\n")
-                    f.write("-" * 50 + "\n")
-                    for i, item in enumerate(scanned_items, 1):
-                        f.write(f"[{i:2d}] {item.quantity:8s} | {item.description}\n")
-                        if item.original_text != item.description:
-                            f.write(f"     Original: {item.original_text}\n")
-                print(f"✓ Detailed item list saved to: {items_file}")
-
-            return scanned_items
-
-        except Exception as e:
-            print(f"✗ Error scanning image: {e}")
-            return []
-
     def _build_parts_context(self) -> str:
         """Build a context string from the parts databases to help with OCR"""
         if not self.databases:
@@ -487,28 +468,6 @@ class LumberListMatcher:
         context_parts.append("=" * 60)
 
         return "\n".join(context_parts)
-
-    # Also add this method to help with debugging matches
-    def debug_matching_process(self, item: ScannedItem, database_name: str) -> None:
-        """Debug helper to see what's happening during matching"""
-        print(f"\nDEBUG: Matching item '{item.description}' against {database_name}")
-        print(f"  Original text: '{item.original_text}'")
-        print(f"  Quantity: '{item.quantity}'")
-
-        database = self.databases[database_name]
-        parts = database['parts']
-        headers = database['headers']
-
-        print(f"  Database has {len(parts)} parts with headers: {headers}")
-
-        # Show first few parts for comparison
-        if parts:
-            print("  First 3 database entries:")
-            for i, part in enumerate(parts[:3]):
-                print(f"    [{i+1}] {part}")
-        else:
-            print("  Database is empty!")
-
 
     def _fallback_match(self, item: ScannedItem, database_name: str) -> List[PartMatch]:
         """Simple fallback matching when Claude fails"""
@@ -591,9 +550,8 @@ class LumberListMatcher:
         if not desc_col:
             desc_col = headers[1] if len(headers) > 1 else headers[0]
         
-        # Create a condensed database sample for Claude (to fit in context)
-        max_parts_for_claude = 500  # Limit to avoid context overflow
-        sample_parts = parts[:max_parts_for_claude] if len(parts) > max_parts_for_claude else parts
+        # Use all parts - token counting will handle chunking if needed
+        sample_parts = parts
         
         # Format database entries for Claude
         db_entries = []
@@ -607,7 +565,8 @@ class LumberListMatcher:
             return []
         
         # Prepare the matching request for Claude
-        db_text = "\n".join(db_entries[:100])  # Further limit for the API call
+        db_text = "\n".join(db_entries)  # Use all database entries
+        training_examples = self._build_training_examples_text()  # Now uses all examples
         
         try:
             response = self.client.messages.create(
@@ -616,34 +575,14 @@ class LumberListMatcher:
                 messages=[
                     {
                         "role": "user", 
-                        "content": f"""I need to match this lumber/construction item against a parts database.
-
-ITEM TO MATCH:
-Quantity: {item.quantity}
-Description: {item.description}
-Original text: {item.original_text}
-
-PARTS DATABASE ({database_name}):
-Format: PART_NUMBER|DESCRIPTION
-{db_text}
-
-Please find the best matches from the database for the item. Consider:
-- Exact dimension matches (2x4, 2x6, etc.)
-- Material equivalents (PT = Pressure Treated, DF = Douglas Fir, etc.)
-- Length conversions and variations
-- Common construction terminology
-- Partial matches where core specs align
-
-Return your response as JSON in this format:
-[
-  {{
-    "part_number": "exact part number from database",
-    "confidence": "exact|high|medium|low",
-    "reason": "brief explanation of why this matches"
-  }}
-]
-
-Return up to 3 best matches, ordered by confidence. If no reasonable matches, return empty array []."""
+                        "content": load_prompt("match_prompt", item=item,
+                                               training_examples="",
+                                               training_instruction="",
+                                               database_name=database_name, 
+                                               chunk_name="",
+                                               column_info="",
+                                               db_text=db_text,
+                                               max_matches=3),
                     }
                 ]
             )
@@ -714,11 +653,22 @@ Return up to 3 best matches, ordered by confidence. If no reasonable matches, re
         if len(db_entries) <= 1:  # Only headers, no data
             return []
         
-        # Calculate approximate token usage and split if necessary
+        # Calculate actual token usage using Anthropic's tokenizer
         db_text = "\n".join(db_entries)
-        estimated_tokens = len(db_text) // 4  # Rough estimate: 4 chars per token
+        training_examples = self._build_training_examples_text()
         
-        if estimated_tokens > 80000:  # Leave room for response and other content
+        # Build the full prompt to count tokens accurately
+        full_prompt = load_prompt("match_prompt", item=item, training_examples=training_examples,
+                                  training_instruction="Use the training examples above to understand common patterns",
+                                  database_name=database_name, 
+                                  chunk_name="",
+                                  column_info="",
+                                  db_text=db_text,
+                                  max_matches=5)
+        total_tokens = self._count_tokens(full_prompt)
+        
+        # Use 180,000 as safe limit (leaving room for response)
+        if total_tokens > 180000:
             # Split database into chunks and process separately
             chunk_size = len(parts) // 3  # Split into 3 chunks
             
@@ -753,8 +703,57 @@ Return up to 3 best matches, ordered by confidence. If no reasonable matches, re
             return unique_matches[:3]
         
         else:
-            # Database fits in one request
-            return self._match_with_claude_chunk_enhanced(item, db_text, database_name, "full_db", headers)
+            # Database fits in one request - use the full prompt we built
+            try:
+                response = self.client.messages.create(
+                    model="claude-sonnet-4-20250514",
+                    max_tokens=2000,
+                    messages=[{"role": "user", "content": full_prompt}]
+                )
+                
+                response_text = response.content[0].text
+                
+                # Extract JSON
+                json_match = re.search(r'\[.*?\]', response_text, re.DOTALL)
+                if not json_match:
+                    return []
+                
+                claude_matches = json.loads(json_match.group(0))
+                
+                # Convert to PartMatch objects
+                matches = []
+                for claude_match in claude_matches:
+                    part_num = claude_match.get('part_number', '')
+                    confidence = claude_match.get('confidence', 'low')
+                    reason = claude_match.get('reason', '')
+                    
+                    # Find the full row data for this part number
+                    full_row_info = ""
+                    for line in db_text.split('\n')[1:]:  # Skip header line
+                        if line and '|' in line:
+                            row_parts = line.split('|')
+                            if len(row_parts) > 0 and row_parts[0].strip() == part_num:
+                                # Create a readable description using all columns
+                                row_info = []
+                                for i, header in enumerate(headers):
+                                    if i < len(row_parts):
+                                        row_info.append(f"{header}: {row_parts[i].strip()}")
+                                full_row_info = " | ".join(row_info)
+                                break
+                    
+                    if full_row_info:
+                        matches.append(PartMatch(
+                            part_number=part_num,
+                            description=full_row_info,
+                            confidence=confidence,
+                            reason=reason
+                        ))
+                
+                return matches[:5]  # Return top 5 matches
+                
+            except Exception as e:
+                print(f"Error in single-call matching: {e}")
+                return []
 
     def _match_with_claude_chunk_enhanced(self, item: ScannedItem, db_text: str, database_name: str, chunk_name: str, headers: List[str]) -> List[PartMatch]:
         """Enhanced matching using all available database columns"""
@@ -775,6 +774,7 @@ Return up to 3 best matches, ordered by confidence. If no reasonable matches, re
                     column_descriptions.append(f"- {header}: Additional product information")
             
             column_info = "\n".join(column_descriptions)
+            training_examples = self._build_training_examples_text()  # Now uses all examples
             
             response = self.client.messages.create(
                 model="claude-sonnet-4-20250514",
@@ -782,54 +782,14 @@ Return up to 3 best matches, ordered by confidence. If no reasonable matches, re
                 messages=[
                     {
                         "role": "user",
-                        "content": f"""Match this construction/lumber item against the parts database using ALL available information.
-
-ITEM TO MATCH:
-Quantity: {item.quantity}
-Description: {item.description}
-Original handwritten text: {item.original_text}
-
-PARTS DATABASE ({database_name} - {chunk_name}):
-The database has the following columns:
-{column_info}
-
-Database format (pipe-separated values):
-{db_text}
-
-MATCHING INSTRUCTIONS:
-1. Use ALL columns for matching, not just the description:
-   - Customer Terms can provide alternative names or categories
-   - Item Description has the technical specs
-   - Stocking Multiple shows the unit type (LF, EA, etc.)
-
-2. Look for these construction material matches:
-   - Exact dimension matches (2x4, 2x6, 3 1/2 x 3 1/2, etc.)
-   - Material types: PT/Pressure Treated, DF/Douglas Fir, Cedar, Pine, POC (Port Orford Cedar), GLU LAM/Glulam beams
-   - Length specifications: 8', 10', 12', 16', 20' etc.
-   - Lumber grades: S1S2E (Surfaced 1 Side, 2 Edges), S4S, Construction Grade
-   - Product categories: Posts, Beams, Fascia, Advantage lumber, etc.
-
-3. Consider unit compatibility:
-   - LF (Linear Feet) for dimensional lumber
-   - EA (Each) for individual items
-   - Board feet for lumber volume
-
-4. Match handwritten abbreviations and variations:
-   - "PT" = "Pressure Treated"
-   - "DF" = "Douglas Fir" 
-   - "GLU LAM" = "Glulam"
-   - Dimension variations: "2x4" = "2 X 4" = "2 by 4"
-
-Respond with JSON array of up to 5 best matches:
-[
-  {{
-    "part_number": "exact item number from database",
-    "confidence": "exact|high|medium|low",
-    "reason": "specific explanation using ALL relevant columns - mention which columns helped with the match"
-  }}
-]
-
-If no reasonable matches found, return []"""
+                        "content": load_prompt("match_prompt", item=item, 
+                                                training_examples=training_examples, 
+                                                training_instruction="Use the training examples above to understand common patterns",
+                                                database_name=database_name,
+                                                chunk_name=f" - {chunk_name}", 
+                                                column_info=column_info, 
+                                                db_text=db_text,
+                                                max_matches=5),
                     }
                 ]
             )
@@ -978,6 +938,12 @@ If no reasonable matches found, return []"""
     def scan_document_with_database_context(self, document_path: str, debug_output: bool = True, output_dir: str = ".", verbose: bool = False) -> List[ScannedItem]:
         """Use Claude API to scan the lumber list with database context for better matching"""
         try:
+            # Check if we can skip scanning
+            if self._should_skip_scanning(document_path, output_dir):
+                if debug_output:
+                    print("✓ Using cached scan results (input file and scan_prompt unchanged)")
+                return self._load_cached_scan_results(output_dir)
+            
             file_ext = Path(document_path).suffix.lower()
             
             # Handle PDF files
@@ -1042,31 +1008,7 @@ If no reasonable matches found, return []"""
             database_context = self._build_comprehensive_database_context()
 
             # Create enhanced prompt with database examples
-            prompt_text = f"""Please scan this handwritten lumber/materials list and extract each item with its quantity and description.
-
-{database_context}
-
-CRITICAL INSTRUCTIONS:
-1. Use the database examples above to format your descriptions to MATCH the database style
-2. For lumber: Use format like "2X4  16" not "2x4 x 16' lumber"
-3. For hardware: Use format like "#8 SCREWS" not "2x4 construction screws #8"
-4. Keep descriptions SHORT and match the database terminology
-5. When unsure, pick the closest database format
-
-Examples of good matches:
-- Handwritten "2x12 20'" → Description: "2X12  20" (matches database format)
-- Handwritten "4x4 12 PT" → Description: "4X4  12  PT" (matches database style)
-- Handwritten "#8 screws" → Description: "#8 SCREWS" (matches database style)
-
-Format your response as a JSON array where each item has:
-{{
-    "quantity": "the number/amount",
-    "description": "item description formatted to match database style",
-    "original_text": "the original handwritten text as you read it",
-    "confidence": "high|medium|low - how confident you are in the match"
-}}
-
-Focus on making descriptions that will match items in the provided database."""
+            prompt_text = load_prompt("scan_prompt", database_context=database_context)
 
             # Create the message with image using the current model
             message = self.client.messages.create(
@@ -1174,6 +1116,8 @@ Focus on making descriptions that will match items in the provided database."""
                             f.write(f"     Original: {item.original_text}\n")
                 print(f"✓ Detailed item list saved to: {items_file}")
 
+            # Post-process to fix missing specifications
+            scanned_items = self._fix_missing_specifications(scanned_items)
             return scanned_items
 
         except Exception as e:
@@ -1499,12 +1443,13 @@ Focus on making descriptions that will match items in the provided database."""
         if debug:
             print(f"  Classified as lumber: {is_lumber}")
 
-        if is_lumber:
-            # Use lumber-specific matching
-            return self.match_lumber_item(item, database_name, debug)
+        # Use Claude-based matching for both lumber and general items
+        if hasattr(self, 'training_data') and self.training_data:
+            # Use full database matching with training data
+            return self.match_item_with_full_database(item, database_name)
         else:
-            # Use enhanced general matching for hardware, etc.
-            return self.match_general_item(item, database_name, debug)
+            # Use standard database matching
+            return self.match_item_in_database(item, database_name)
 
     def match_general_item(self, item: ScannedItem, database_name: str, debug: bool = False) -> List[PartMatch]:
         """General matching for non-lumber items (hardware, screws, etc.)"""
@@ -1566,17 +1511,42 @@ Focus on making descriptions that will match items in the provided database."""
         return matches[:3]
 
     def find_all_matches_hybrid(self, debug: bool = False, output_dir: str = ".") -> None:
-        """Find matches using hybrid approach: lumber-specific + general matching"""
+        """Find matches using batch processing: all items in single Claude call per database"""
         if debug:
             print("\n" + "="*60)
-            print("SEARCHING FOR MATCHES USING HYBRID MATCHING")
-            print("(Lumber-specific for lumber items, general for hardware/other)")
+            print("SEARCHING FOR MATCHES USING BATCH PROCESSING")
+            print("(All items processed together for efficiency)")
             print("="*60)
 
         # Create debug log file for detailed output
         debug_log_file = Path(output_dir) / "matching_debug.log"
         with open(debug_log_file, 'w', encoding='utf-8') as log_file:
             log_file.write("DETAILED MATCHING DEBUG LOG\n")
+            log_file.write("=" * 60 + "\n\n")
+
+        # Process each database
+        for db_name in self.databases:
+            if debug:
+                print(f"\nProcessing database: {db_name}")
+            
+            # Batch match all items against this database
+            self._batch_match_items(db_name, debug, debug_log_file)
+
+        if debug:
+            print(f"\n✓ Detailed matching log saved to: {debug_log_file}")
+
+    def find_all_matches_keyword(self, debug: bool = False, output_dir: str = ".") -> None:
+        """Find matches using original keyword-based matching (for comparison)"""
+        if debug:
+            print("\n" + "="*60)
+            print("SEARCHING FOR MATCHES USING KEYWORD MATCHING")
+            print("(Original keyword-based approach for comparison)")
+            print("="*60)
+
+        # Create debug log file for detailed output
+        debug_log_file = Path(output_dir) / "matching_debug.log"
+        with open(debug_log_file, 'w', encoding='utf-8') as log_file:
+            log_file.write("DETAILED MATCHING DEBUG LOG (KEYWORD MATCHING)\n")
             log_file.write("=" * 60 + "\n\n")
 
         for i, item in enumerate(self.scanned_items, 1):
@@ -1593,8 +1563,8 @@ Focus on making descriptions that will match items in the provided database."""
                 if debug:
                     print(f"\n  Checking database: {db_name}")
 
-                # Run matching with appropriate debug level
-                matches = self.hybrid_match_item(item, db_name, debug=debug)
+                # Use original hybrid matching (which calls keyword methods)
+                matches = self.hybrid_match_item_original(item, db_name, debug=debug)
                 all_matches.extend(matches)
 
                 if debug:
@@ -1634,6 +1604,138 @@ Focus on making descriptions that will match items in the provided database."""
         
         print(f"\n✓ Detailed matching log saved to: {debug_log_file}")
 
+    def hybrid_match_item_original(self, item: ScannedItem, database_name: str, debug: bool = False) -> List[PartMatch]:
+        """Original hybrid matching: lumber-specific for lumber items, general for others"""
+        if debug:
+            print(f"\nDEBUG: Original hybrid matching for '{item.description}' in {database_name}")
+
+        # Determine if this looks like a lumber item
+        desc_lower = item.description.lower()
+        is_lumber = bool(re.search(r'\d+\s*x\s*\d+', desc_lower)) or any(term in desc_lower for term in
+                         ['post', 'beam', 'lumber', 'cedar', 'pine', 'pt', 'advantage', 'glu lam', 'glulam'])
+
+        if debug:
+            print(f"  Classified as lumber: {is_lumber}")
+
+        if is_lumber:
+            # Use lumber-specific matching
+            return self.match_lumber_item(item, database_name, debug)
+        else:
+            # Use enhanced general matching for hardware, etc.
+            return self.match_general_item(item, database_name, debug)
+
+    def _batch_match_items(self, database_name: str, debug: bool, debug_log_file) -> None:
+        """Match all scanned items against a single database in one Claude call"""
+        database = self.databases[database_name]
+        parts = database['parts']
+        headers = database['headers']
+        
+        if not parts:
+            return
+        
+        # Format all items for batch processing
+        items_text = ""
+        for i, item in enumerate(self.scanned_items, 1):
+            items_text += f"[{i}] Quantity: {item.quantity} | Description: {item.description} | Original: {item.original_text}\n"
+        
+        # Format database
+        db_entries = []
+        header_line = "|".join(headers)
+        db_entries.append(f"HEADERS: {header_line}")
+        
+        for part in parts:
+            row_data = []
+            for header in headers:
+                value = part.get(header, '').strip()
+                row_data.append(value)
+            db_entries.append("|".join(row_data))
+        
+        db_text = "\n".join(db_entries)
+        training_examples = self._build_training_examples_text()
+        
+        # Build batch prompt
+        batch_prompt = load_prompt("batch_match_prompt", 
+                                    items_text=items_text,
+                                    training_examples=training_examples,
+                                    training_instruction="Use the training examples above to understand common patterns",
+                                    database_name=database_name,
+                                    column_info="",
+                                    db_text=db_text,
+                                    max_matches=3)
+        
+        try:
+            response = self.client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=4000,
+                messages=[{"role": "user", "content": batch_prompt}]
+            )
+            
+            response_text = response.content[0].text
+            
+            # Parse the batch response
+            self._parse_batch_response(response_text, database_name, debug, debug_log_file)
+            
+        except Exception as e:
+            print(f"Error in batch matching for {database_name}: {e}")
+            # Fall back to individual matching
+            self._fallback_individual_matching(database_name, debug, debug_log_file)
+
+    def _parse_batch_response(self, response_text: str, database_name: str, debug: bool, debug_log_file) -> None:
+        """Parse the batch response and assign matches to items"""
+        try:
+            # Extract JSON from response
+            json_match = re.search(r'\[.*?\]', response_text, re.DOTALL)
+            if not json_match:
+                return
+            
+            batch_matches = json.loads(json_match.group(0))
+            
+            # Group matches by item index
+            item_matches = {}
+            for match in batch_matches:
+                item_idx = match.get('item_index', 0)
+                if item_idx not in item_matches:
+                    item_matches[item_idx] = []
+                
+                part_match = PartMatch(
+                    part_number=match.get('part_number', ''),
+                    database_description=match.get('description', ''),
+                    confidence=match.get('confidence', 'low'),
+                    reason=match.get('reason', ''),
+                    database_name=database_name
+                )
+                item_matches[item_idx].append(part_match)
+            
+            # Assign matches to items
+            for i, item in enumerate(self.scanned_items):
+                if i in item_matches:
+                    item.matches.extend(item_matches[i])
+                    
+                    if debug:
+                        print(f"  [{i+1:2d}] {item.description} - {len(item_matches[i])} matches")
+                    
+                    # Log to debug file
+                    with open(debug_log_file, 'a', encoding='utf-8') as log_file:
+                        log_file.write(f"\n=== ITEM {i+1}: {item.description} ===\n")
+                        log_file.write(f"Database: {database_name}\n")
+                        log_file.write(f"Matches found: {len(item_matches[i])}\n")
+                        for match in item_matches[i]:
+                            log_file.write(f"  - {match.confidence}: {match.part_number} | {match.database_description}\n")
+                        log_file.write("-" * 50 + "\n")
+                        
+        except Exception as e:
+            print(f"Error parsing batch response: {e}")
+
+    def _fallback_individual_matching(self, database_name: str, debug: bool, debug_log_file) -> None:
+        """Fallback to individual matching if batch fails"""
+        for i, item in enumerate(self.scanned_items, 1):
+            matches = self.hybrid_match_item(item, database_name, debug=False)
+            item.matches.extend(matches)
+            
+            if debug:
+                print(f"  [{i:2d}] {item.description} - {len(matches)} matches (fallback)")
+
+###############################################################################
 def parse_arguments():
     """Parse command line arguments"""
     parser = argparse.ArgumentParser(
@@ -1644,6 +1746,8 @@ Examples:
   %(prog)s document.pdf parts1.csv parts2.csv
   %(prog)s -k YOUR_API_KEY photo.png lumber_db.csv hardware_db.csv
   %(prog)s --output-dir ./results lumber_list.pdf database.csv
+  %(prog)s --training-data training1.csv training2.csv document.pdf database.csv
+  %(prog)s --use-keyword-matching document.pdf database.csv
   
 Note: All output files (reports, debug files, CSV exports) will be saved in a 
 subdirectory named after the input file (e.g., 'document_results/', 'lumber_list_results/')
@@ -1687,8 +1791,18 @@ subdirectory named after the input file (e.g., 'document_results/', 'lumber_list
                        action='store_true',
                        help='Show detailed matching debug output on console (default: save to files)')
     
+    parser.add_argument('--training-data',
+                       nargs='*',
+                       default=[],
+                       help='One or more CSV files containing training data (original_text, correct_sku columns)')
+    
+    parser.add_argument('--use-keyword-matching',
+                       action='store_true',
+                       help='Use keyword-based matching instead of Claude AI (for comparison)')
+    
     return parser.parse_args()
 
+###############################################################################
 def main():
     """Main program execution"""
     args = parse_arguments()
@@ -1743,6 +1857,55 @@ def main():
         print("Error: No databases loaded successfully")
         sys.exit(1)
     
+    # Count tokens in loaded databases
+    if not args.quiet:
+        total_db_tokens = 0
+        for db_name, db_info in matcher.databases.items():
+            # Build database text similar to what's used in matching
+            parts = db_info['parts']
+            headers = db_info['headers']
+            
+            db_entries = []
+            header_line = "|".join(headers)
+            db_entries.append(f"HEADERS: {header_line}")
+            
+            for part in parts:
+                row_data = []
+                for header in headers:
+                    value = part.get(header, '').strip()
+                    row_data.append(value)
+                db_entries.append("|".join(row_data))
+            
+            db_text = "\n".join(db_entries)
+            db_tokens = matcher._count_tokens(db_text)
+            total_db_tokens += db_tokens
+            print(f"  {db_name} database tokens: {db_tokens:,}")
+        
+        print(f"  Total database tokens: {total_db_tokens:,}")
+    
+    # Load training data if provided
+    if args.training_data:
+        if not args.quiet:
+            print(f"\nLoading {len(args.training_data)} training data file(s)...")
+        
+        training_loaded = 0
+        for training_path in args.training_data:
+            if not os.path.exists(training_path):
+                print(f"Warning: Training file not found: {training_path}")
+                continue
+            
+            if matcher.load_training_data(training_path):
+                training_loaded += 1
+            elif not args.quiet:
+                print(f"Failed to load training data: {training_path}")
+        
+        if not args.quiet and training_loaded > 0:
+            # Count tokens in training data
+            training_text = matcher._build_training_examples_text()
+            training_tokens = matcher._count_tokens(training_text)
+            print(f"✓ Loaded {training_loaded} training data file(s) with {len(matcher.training_data)} total examples")
+            print(f"  Training data tokens: {training_tokens:,}")
+    
     # Scan document
     if not args.quiet:
         print(f"\nScanning document: {args.document}")
@@ -1752,40 +1915,11 @@ def main():
         print("Error: No items found in document")
         sys.exit(1)
     
-    # Find matches
-    if not args.quiet:
-        matcher.find_all_matches_hybrid(debug=args.verbose_matching, output_dir=str(output_dir))
-    elif not args.quiet:
-        matcher.find_all_matches(
-            use_claude=args.use_claude_matching,
-            full_database=args.full_database
-        )
+    # Find matches using selected approach
+    if args.use_keyword_matching:
+        matcher.find_all_matches_keyword(debug=args.verbose_matching, output_dir=str(output_dir))
     else:
-        # Silent matching for quiet mode
-        for item in matcher.scanned_items:
-            all_matches = []
-            for db_name in matcher.databases:
-                if args.use_claude_matching:
-                    if args.full_database:
-                        matches = matcher.match_item_with_full_database(item, db_name)
-                    else:
-                        matches = matcher.match_item_in_database(item, db_name)
-                else:
-                    matches = matcher._fallback_match(item, db_name)
-                all_matches.extend(matches)
-            
-            # Remove duplicates and sort by confidence
-            unique_matches = []
-            seen_parts = set()
-            for match in all_matches:
-                key = (match.part_number, match.database_name)
-                if key not in seen_parts:
-                    unique_matches.append(match)
-                    seen_parts.add(key)
-            
-            confidence_order = {"exact": 0, "high": 1, "medium": 2, "low": 3}
-            unique_matches.sort(key=lambda x: confidence_order.get(x.confidence, 4))
-            item.matches = unique_matches[:3]
+        matcher.find_all_matches_hybrid(debug=args.verbose_matching, output_dir=str(output_dir))
     
     # Generate outputs with specified names and directory
     if not args.quiet:
@@ -1814,5 +1948,6 @@ def main():
     print(f"    Report: {args.report_name}")
     print(f"    CSV: {args.csv_name}")
 
+###############################################################################
 if __name__ == "__main__":
     main()
