@@ -87,6 +87,7 @@ class PartMatch:
     database_name: str
     database_description: str
     confidence: str  # "exact", "partial", "similar"
+    reason: str = ""  # Explanation for the match
 
 ###############################################################################
 @dataclass
@@ -223,6 +224,47 @@ TRAINING EXAMPLES (use these to understand common patterns and improve accuracy)
         except Exception as e:
             # Fallback to rough estimate if counting fails
             return len(text) // 4
+
+    def _call_ai_with_retry(self, messages, max_tokens=4000, max_retries=3, model=None):
+        """Call AI API with retry logic (works with both Anthropic and OpenAI)"""
+        import time
+        
+        # Set default model
+        if model is None:
+            model = "claude-sonnet-4-20250514"
+        
+        for attempt in range(max_retries):
+            try:
+                if True:
+                    response = self.client.messages.create(
+                        model=model,
+                        max_tokens=max_tokens,
+                        messages=messages
+                    )
+                    return response
+                elif self.ai_provider == 'openai':
+                    response = self.client.chat.completions.create(
+                        model=model,
+                        max_completion_tokens=max_tokens,
+                        messages=messages
+                    )
+                    return response
+            except Exception as e:
+                error_str = str(e)
+                if "rate_limit_error" in error_str or "429" in error_str:
+                    if attempt < max_retries - 1:
+                        # Exponential backoff: 60, 120, 240 seconds
+                        wait_time = 60 * (2 ** attempt)
+                        print(f"  Rate limited, waiting {wait_time} seconds before retry {attempt + 1}/{max_retries}...")
+                        time.sleep(wait_time)
+                    else:
+                        print(f"  ✗ Max retries ({max_retries}) exceeded for rate limit")
+                        raise e
+                else:
+                    # Non-rate-limit error, don't retry
+                    raise e
+        
+        raise Exception("Max retries exceeded")
     
     def _fix_missing_specifications(self, scanned_items: List[ScannedItem]) -> List[ScannedItem]:
         """Post-process scanned items to carry forward missing material specifications"""
@@ -527,362 +569,6 @@ TRAINING EXAMPLES (use these to understand common patterns and improve accuracy)
         overlap_ratio = overlap / total_unique if total_unique > 0 else 0
         
         return overlap_ratio > 0.3  # At least 30% word overlap
-
-    def match_item_in_database(self, item: ScannedItem, database_name: str) -> List[PartMatch]:
-        """Use Claude to intelligently find matches for an item in a specific database"""
-        database = self.databases[database_name]
-        parts = database['parts']
-        headers = database['headers']
-        
-        if not parts:
-            return []
-        
-        # Get the primary columns for part numbers and descriptions
-        item_num_col = headers[0] if headers else 'item_number'
-        desc_col = None
-        
-        # Find the best description column
-        for header in headers:
-            if 'description' in header.lower() or 'desc' in header.lower():
-                desc_col = header
-                break
-        
-        if not desc_col:
-            desc_col = headers[1] if len(headers) > 1 else headers[0]
-        
-        # Use all parts - token counting will handle chunking if needed
-        sample_parts = parts
-        
-        # Format database entries for Claude
-        db_entries = []
-        for part in sample_parts:
-            part_num = part.get(item_num_col, '').strip()
-            part_desc = part.get(desc_col, '').strip()
-            if part_num and part_desc:
-                db_entries.append(f"{part_num}|{part_desc}")
-        
-        if not db_entries:
-            return []
-        
-        # Prepare the matching request for Claude
-        db_text = "\n".join(db_entries)  # Use all database entries
-        training_examples = self._build_training_examples_text()  # Now uses all examples
-        
-        try:
-            response = self.client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=1000,
-                messages=[
-                    {
-                        "role": "user", 
-                        "content": load_prompt("match_prompt", item=item,
-                                               training_examples="",
-                                               training_instruction="",
-                                               database_name=database_name, 
-                                               chunk_name="",
-                                               column_info="",
-                                               db_text=db_text,
-                                               max_matches=3),
-                    }
-                ]
-            )
-            
-            # Parse Claude's response
-            response_text = response.content[0].text
-            
-            # Extract JSON from response
-            json_match = re.search(r'\[.*?\]', response_text, re.DOTALL)
-            if json_match:
-                claude_matches = json.loads(json_match.group(0))
-            else:
-                return []
-            
-            # Convert Claude's matches to PartMatch objects
-            matches = []
-            for claude_match in claude_matches:
-                part_num = claude_match.get('part_number', '')
-                confidence = claude_match.get('confidence', 'low')
-                reason = claude_match.get('reason', '')
-                
-                # Find the full part info from database
-                matching_part = None
-                for part in sample_parts:
-                    if part.get(item_num_col, '').strip() == part_num:
-                        matching_part = part
-                        break
-                
-                if matching_part:
-                    part_desc = matching_part.get(desc_col, '').strip()
-                    match = PartMatch(
-                        description=item.description,
-                        part_number=part_num,
-                        database_name=database_name,
-                        database_description=f"{part_desc} (Claude: {reason})",
-                        confidence=confidence
-                    )
-                    matches.append(match)
-            
-            return matches
-            
-        except Exception as e:
-            print(f"Warning: Claude matching failed for {database_name}: {e}")
-            # Fallback to simple keyword matching
-            return self._fallback_match(item, database_name)
-
-    def match_item_with_full_database(self, item: ScannedItem, database_name: str) -> List[PartMatch]:
-        """Use Claude to match against a large database by sending the full database context"""
-        database = self.databases[database_name]
-        parts = database['parts']
-        headers = database['headers']
-        
-        if not parts:
-            return []
-        
-        # Format the entire database with ALL columns for Claude
-        db_entries = []
-        header_line = "|".join(headers)
-        db_entries.append(f"HEADERS: {header_line}")
-        
-        for part in parts:
-            row_data = []
-            for header in headers:
-                value = part.get(header, '').strip()
-                row_data.append(value)
-            db_entries.append("|".join(row_data))
-        
-        if len(db_entries) <= 1:  # Only headers, no data
-            return []
-        
-        # Calculate actual token usage using Anthropic's tokenizer
-        db_text = "\n".join(db_entries)
-        training_examples = self._build_training_examples_text()
-        
-        # Build the full prompt to count tokens accurately
-        full_prompt = load_prompt("match_prompt", item=item, training_examples=training_examples,
-                                  training_instruction="Use the training examples above to understand common patterns",
-                                  database_name=database_name, 
-                                  chunk_name="",
-                                  column_info="",
-                                  db_text=db_text,
-                                  max_matches=5)
-        total_tokens = self._count_tokens(full_prompt)
-        
-        # Use 180,000 as safe limit (leaving room for response)
-        if total_tokens > 180000:
-            # Split database into chunks and process separately
-            chunk_size = len(parts) // 3  # Split into 3 chunks
-            
-            all_matches = []
-            for i in range(0, len(parts), chunk_size):
-                chunk_parts = parts[i:i + chunk_size]
-                chunk_entries = [f"HEADERS: {header_line}"]
-                
-                for part in chunk_parts:
-                    row_data = []
-                    for header in headers:
-                        value = part.get(header, '').strip()
-                        row_data.append(value)
-                    chunk_entries.append("|".join(row_data))
-                
-                chunk_text = "\n".join(chunk_entries)
-                chunk_matches = self._match_with_claude_chunk_enhanced(item, chunk_text, database_name, f"chunk_{i//chunk_size + 1}", headers)
-                all_matches.extend(chunk_matches)
-            
-            # Deduplicate and sort
-            unique_matches = []
-            seen_parts = set()
-            for match in all_matches:
-                if match.part_number not in seen_parts:
-                    unique_matches.append(match)
-                    seen_parts.add(match.part_number)
-            
-            # Sort by confidence
-            confidence_order = {"exact": 0, "high": 1, "medium": 2, "low": 3}
-            unique_matches.sort(key=lambda x: confidence_order.get(x.confidence, 4))
-            
-            return unique_matches[:3]
-        
-        else:
-            # Database fits in one request - use the full prompt we built
-            try:
-                response = self.client.messages.create(
-                    model="claude-sonnet-4-20250514",
-                    max_tokens=2000,
-                    messages=[{"role": "user", "content": full_prompt}]
-                )
-                
-                response_text = response.content[0].text
-                
-                # Extract JSON
-                json_match = re.search(r'\[.*?\]', response_text, re.DOTALL)
-                if not json_match:
-                    return []
-                
-                claude_matches = json.loads(json_match.group(0))
-                
-                # Convert to PartMatch objects
-                matches = []
-                for claude_match in claude_matches:
-                    part_num = claude_match.get('part_number', '')
-                    confidence = claude_match.get('confidence', 'low')
-                    reason = claude_match.get('reason', '')
-                    
-                    # Find the full row data for this part number
-                    full_row_info = ""
-                    for line in db_text.split('\n')[1:]:  # Skip header line
-                        if line and '|' in line:
-                            row_parts = line.split('|')
-                            if len(row_parts) > 0 and row_parts[0].strip() == part_num:
-                                # Create a readable description using all columns
-                                row_info = []
-                                for i, header in enumerate(headers):
-                                    if i < len(row_parts):
-                                        row_info.append(f"{header}: {row_parts[i].strip()}")
-                                full_row_info = " | ".join(row_info)
-                                break
-                    
-                    if full_row_info:
-                        matches.append(PartMatch(
-                            part_number=part_num,
-                            description=full_row_info,
-                            confidence=confidence,
-                            reason=reason
-                        ))
-                
-                return matches[:5]  # Return top 5 matches
-                
-            except Exception as e:
-                print(f"Error in single-call matching: {e}")
-                return []
-
-    def _match_with_claude_chunk_enhanced(self, item: ScannedItem, db_text: str, database_name: str, chunk_name: str, headers: List[str]) -> List[PartMatch]:
-        """Enhanced matching using all available database columns"""
-        try:
-            # Create a description of what each column contains
-            column_descriptions = []
-            for header in headers:
-                header_lower = header.lower()
-                if 'customer' in header_lower or 'term' in header_lower:
-                    column_descriptions.append(f"- {header}: Alternative names, categories, or search terms for the product")
-                elif 'item' in header_lower and 'number' in header_lower:
-                    column_descriptions.append(f"- {header}: Unique part/SKU number")
-                elif 'description' in header_lower or 'desc' in header_lower:
-                    column_descriptions.append(f"- {header}: Detailed product description with dimensions and specifications")
-                elif 'stock' in header_lower or 'multiple' in header_lower or 'unit' in header_lower:
-                    column_descriptions.append(f"- {header}: Unit of measure (LF=Linear Feet, EA=Each, etc.)")
-                else:
-                    column_descriptions.append(f"- {header}: Additional product information")
-            
-            column_info = "\n".join(column_descriptions)
-            training_examples = self._build_training_examples_text()  # Now uses all examples
-            
-            response = self.client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=1500,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": load_prompt("match_prompt", item=item, 
-                                                training_examples=training_examples, 
-                                                training_instruction="Use the training examples above to understand common patterns",
-                                                database_name=database_name,
-                                                chunk_name=f" - {chunk_name}", 
-                                                column_info=column_info, 
-                                                db_text=db_text,
-                                                max_matches=5),
-                    }
-                ]
-            )
-            
-            response_text = response.content[0].text
-            
-            # Extract JSON
-            json_match = re.search(r'\[.*?\]', response_text, re.DOTALL)
-            if not json_match:
-                return []
-            
-            claude_matches = json.loads(json_match.group(0))
-            
-            # Convert to PartMatch objects with full row information
-            matches = []
-            for claude_match in claude_matches:
-                part_num = claude_match.get('part_number', '')
-                confidence = claude_match.get('confidence', 'low')
-                reason = claude_match.get('reason', '')
-                
-                # Find the full row data for this part number
-                full_row_info = ""
-                for line in db_text.split('\n')[1:]:  # Skip header line
-                    if line and '|' in line:
-                        row_parts = line.split('|')
-                        if len(row_parts) > 0 and row_parts[0].strip() == part_num:
-                            # Create a readable description using all columns
-                            row_info = []
-                            for i, header in enumerate(headers):
-                                if i < len(row_parts) and row_parts[i].strip():
-                                    row_info.append(f"{header}: {row_parts[i].strip()}")
-                            full_row_info = " | ".join(row_info)
-                            break
-                
-                if part_num:
-                    match = PartMatch(
-                        description=item.description,
-                        part_number=part_num,
-                        database_name=database_name,
-                        database_description=f"{full_row_info} || Claude reasoning: {reason}",
-                        confidence=confidence
-                    )
-                    matches.append(match)
-            
-            return matches
-            
-        except Exception as e:
-            print(f"Warning: Enhanced Claude matching failed for {database_name}: {e}")
-            return []
-    
-    def find_all_matches(self, use_claude: bool = False, full_database: bool = False) -> None:
-        """Find matches for all scanned items across all databases"""
-        print("\n" + "="*60)
-        if use_claude:
-            print("SEARCHING FOR MATCHES USING CLAUDE AI MATCHING")
-        else:
-            print("SEARCHING FOR MATCHES USING BASIC KEYWORD MATCHING")
-        print("="*60)
-        
-        for i, item in enumerate(self.scanned_items, 1):
-            print(f"\n[{i:2d}] Searching for: {item.description}")
-            print("-" * 50)
-            
-            all_matches = []
-            for db_name in self.databases:
-                if use_claude:
-                    if full_database:
-                        matches = self.match_item_with_full_database(item, db_name)
-                    else:
-                        matches = self.match_item_in_database(item, db_name)
-                else:
-                    matches = self._fallback_match(item, db_name)
-                all_matches.extend(matches)
-            
-            # Remove duplicates and sort by confidence
-            unique_matches = []
-            seen_parts = set()
-            for match in all_matches:
-                key = (match.part_number, match.database_name)
-                if key not in seen_parts:
-                    unique_matches.append(match)
-                    seen_parts.add(key)
-            
-            confidence_order = {"exact": 0, "high": 1, "medium": 2, "low": 3}
-            unique_matches.sort(key=lambda x: confidence_order.get(x.confidence, 4))
-            
-            item.matches = unique_matches[:3]  # Keep top 3 matches
-            
-            if item.matches:
-                for match in item.matches:
-                    print(f"  ✓ {match.confidence.upper():8s} | {match.part_number:15s} | {match.database_name:15s} | {match.database_description}")
-            else:
-                print("  ✗ No matches found")
     
     def generate_report(self, output_file: str = "lumber_match_report.txt") -> None:
         """Generate a detailed report of all matches"""
@@ -1430,27 +1116,6 @@ TRAINING EXAMPLES (use these to understand common patterns and improve accuracy)
         
         return components
 
-    def hybrid_match_item(self, item: ScannedItem, database_name: str, debug: bool = False) -> List[PartMatch]:
-        """Hybrid matching: lumber-specific for lumber items, general for others"""
-        if debug:
-            print(f"\nDEBUG: Hybrid matching for '{item.description}' in {database_name}")
-
-        # Determine if this looks like a lumber item
-        desc_lower = item.description.lower()
-        is_lumber = bool(re.search(r'\d+\s*x\s*\d+', desc_lower)) or any(term in desc_lower for term in
-                         ['post', 'beam', 'lumber', 'cedar', 'pine', 'pt', 'advantage', 'glu lam', 'glulam'])
-
-        if debug:
-            print(f"  Classified as lumber: {is_lumber}")
-
-        # Use Claude-based matching for both lumber and general items
-        if hasattr(self, 'training_data') and self.training_data:
-            # Use full database matching with training data
-            return self.match_item_with_full_database(item, database_name)
-        else:
-            # Use standard database matching
-            return self.match_item_in_database(item, database_name)
-
     def match_general_item(self, item: ScannedItem, database_name: str, debug: bool = False) -> List[PartMatch]:
         """General matching for non-lumber items (hardware, screws, etc.)"""
         if debug:
@@ -1510,7 +1175,7 @@ TRAINING EXAMPLES (use these to understand common patterns and improve accuracy)
 
         return matches[:3]
 
-    def find_all_matches_hybrid(self, debug: bool = False, output_dir: str = ".") -> None:
+    def find_all_matches_ai(self, debug: bool = False, output_dir: str = ".") -> None:
         """Find matches using batch processing: all items in single Claude call per database"""
         if debug:
             print("\n" + "="*60)
@@ -1563,8 +1228,8 @@ TRAINING EXAMPLES (use these to understand common patterns and improve accuracy)
                 if debug:
                     print(f"\n  Checking database: {db_name}")
 
-                # Use original hybrid matching (which calls keyword methods)
-                matches = self.hybrid_match_item_original(item, db_name, debug=debug)
+                # Use original keyword matching
+                matches = self.keyword_match_item(item, db_name, debug=debug)
                 all_matches.extend(matches)
 
                 if debug:
@@ -1604,10 +1269,9 @@ TRAINING EXAMPLES (use these to understand common patterns and improve accuracy)
         
         print(f"\n✓ Detailed matching log saved to: {debug_log_file}")
 
-    def hybrid_match_item_original(self, item: ScannedItem, database_name: str, debug: bool = False) -> List[PartMatch]:
-        """Original hybrid matching: lumber-specific for lumber items, general for others"""
+    def keyword_match_item(self, item: ScannedItem, database_name: str, debug: bool = False) -> List[PartMatch]:
         if debug:
-            print(f"\nDEBUG: Original hybrid matching for '{item.description}' in {database_name}")
+            print(f"\nDEBUG: Keyword matching for '{item.description}' in {database_name}")
 
         # Determine if this looks like a lumber item
         desc_lower = item.description.lower()
@@ -1625,13 +1289,16 @@ TRAINING EXAMPLES (use these to understand common patterns and improve accuracy)
             return self.match_general_item(item, database_name, debug)
 
     def _batch_match_items(self, database_name: str, debug: bool, debug_log_file) -> None:
-        """Match all scanned items against a single database in one Claude call"""
+        """Match all scanned items against a single database in one AI call"""
         database = self.databases[database_name]
         parts = database['parts']
         headers = database['headers']
         
         if not parts:
+            print(f"  No parts in database {database_name}")
             return
+        
+        print(f"  Batch matching {len(self.scanned_items)} items against {len(parts)} parts...")
         
         # Format all items for batch processing
         items_text = ""
@@ -1663,73 +1330,165 @@ TRAINING EXAMPLES (use these to understand common patterns and improve accuracy)
                                     db_text=db_text,
                                     max_matches=3)
         
+        # Write prompt to debug file
+        with open(debug_log_file, 'a', encoding='utf-8') as log_file:
+            log_file.write(f"\n=== BATCH MATCHING PROMPT FOR {database_name} ===\n")
+            log_file.write(f"Items to match: {len(self.scanned_items)}\n")
+            log_file.write(f"Database parts: {len(parts)}\n")
+            log_file.write(f"Prompt length: {len(batch_prompt)} characters\n")
+            log_file.write(f"Training examples: {len(training_examples)} characters\n")
+            log_file.write("\n--- PROMPT CONTENT ---\n")
+            log_file.write(batch_prompt)
+            log_file.write("\n--- END PROMPT ---\n\n")
+        
         try:
-            response = self.client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=4000,
-                messages=[{"role": "user", "content": batch_prompt}]
-            )
-            
-            response_text = response.content[0].text
+            if os.getenv("BATCH_RESPONSE") and os.path.exists(os.getenv("BATCH_RESPONSE")):
+                with open(os.getenv("BATCH_RESPONSE"), "r") as f:
+                    response_text = f.read()
+            else:
+                response = self.client.messages.create(
+                    model="claude-sonnet-4-20250514",
+                    max_tokens=8000,
+                    messages=[{"role": "user", "content": batch_prompt}]
+                )
+                response_text = response.content[0].text
+
+            # Write response to debug file
+            with open(debug_log_file, 'a', encoding='utf-8') as log_file:
+                log_file.write(f"\n=== RESPONSE ===\n")
+                log_file.write(response_text)
+                log_file.write(f"\n=== END RESPONSE ===\n\n")
             
             # Parse the batch response
             self._parse_batch_response(response_text, database_name, debug, debug_log_file)
             
         except Exception as e:
-            print(f"Error in batch matching for {database_name}: {e}")
+            print(f"  ✗ Error in batch matching for {database_name}: {e}")
+            with open(debug_log_file, 'a', encoding='utf-8') as log_file:
+                log_file.write(f"\n=== ERROR ===\n")
+                log_file.write(f"Error in batch matching: {e}\n")
+                log_file.write(f"Error type: {type(e).__name__}\n")
+                log_file.write(f"=== END ERROR ===\n\n")
             # Fall back to individual matching
-            self._fallback_individual_matching(database_name, debug, debug_log_file)
+            # self._fallback_individual_matching(database_name, debug, debug_log_file)
+            exit(1)
 
     def _parse_batch_response(self, response_text: str, database_name: str, debug: bool, debug_log_file) -> None:
         """Parse the batch response and assign matches to items"""
         try:
-            # Extract JSON from response
-            json_match = re.search(r'\[.*?\]', response_text, re.DOTALL)
-            if not json_match:
-                return
+            print(f"  Parsing Claude response...")
             
-            batch_matches = json.loads(json_match.group(0))
+            # Extract JSON from response - handle both bare JSON and markdown code blocks
+            json_text = None
+            
+            # First try to find JSON in markdown code blocks
+            json_start = response_text.find('```json')
+            
+            if json_start != -1:
+                # Find the start of the JSON array after ```json
+                array_start = response_text.find('[', json_start)
+                
+                if array_start != -1:
+                    # Count brackets to find the matching closing bracket
+                    bracket_count = 0
+                    for i, char in enumerate(response_text[array_start:], array_start):
+                        if char == '[':
+                            bracket_count += 1
+                        elif char == ']':
+                            bracket_count -= 1
+                            if bracket_count == 0:
+                                json_text = response_text[array_start:i+1]
+                                break
+            else:
+                # Try to find bare JSON array using bracket counting
+                start_pos = response_text.find('[')
+                if start_pos != -1:
+                    # Count brackets to find the matching closing bracket
+                    bracket_count = 0
+                    for i, char in enumerate(response_text[start_pos:], start_pos):
+                        if char == '[':
+                            bracket_count += 1
+                        elif char == ']':
+                            bracket_count -= 1
+                            if bracket_count == 0:
+                                json_text = response_text[start_pos:i+1]
+                                break
+            
+            if not json_text:
+                print(f"  ✗ No JSON array found in response")
+                with open(debug_log_file, 'a', encoding='utf-8') as log_file:
+                    log_file.write(f"\n=== JSON EXTRACTION ERROR ===\n")
+                    log_file.write(f"Could not find JSON array in response\n")
+                    log_file.write(f"Response length: {len(response_text)}\n")
+                    log_file.write(f"First 500 chars: {response_text[:500]}\n")
+                    log_file.write(f"Last 500 chars: {response_text[-500:]}\n")
+                    log_file.write(f"=== END JSON EXTRACTION ERROR ===\n\n")
+                return
+            print(f"  Extracted JSON length: {len(json_text)} characters")
+            
+            batch_matches = json.loads(json_text)
+            print(f"  Parsed {len(batch_matches)} match entries")
             
             # Group matches by item index
             item_matches = {}
             for match in batch_matches:
-                item_idx = match.get('item_index', 0)
+                item_idx = match.get('item_index', 1) - 1
                 if item_idx not in item_matches:
                     item_matches[item_idx] = []
                 
                 part_match = PartMatch(
+                    description="",  # Will be set when assigning to items
                     part_number=match.get('part_number', ''),
+                    database_name=database_name,
                     database_description=match.get('description', ''),
                     confidence=match.get('confidence', 'low'),
-                    reason=match.get('reason', ''),
-                    database_name=database_name
+                    reason=match.get('reason', '')
                 )
                 item_matches[item_idx].append(part_match)
+            
+            print(f"  Grouped matches for {len(item_matches)} items")
             
             # Assign matches to items
             for i, item in enumerate(self.scanned_items):
                 if i in item_matches:
-                    item.matches.extend(item_matches[i])
+                    matches = item_matches[i]
+                else:
+                    # try to match with keyword matching
+                    matches = self.keyword_match_item(item, database_name, debug=False)
+
+                if len(matches):
+                    # Update the description field for each match
+                    for match in matches:
+                        match.description = item.description
+                    item.matches.extend(matches)
                     
                     if debug:
-                        print(f"  [{i+1:2d}] {item.description} - {len(item_matches[i])} matches")
+                        print(f"  [{i+1:2d}] {item.description} - {len(matches)} matches")
                     
                     # Log to debug file
                     with open(debug_log_file, 'a', encoding='utf-8') as log_file:
                         log_file.write(f"\n=== ITEM {i+1}: {item.description} ===\n")
                         log_file.write(f"Database: {database_name}\n")
-                        log_file.write(f"Matches found: {len(item_matches[i])}\n")
-                        for match in item_matches[i]:
+                        log_file.write(f"Matches found: {len(matches)}\n")
+                        for match in matches:
                             log_file.write(f"  - {match.confidence}: {match.part_number} | {match.database_description}\n")
                         log_file.write("-" * 50 + "\n")
+                elif debug:
+                    print(f"  [{i+1:2d}] {item.description} - 0 matches")
                         
         except Exception as e:
-            print(f"Error parsing batch response: {e}")
+            print(f"  ✗ Error parsing batch response: {e}")
+            with open(debug_log_file, 'a', encoding='utf-8') as log_file:
+                log_file.write(f"\n=== PARSING ERROR ===\n")
+                log_file.write(f"Error parsing batch response: {e}\n")
+                log_file.write(f"Error type: {type(e).__name__}\n")
+                log_file.write(f"Response text: {response_text[:1000]}...\n")
+                log_file.write(f"=== END PARSING ERROR ===\n\n")
 
     def _fallback_individual_matching(self, database_name: str, debug: bool, debug_log_file) -> None:
         """Fallback to individual matching if batch fails"""
         for i, item in enumerate(self.scanned_items, 1):
-            matches = self.hybrid_match_item(item, database_name, debug=False)
+            matches = self.keyword_match_item(item, database_name, debug=False)
             item.matches.extend(matches)
             
             if debug:
@@ -1909,7 +1668,8 @@ def main():
     # Scan document
     if not args.quiet:
         print(f"\nScanning document: {args.document}")
-    items = matcher.scan_document_with_database_context(args.document, output_dir=str(output_dir), verbose=args.verbose_matching)
+    items = matcher.scan_document_with_database_context(args.document, output_dir=str(output_dir), 
+                                                        verbose=args.verbose_matching)
     
     if not items:
         print("Error: No items found in document")
@@ -1919,7 +1679,7 @@ def main():
     if args.use_keyword_matching:
         matcher.find_all_matches_keyword(debug=args.verbose_matching, output_dir=str(output_dir))
     else:
-        matcher.find_all_matches_hybrid(debug=args.verbose_matching, output_dir=str(output_dir))
+        matcher.find_all_matches_ai(debug=args.verbose_matching, output_dir=str(output_dir))
     
     # Generate outputs with specified names and directory
     if not args.quiet:
