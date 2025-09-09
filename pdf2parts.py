@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
-"""
-PDF2Parts - Lumber List Scanner and Parts Matcher
-
-This program uses the Claude API to scan handwritten lumber lists from PDF files or images,
-then iteratively searches through multiple parts databases to find matches.
-
-Supports:
-- PDF files (converts to images for processing)
-- Image files (.jpg, .png, .gif, .webp)
-- Multiple parts databases
-- Intelligent matching with Claude AI
-"""
-
+###############################################################################
+# PDF2Parts - Lumber List Scanner and Parts Matcher
+#
+# This program uses the Claude API to scan handwritten lumber lists from PDF files or images,
+# then iteratively searches through multiple parts databases to find matches.
+# 
+# Supports:
+# - PDF files (converts to images for processing)
+# - Image files (.jpg, .png, .gif, .webp)
+# - Multiple parts databases
+# - Intelligent matching with Claude AI
+###############################################################################
 import os
 import sys
 import csv
@@ -23,8 +22,9 @@ from pathlib import Path
 import anthropic
 from dataclasses import dataclass
 import re
-import tempfile
 import shutil
+from util import *
+from match import Matcher
 
 # PDF processing imports
 try:
@@ -79,26 +79,6 @@ def load_prompt(name, **kwargs):
     return result
 
 ###############################################################################
-@dataclass
-class PartMatch:
-    """Represents a matched part"""
-    description: str
-    part_number: str
-    database_name: str
-    database_description: str
-    confidence: str  # "exact", "partial", "similar"
-    reason: str = ""  # Explanation for the match
-
-###############################################################################
-@dataclass
-class ScannedItem:
-    """Represents an item from the scanned list"""
-    quantity: str
-    description: str
-    original_text: str
-    matches: List[PartMatch]
-
-###############################################################################
 class LumberListMatcher:
     def __init__(self, api_key: str):
         """Initialize with Claude API key"""
@@ -107,6 +87,8 @@ class LumberListMatcher:
         self.scanned_items = []
         self.training_data = []
         
+        self.keyword_matcher = Matcher(self.databases)
+
     def load_database(self, csv_path: str, database_name: str, output_dir: str = None) -> bool:
         """Load a parts database from CSV file"""
         try:
@@ -384,13 +366,12 @@ TRAINING EXAMPLES (use these to understand common patterns and improve accuracy)
         with open(image_path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode('utf-8')
     
-    def convert_pdf_to_images(self, pdf_path: str) -> List[str]:
+    def convert_pdf_to_images(self, pdf_path: str, output_dir:str) -> List[str]:
         """Convert PDF pages to images and return list of image file paths"""
         if not PDF_SUPPORT:
             raise ImportError("PDF support requires pdf2image. Install with: pip install pdf2image")
         
         # Create temporary directory for images
-        temp_dir = tempfile.mkdtemp()
         image_paths = []
         
         try:
@@ -405,7 +386,7 @@ TRAINING EXAMPLES (use these to understand common patterns and improve accuracy)
                     
                     for i, image in enumerate(images):
                         # Save as JPEG with compression to reduce file size
-                        image_path = os.path.join(temp_dir, f"page_{i+1}.jpg")
+                        image_path = os.path.join(output_dir, f"page_{i+1}.jpg")
                         
                         # Convert to RGB if necessary (JPEG doesn't support RGBA)
                         if image.mode in ('RGBA', 'LA', 'P'):
@@ -446,11 +427,9 @@ TRAINING EXAMPLES (use these to understand common patterns and improve accuracy)
                         raise Exception(f"Could not compress images small enough: {e}")
                 
         except Exception as e:
-            # Clean up temp directory on error
-            shutil.rmtree(temp_dir, ignore_errors=True)
             raise Exception(f"Error converting PDF to images: {e}")
         
-        return image_paths, temp_dir
+        return image_paths
     
     def _build_parts_context(self) -> str:
         """Build a context string from the parts databases to help with OCR"""
@@ -511,25 +490,6 @@ TRAINING EXAMPLES (use these to understand common patterns and improve accuracy)
 
         return "\n".join(context_parts)
 
-    def _keyword_match(self, item_desc: str, part_desc: str) -> bool:
-        """Check for keyword overlap"""
-        # Split into words and remove common filler words
-        stop_words = {'x', 'and', 'the', 'a', 'an', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'}
-        
-        item_words = set(re.findall(r'\w+', item_desc.lower())) - stop_words
-        part_words = set(re.findall(r'\w+', part_desc.lower())) - stop_words
-        
-        if len(item_words) == 0 or len(part_words) == 0:
-            return False
-        
-        # Calculate overlap ratio
-        overlap = len(item_words.intersection(part_words))
-        total_unique = len(item_words.union(part_words))
-        
-        overlap_ratio = overlap / total_unique if total_unique > 0 else 0
-        
-        return overlap_ratio > 0.3  # At least 30% word overlap
-    
     def generate_report(self, output_file: str = "lumber_match_report.txt") -> None:
         """Generate a detailed report of all matches"""
         with open(output_file, 'w') as f:
@@ -600,29 +560,24 @@ TRAINING EXAMPLES (use these to understand common patterns and improve accuracy)
                 if debug_output:
                     print(f"Converting PDF to images: {document_path}")
                 
-                image_paths, temp_dir = self.convert_pdf_to_images(document_path)
+                image_paths = self.convert_pdf_to_images(document_path, output_dir)
                 
                 if debug_output:
                     print(f"PDF converted to {len(image_paths)} page(s)")
                 
                 all_items = []
                 
-                try:
-                    # Process each page
-                    for i, image_path in enumerate(image_paths):
-                        if debug_output:
-                            print(f"Processing page {i+1}/{len(image_paths)}")
-                        
-                        page_items = self._scan_single_image_with_database_context(image_path, debug_output, output_dir, verbose)
-                        all_items.extend(page_items)
+                # Process each page
+                for i, image_path in enumerate(image_paths):
+                    if debug_output:
+                        print(f"Processing page {i+1}/{len(image_paths)}")
                     
-                    self.scanned_items = all_items
-                    return all_items
+                    page_items = self._scan_single_image_with_database_context(image_path, debug_output, output_dir, verbose)
+                    all_items.extend(page_items)
+                
+                self.scanned_items = all_items
+                return all_items
                     
-                finally:
-                    # Clean up temporary files
-                    shutil.rmtree(temp_dir, ignore_errors=True)
-            
             # Handle image files
             else:
                 items = self._scan_single_image_with_database_context(document_path, debug_output, output_dir, verbose)
@@ -855,286 +810,6 @@ TRAINING EXAMPLES (use these to understand common patterns and improve accuracy)
 
         return "\n".join(context_parts)
 
-    def _parse_lumber_item(self, description: str, debug: bool = False) -> dict:
-        """Parse a scanned lumber item description into components"""
-        desc = description.lower().strip()
-        components = {}
-
-        # Remove common words that don't help with matching
-        desc = re.sub(r'\b(lumber|wood|board|construction|grade|treated|pressure)\b', '', desc)
-        desc = ' '.join(desc.split())  # Clean up whitespace
-
-        if debug:
-            print(f"    Cleaned description: '{desc}'")
-
-        # Extract dimensions - handle various formats
-        # 2x4, 2x6, 4x4, etc.
-        dim_match = re.search(r'(\d+(?:\s*1/2)?)\s*x\s*(\d+(?:\s*1/2)?)', desc)
-        if dim_match:
-            width = dim_match.group(1).replace(' ', '')
-            height = dim_match.group(2).replace(' ', '')
-            components['dimensions'] = f"{width}x{height}"
-            if debug:
-                print(f"    Found dimensions: {components['dimensions']}")
-
-        # Extract length - look for numbers followed by ' or ft
-        length_match = re.search(r'(\d+)(?:\s*(?:\'|ft|feet))?(?:\s|$)', desc)
-        if length_match:
-            components['length'] = length_match.group(1)
-            if debug:
-                print(f"    Found length: {components['length']}")
-
-        # Extract material/treatment indicators
-        if 'pt' in desc or 'pressure' in desc:
-            components['treatment'] = 'pt'
-
-        # Look for specific material types
-        for material in ['cedar', 'pine', 'fir', 'poc']:
-            if material in desc:
-                components['material'] = material
-                break
-
-        # Look for product type indicators
-        if 'glu' in desc or 'glulam' in desc or 'glue' in desc:
-            components['type'] = 'glulam'
-        elif 'post' in desc:
-            components['type'] = 'post'
-        elif 'advantage' in desc or 'adv' in desc:
-            components['type'] = 'advantage'
-
-        return components
-
-    def match_lumber_item(self, item: ScannedItem, database_name: str, debug: bool = False) -> List[PartMatch]:
-        """Specialized matching for lumber database format"""
-        if debug:
-            print(f"\nDEBUG: Lumber-specific matching for '{item.description}' in {database_name}")
-
-        database = self.databases[database_name]
-        parts = database['parts']
-        headers = database['headers']
-
-        if not parts:
-            return []
-
-        # Parse the scanned item to extract lumber components
-        item_components = self._parse_lumber_item(item.description, debug)
-        if debug:
-            print(f"  Parsed item components: {item_components}")
-
-        matches = []
-        confidence_scores = []
-
-        for part in parts:
-            item_number = part.get('Item Number', '').strip()
-            item_desc = part.get('Item Description', '').strip()
-            customer_terms = part.get('Customer Terms', '').strip()
-            stocking_multiple = part.get('Stocking Multiple', '').strip()
-
-            if not item_number or not item_desc:
-                continue
-
-            # Parse the database entry
-            db_components = self._parse_database_entry(item_desc, customer_terms, debug)
-
-            # Calculate match score
-            match_score = self._calculate_lumber_match_score(item_components, db_components, debug)
-
-            if match_score > 0.5:  # Threshold for considering it a match
-                confidence = "high" if match_score > 0.8 else "medium" if match_score > 0.65 else "low"
-
-                match = PartMatch(
-                    description=item.description,
-                    part_number=item_number,
-                    database_name=database_name,
-                    database_description=f"{item_desc} | Terms: {customer_terms} | Unit: {stocking_multiple} | Score: {match_score:.2f}",
-                    confidence=confidence
-                )
-                matches.append(match)
-                confidence_scores.append(match_score)
-
-                if debug:
-                    print(f"    MATCH: {item_number} -> {item_desc} (score: {match_score:.2f})")
-
-        # Sort by match score (highest first)
-        # Use a stable sort that handles ties by using the index as a secondary key
-        sorted_indices = sorted(range(len(confidence_scores)), key=lambda i: confidence_scores[i], reverse=True)
-        sorted_matches = [matches[i] for i in sorted_indices]
-
-        if debug:
-            print(f"  Found {len(sorted_matches)} matches")
-
-        return sorted_matches[:3]  # Return top 3 matches
-
-    def _calculate_lumber_match_score(self, item_components: dict, db_components: dict, debug: bool = False) -> float:
-        """Calculate how well an item matches a database entry"""
-        score = 0.0
-        max_score = 0.0
-
-        # Dimensions are most important (40% weight)
-        if 'dimensions' in item_components or 'dimensions' in db_components:
-            max_score += 0.4
-            if ('dimensions' in item_components and 'dimensions' in db_components and
-                item_components['dimensions'] == db_components['dimensions']):
-                score += 0.4
-                if debug:
-                    print(f"      Dimension match: {item_components['dimensions']} == {db_components['dimensions']}")
-            elif debug and 'dimensions' in item_components and 'dimensions' in db_components:
-                print(f"      Dimension mismatch: {item_components['dimensions']} != {db_components['dimensions']}")
-
-        # Length is important (25% weight)
-        if 'length' in item_components or 'length' in db_components:
-            max_score += 0.25
-            if ('length' in item_components and 'length' in db_components and
-                item_components['length'] == db_components['length']):
-                score += 0.25
-                if debug:
-                    print(f"      Length match: {item_components['length']} == {db_components['length']}")
-            elif debug and 'length' in item_components and 'length' in db_components:
-                print(f"      Length mismatch: {item_components['length']} != {db_components['length']}")
-
-        # Material type (20% weight)
-        if 'material' in item_components or 'material' in db_components:
-            max_score += 0.2
-            if ('material' in item_components and 'material' in db_components and
-                item_components['material'] == db_components['material']):
-                score += 0.2
-                if debug:
-                    print(f"      Material match: {item_components['material']} == {db_components['material']}")
-
-        # Product type (10% weight)
-        if 'type' in item_components or 'type' in db_components:
-            max_score += 0.1
-            if ('type' in item_components and 'type' in db_components and
-                item_components['type'] == db_components['type']):
-                score += 0.1
-                if debug:
-                    print(f"      Type match: {item_components['type']} == {db_components['type']}")
-
-        # Treatment (5% weight)
-        if 'treatment' in item_components or 'treatment' in db_components:
-            max_score += 0.05
-            if ('treatment' in item_components and 'treatment' in db_components and
-                item_components['treatment'] == db_components['treatment']):
-                score += 0.05
-                if debug:
-                    print(f"      Treatment match: {item_components['treatment']} == {db_components['treatment']}")
-
-        # Normalize score
-        final_score = score / max_score if max_score > 0 else 0
-
-        if debug:
-            print(f"      Final score: {score:.2f}/{max_score:.2f} = {final_score:.2f}")
-
-        return final_score
-
-    def _parse_database_entry(self, item_desc: str, customer_terms: str, debug: bool = False) -> dict:
-        """Parse a database entry into components"""
-        desc = item_desc.lower().strip()
-        terms = customer_terms.lower().strip()
-        components = {}
-        
-        if debug:
-            print(f"    Parsing DB entry: '{item_desc}' | Terms: '{customer_terms}'")
-        
-        # Extract dimensions from database format: "2X4", "3 1/2  X  3 1/2", etc.
-        dim_match = re.search(r'(\d+(?:\s*1/2)?)\s*x\s*(\d+(?:\s*1/2)?)', desc)
-        if dim_match:
-            width = dim_match.group(1).replace(' ', '')
-            height = dim_match.group(2).replace(' ', '')
-            components['dimensions'] = f"{width}x{height}"
-        
-        # Extract length
-        length_match = re.search(r'\b(\d+)\s+(?!x|1/2)', desc)  # Number not followed by x or 1/2
-        if length_match:
-            components['length'] = length_match.group(1)
-        
-        # Material identification
-        if 'poc' in desc:
-            components['material'] = 'poc'
-        elif 'cedar' in desc or 'wrc' in desc or 'cdr' in desc:
-            components['material'] = 'cedar'
-        elif 'spf' in desc or 'pine' in desc:
-            components['material'] = 'pine'
-        elif 'df' in desc:
-            components['material'] = 'fir'
-        
-        # Product type from terms and description
-        if 'glu lam' in terms or 'glulam' in desc or 'glu lam' in desc:
-            components['type'] = 'glulam'
-        elif 'post' in desc:
-            components['type'] = 'post'
-        elif 'advantage' in terms or 'adv' in terms or 'advantage' in desc:
-            components['type'] = 'advantage'
-        elif 'fascia' in terms:
-            components['type'] = 'fascia'
-        elif 'boral' in desc or 'bor' in terms:
-            components['type'] = 'boral'
-        
-        # Treatment indicators
-        if 'trtd' in desc or 'treated' in desc:
-            components['treatment'] = 'pt'
-        
-        return components
-
-    def match_general_item(self, item: ScannedItem, database_name: str, debug: bool = False) -> List[PartMatch]:
-        """General matching for non-lumber items (hardware, screws, etc.)"""
-        if debug:
-            print(f"  Using general matching for non-lumber item")
-
-        database = self.databases[database_name]
-        parts = database['parts']
-        headers = database['headers']
-
-        if not parts:
-            return []
-
-        matches = []
-        item_desc_lower = item.description.lower()
-
-        # Extract key terms from the scanned item
-        item_terms = set(re.findall(r'\w+', item_desc_lower))
-
-        for part in parts:
-            item_number = part.get('Item Number', '').strip()
-            item_desc = part.get('Item Description', '').strip()
-            customer_terms = part.get('Customer Terms', '').strip()
-            stocking_multiple = part.get('Stocking Multiple', '').strip()
-
-            if not item_number or not item_desc:
-                continue
-
-            # Combine description and customer terms for matching
-            full_desc = f"{item_desc} {customer_terms}".lower()
-            db_terms = set(re.findall(r'\w+', full_desc))
-
-            # Calculate overlap
-            overlap = len(item_terms.intersection(db_terms))
-            total_unique = len(item_terms.union(db_terms))
-
-            if total_unique > 0:
-                overlap_ratio = overlap / total_unique
-
-                # More lenient threshold for general items
-                if overlap_ratio > 0.2:  # 20% overlap
-                    confidence = "high" if overlap_ratio > 0.5 else "medium" if overlap_ratio > 0.35 else "low"
-
-                    match = PartMatch(
-                        description=item.description,
-                        part_number=item_number,
-                        database_name=database_name,
-                        database_description=f"{item_desc} | Terms: {customer_terms} | Overlap: {overlap_ratio:.2f}",
-                        confidence=confidence
-                    )
-                    matches.append(match)
-
-                    if debug:
-                        print(f"    General match: {item_number} -> {item_desc} (overlap: {overlap_ratio:.2f})")
-
-        # Sort by overlap ratio (stored in description for now)
-        matches.sort(key=lambda x: float(x.database_description.split('Overlap: ')[1].split()[0]), reverse=True)
-
-        return matches[:3]
-
     def find_all_matches_ai(self, debug: bool = False, output_dir: str = ".") -> None:
         """Find matches using batch processing: all items in single Claude call per database"""
         if debug:
@@ -1159,94 +834,6 @@ TRAINING EXAMPLES (use these to understand common patterns and improve accuracy)
 
         if debug:
             print(f"\n✓ Detailed matching log saved to: {debug_log_file}")
-
-    def find_all_matches_keyword(self, debug: bool = False, output_dir: str = ".") -> None:
-        """Find matches using original keyword-based matching (for comparison)"""
-        if debug:
-            print("\n" + "="*60)
-            print("SEARCHING FOR MATCHES USING KEYWORD MATCHING")
-            print("(Original keyword-based approach for comparison)")
-            print("="*60)
-
-        # Create debug log file for detailed output
-        debug_log_file = Path(output_dir) / "matching_debug.log"
-        with open(debug_log_file, 'w', encoding='utf-8') as log_file:
-            log_file.write("DETAILED MATCHING DEBUG LOG (KEYWORD MATCHING)\n")
-            log_file.write("=" * 60 + "\n\n")
-
-        for i, item in enumerate(self.scanned_items, 1):
-            if debug:
-                print(f"\n[{i:2d}] Searching for: {item.description}")
-                print(f"     Original: {item.original_text}")
-                print(f"     Quantity: {item.quantity}")
-                print("-" * 50)
-            else:
-                print(f"  [{i:2d}] {item.description}")
-
-            all_matches = []
-            for db_name in self.databases:
-                if debug:
-                    print(f"\n  Checking database: {db_name}")
-
-                # Use original keyword matching
-                matches = self.keyword_match_item(item, db_name, debug=debug)
-                all_matches.extend(matches)
-
-                if debug:
-                    print(f"    Found {len(matches)} matches in {db_name}")
-                
-                # Always write to debug log file for detailed analysis
-                with open(debug_log_file, 'a', encoding='utf-8') as log_file:
-                    log_file.write(f"\n=== ITEM {i}: {item.description} ===\n")
-                    log_file.write(f"Database: {db_name}\n")
-                    log_file.write(f"Original: {item.original_text}\n")
-                    log_file.write(f"Quantity: {item.quantity}\n")
-                    log_file.write(f"Matches found: {len(matches)}\n")
-                    for match in matches:
-                        log_file.write(f"  - {match.confidence}: {match.part_number} | {match.database_description}\n")
-                    log_file.write("-" * 50 + "\n")
-
-            # Remove duplicates and sort by confidence
-            unique_matches = []
-            seen_parts = set()
-            for match in all_matches:
-                key = (match.part_number, match.database_name)
-                if key not in seen_parts:
-                    unique_matches.append(match)
-                    seen_parts.add(key)
-
-            confidence_order = {"high": 0, "medium": 1, "low": 2}
-            unique_matches.sort(key=lambda x: confidence_order.get(x.confidence, 3))
-
-            item.matches = unique_matches[:3]  # Keep top 3 matches
-
-            if debug:
-                if item.matches:
-                    for match in item.matches:
-                        print(f"  ✓ {match.confidence.upper():8s} | {match.part_number:15s} | {match.database_description[:80]}...")
-                else:
-                    print("  ✗ No matches found")
-        
-        print(f"\n✓ Detailed matching log saved to: {debug_log_file}")
-
-    def keyword_match_item(self, item: ScannedItem, database_name: str, debug: bool = False) -> List[PartMatch]:
-        if debug:
-            print(f"\nDEBUG: Keyword matching for '{item.description}' in {database_name}")
-
-        # Determine if this looks like a lumber item
-        desc_lower = item.description.lower()
-        is_lumber = bool(re.search(r'\d+\s*x\s*\d+', desc_lower)) or any(term in desc_lower for term in
-                         ['post', 'beam', 'lumber', 'cedar', 'pine', 'pt', 'advantage', 'glu lam', 'glulam'])
-
-        if debug:
-            print(f"  Classified as lumber: {is_lumber}")
-
-        if is_lumber:
-            # Use lumber-specific matching
-            return self.match_lumber_item(item, database_name, debug)
-        else:
-            # Use enhanced general matching for hardware, etc.
-            return self.match_general_item(item, database_name, debug)
 
     def _batch_match_items(self, database_name: str, debug: bool, debug_log_file) -> None:
         """Match all scanned items against a single database in one AI call"""
@@ -1413,7 +1000,7 @@ TRAINING EXAMPLES (use these to understand common patterns and improve accuracy)
                     matches = item_matches[i]
                 else:
                     # try to match with keyword matching
-                    # matches = self.keyword_match_item(item, database_name, debug=False)
+                    # matches = self.keyword_matcher.match_item(item, database_name, debug=False)
                     # keyword matching needs work so don't use for now
                     matches = []
 
@@ -1449,7 +1036,7 @@ TRAINING EXAMPLES (use these to understand common patterns and improve accuracy)
     def _fallback_individual_matching(self, database_name: str, debug: bool, debug_log_file) -> None:
         """Fallback to individual matching if batch fails"""
         for i, item in enumerate(self.scanned_items, 1):
-            matches = self.keyword_match_item(item, database_name, debug=False)
+            matches = self.keyword_matcher.match_item(item, database_name, debug=False)
             item.matches.extend(matches)
             
             if debug:
@@ -1516,7 +1103,7 @@ subdirectory named after the input file (e.g., 'document_results/', 'lumber_list
                        default=[],
                        help='One or more CSV files containing training data (original_text, correct_sku columns)')
     
-    parser.add_argument('--use-keyword-matching',
+    parser.add_argument('--use-keyword-matching', '-mk',
                        action='store_true',
                        help='Use keyword-based matching instead of Claude AI (for comparison)')
     
@@ -1638,7 +1225,8 @@ def main():
     
     # Find matches using selected approach
     if args.use_keyword_matching:
-        matcher.find_all_matches_keyword(debug=args.verbose_matching, output_dir=str(output_dir))
+        matcher.keyword_matcher.find_all_matches(matcher.scanned_items, 
+                                    debug=args.verbose_matching, output_dir=str(output_dir))
     else:
         matcher.find_all_matches_ai(debug=args.verbose_matching, output_dir=str(output_dir))
     
