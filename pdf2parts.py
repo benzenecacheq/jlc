@@ -225,7 +225,7 @@ TRAINING EXAMPLES (use these to understand common patterns and improve accuracy)
             # Fallback to rough estimate if counting fails
             return len(text) // 4
 
-    def _call_ai_with_retry(self, messages, max_tokens=4000, max_retries=3, model=None):
+    def _call_ai_with_retry(self, messages, max_tokens=8000, max_retries=3, model=None):
         """Call AI API with retry logic (works with both Anthropic and OpenAI)"""
         import time
         
@@ -235,14 +235,14 @@ TRAINING EXAMPLES (use these to understand common patterns and improve accuracy)
         
         for attempt in range(max_retries):
             try:
-                if True:
+                if model.startswith("claude"):
                     response = self.client.messages.create(
                         model=model,
                         max_tokens=max_tokens,
                         messages=messages
                     )
                     return response
-                elif self.ai_provider == 'openai':
+                else: # assume openai for now
                     response = self.client.chat.completions.create(
                         model=model,
                         max_completion_tokens=max_tokens,
@@ -511,46 +511,6 @@ TRAINING EXAMPLES (use these to understand common patterns and improve accuracy)
 
         return "\n".join(context_parts)
 
-    def _fallback_match(self, item: ScannedItem, database_name: str) -> List[PartMatch]:
-        """Simple fallback matching when Claude fails"""
-        database = self.databases[database_name]
-        parts = database['parts']
-        headers = database['headers']
-        
-        if not parts or not headers:
-            return []
-        
-        item_num_col = headers[0]
-        desc_col = headers[1] if len(headers) > 1 else headers[0]
-        
-        matches = []
-        item_desc_lower = item.description.lower()
-        
-        for part in parts[:50]:  # Limit search for performance
-            part_num = part.get(item_num_col, '').strip()
-            part_desc = part.get(desc_col, '').strip()
-            
-            if not part_num or not part_desc:
-                continue
-            
-            part_desc_lower = part_desc.lower()
-            
-            # Simple keyword matching
-            if self._keyword_match(item_desc_lower, part_desc_lower):
-                match = PartMatch(
-                    description=item.description,
-                    part_number=part_num,
-                    database_name=database_name,
-                    database_description=part_desc,
-                    confidence="low"
-                )
-                matches.append(match)
-                
-                if len(matches) >= 3:
-                    break
-        
-        return matches
-    
     def _keyword_match(self, item_desc: str, part_desc: str) -> bool:
         """Check for keyword overlap"""
         # Split into words and remove common filler words
@@ -1346,11 +1306,10 @@ TRAINING EXAMPLES (use these to understand common patterns and improve accuracy)
                 with open(os.getenv("BATCH_RESPONSE"), "r") as f:
                     response_text = f.read()
             else:
-                response = self.client.messages.create(
-                    model="claude-sonnet-4-20250514",
-                    max_tokens=8000,
-                    messages=[{"role": "user", "content": batch_prompt}]
-                )
+                model = "claude-sonnet-4-20250514"
+                max_tokens = 8000
+                messages = [{"role": "user", "content": batch_prompt}]
+                response = self._call_ai_with_retry(messages, model=model, max_tokens=max_tokens)
                 response_text = response.content[0].text
 
             # Write response to debug file
@@ -1454,7 +1413,9 @@ TRAINING EXAMPLES (use these to understand common patterns and improve accuracy)
                     matches = item_matches[i]
                 else:
                     # try to match with keyword matching
-                    matches = self.keyword_match_item(item, database_name, debug=False)
+                    # matches = self.keyword_match_item(item, database_name, debug=False)
+                    # keyword matching needs work so don't use for now
+                    matches = []
 
                 if len(matches):
                     # Update the description field for each match
