@@ -9,6 +9,7 @@ class PartMatch:
     part_number: str
     database_name: str
     database_description: str
+    score: float
     confidence: str  # "exact", "partial", "similar"
     reason: str = ""  # Explanation for the match
 

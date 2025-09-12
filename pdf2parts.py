@@ -483,7 +483,7 @@ TRAINING EXAMPLES (use these to understand common patterns and improve accuracy)
     def _fallback_individual_matching(self, database_name: str, debug: bool, debug_log_file) -> None:
         """Fallback to individual matching if batch fails"""
         for i, item in enumerate(self.scanned_items, 1):
-            matches = self.keyword_matcher.match_item(item, database_name, debug=False)
+            matches = self.keyword_matcher.match_item(item.description, database_name, debug=False)
             item.matches.extend(matches)
             
             if debug:
@@ -517,34 +517,29 @@ subdirectory named after the input file (e.g., 'document_results/', 'lumber_list
     parser.add_argument('-k', '--api-key',
                        help='Anthropic API key (can also use ANTHROPIC_API_KEY env var)')
     
-    parser.add_argument('-o', '--output-dir',
-                       default='.',
+    parser.add_argument('-o', '--output-dir', default='.',
                        help='Base directory to save output files. A subdirectory named after the input file will be created (default: current directory)')
     
-    parser.add_argument('--report-name',
-                       default='lumber_match_report.txt',
+    parser.add_argument('--report-name', default='lumber_match_report.txt',
                        help='Name for the text report file (default: lumber_match_report.txt)')
     
-    parser.add_argument('--csv-name',
-                       default='lumber_matches.csv',
+    parser.add_argument('--csv-name', default='lumber_matches.csv',
                        help='Name for the CSV export file (default: lumber_matches.csv)')
     
-    parser.add_argument('-q', '--quiet',
-                       action='store_true',
+    parser.add_argument('-q', '--quiet', action='store_true',
                        help='Reduce output verbosity')
     
-    parser.add_argument('--use-claude-matching',
-                       action='store_true',
+    parser.add_argument('--use-claude-matching', action='store_true',
                        help='Use Claude AI for intelligent parts matching (slower but more accurate)')
     
-    parser.add_argument('--full-database',
-                       action='store_true',
+    parser.add_argument('--full-database', action='store_true',
                        help='Send full database to Claude for matching (use with large SKU lists)')
     
-    parser.add_argument('--verbose-matching',
-                       action='store_true',
+    parser.add_argument('--verbose-matching', action='store_true',
                        help='Show detailed matching debug output on console (default: save to files)')
     
+    parser.add_argument('--test-match', '-tm', action='store_true', help='Test matching function')
+
     parser.add_argument('--training-data',
                        nargs='*',
                        default=[],
@@ -660,6 +655,34 @@ def main():
             print(f"✓ Loaded {training_loaded} training data file(s) with {len(matcher.training_data)} total examples")
             print(f"  Training data tokens: {training_tokens:,}")
     
+    if args.test_match:
+        matcher.keyword_matcher._load_attributes()
+        print("Testing match_lumber_items()")
+        print("Enter strings to test (type 'exit' to quit):")
+        print("-" * 40)
+        
+        while True:
+            # Get input from user
+            user_input = input("Enter a string: ")
+            
+            # Check if user wants to exit
+            if user_input.lower() == "exit":
+                print("Exiting test function.")
+                break
+            
+            # Call cleanup function and print result
+            result = matcher.keyword_matcher.match_lumber_item(user_input)
+            if len(result) == 0:
+                print(f'No result matched "{user_input}".')
+            else:
+                print("-" * 40)
+                print(f'Original: "{user_input}"')
+                print(f'matched:')
+                for match in result:
+                   print(f' -> {match.part_number}: {match.database_description}')
+
+            print("-" * 40)
+
     # Scan document
     if not args.quiet:
         print(f"\nScanning document: {args.document}")
