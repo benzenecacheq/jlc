@@ -3,6 +3,7 @@
 # Match items in database programmatically.
 ###############################################################################
 
+import pdb
 import os
 import sys
 import csv
@@ -19,72 +20,262 @@ class Matcher:
     def __init__(self, databases):
         """Initialize with Claude API key"""
         self.databases = databases
-        
+        self.attributes = None
+        self.attrmap = None
+    
+    def _load_attributes(self):
+        if self.attributes is not None:
+            return
+        # load attributes from the database.  Map the attribute to the first value and the entry
+        # in the database
+        self.attributes = {}    # map alternative attribute names
+        self.attrmap = {}       # list of database entries by attribute
+
+        for fname,database in self.databases.items():
+            for entry in database["parts"]:
+                # Assume the first column is the attributes
+                attributes = entry[database["headers"][0]].split(',')
+                for i,attr in enumerate(attributes):
+                    attributes[i] = attr.lower().strip().replace(' ', '')
+
+                # the first attributes in the list is the name we will map others to
+                name = attributes[0]
+                if name not in self.attrmap:
+                    self.attrmap[name] = []
+                self.attrmap[name].append(entry)
+
+                for attr in attributes:
+                    if attr not in self.attributes:
+                       self.attributes[attr] = name
+
+                entry["attr"] = name
+
+    def _looks_like_dimension(self, word, requirex=False):
+        # dimensions look like 2x4 or 4x8x1/2
+        if requirex and 'x' not in word: 
+            return False
+        invalid_pattern = "[^0-9 x/-]"
+        return re.search(invalid_pattern, word) is None
+
+    def _looks_like_fraction(self, word):
+        valid_pattern = "[0-9]* */ *[0-9]*"
+        return re.fullmatch(valid_pattern, word) is not None
+
+    def _looks_like_length(self, word):
+        return re.match(r'(\d+)(?:\s*(?:\'|ft|feet))?(?:\s|$)', word) != None
+        return re.search(r'(\d+)(?:\s*(?:\'|ft|feet))?(?:\s|$)', word) != None
+
+    def _cleanup(self, description):
+        # perform obvious fixing of things that look like OCR errors and other
+        # things that will confuse the matcher
+        # this takes a string and returns a list of words
+        desc = description.lower().strip().split()
+        i = 0
+        gotdim = False
+        gotlen = False
+        gotattr = False
+        gotgrade = False
+        while i < len(desc):
+            word = desc[i]
+
+            # look for two words divided by /.  We see PT/DF which should actually
+            # be changed to "DF PT" or just PT
+            if '/' in word and not word.startswith('/') and not word.endswith('/'):
+                index = word.find('/')
+                next = word[index+1:]
+                word = word[:index]
+                if word+next in self.attributes:
+                    # join together without /
+                    desc[i] = word+next
+                    continue
+                elif next+word in self.attributes:
+                    desc[i] = next+word
+                    continue
+                elif word in self.attributes or next in self.attributes:
+                    # split in two
+                    desc[i] = word
+                    desc.insert(i+1, next)
+                    continue    # reprocess word we just truncated
+
+            # look for # sign and if it's a grade maybe split the word
+            if '#' in word:
+                # is there a number after it?
+                index = word.find('#')
+                if index == 0 and word[1:].isdigit():
+                    # assume this is a grade
+                    gotgrade = True
+                else:
+                    if word[:index] in self.attributes:
+                        # break the word here
+                        if index == len(word)-1:
+                            # just smoke the # if it's at the end of an attr
+                            desc[i] = word[:-1]
+                        else:
+                            # break into two
+                            desc[i] = word[:index]
+                            next = word[index:]
+                            desc.insert(i+1, next)
+                        continue    # reprocess word we just truncated
+
+            # sometimes we see an H instead of a #
+            if 'h' in word:
+                # this only matters if the stuff before the h is an attr and the stuff
+                # after the h is a number
+                index = word.find('h')
+                if index == len(word)-2 and word[index+1].isdigit() and word[:index] in self.attributes:
+                    desc[i] = word[:index] + "#" + word[index+1:]
+                    continue    # reprocess with number sign instead
+                
+            # look for cases where we will join words
+            if i < len(desc)-1:
+                nextword = desc[i+1]
+                # sometimes there are multi-word attributes that may have 
+                # an attribute as a subset, such as KD and KD Doug Fir is three word example
+                if i < len(desc)-2 and word + nextword + desc[i+2] in self.attributes:
+                    desc[i] = self.attributes[word + nextword + desc[i+2]]
+                    del desc[i+1]
+                    del desc[i+1]
+                    continue
+                # two word example, such as KD DF
+                if word + nextword in self.attributes:
+                    desc[i] = self.attributes[word + nextword]
+                    del desc[i+1]
+                    continue
+
+                # sometimes we see an H instead of a # at the end of a word that should be a #
+                if 'h' in word:
+                    # this only matters if the stuff before the h is an attr and the next word is a number
+                    index = word.find('h')
+                    if index == len(word)-1 and nextword.isdigit() and word[:index] in self.attributes:
+                        # just smoke the #
+                        desc[i] = word[:index]
+                        continue
+                
+                # look for number followed by feet or ft
+                if word.isdigit() and nextword in ["ft", "feet", "'"]:
+                    desc[i] += "'"
+                    del desc[i+1]
+                    continue
+
+                # sometimes we see dimensions with spaces in them like 2 x 4
+                if i > 0 and word == "x":
+                    check = desc[i-1] + word + desc[i+1]
+                    if self._looks_like_dimension(check):
+                        desc[i-1] = check
+                        del desc[i]
+                        del desc[i]
+                        i -= 1
+                        continue
+
+                if (word[-1].isdigit() and  self._looks_like_dimension(word)
+                    and self._looks_like_fraction(nextword)):
+                    # this was something like '1 1/2' and we want to make it
+                    # 1-1/2
+                    desc[i] += '-' + nextword
+                    del desc[i+1]
+                    continue
+
+            # look for grade. currently 1 and 2 are the only grades I've seen
+            if not gotgrade and word in ["1","2"]:
+                found = gotlen
+                if not found:
+                    # unlikely given it's a 1 or 2, but this could be a length.  
+                    # To make sure it's not, check to see if there is a length later.
+                    for next in desc[i+1:]:
+                        if self._looks_like_length(next):
+                            found = True
+                            break
+                if found:
+                    gotgrade = True
+                    desc[i] = '#' + word
+
+            if self._looks_like_dimension(word, requirex=True):
+                gotdim = True
+            elif word in self.attributes:
+                # change to universal attribute name
+                desc[i] = self.attributes[word]
+                gotattr = True
+            elif self._looks_like_length(word):
+                gotlen = True
+
+            i += 1
+
+        return desc
+
     def _parse_lumber_item(self, description: str, debug: bool = False) -> dict:
-        """Parse a scanned lumber item description into components"""
-        desc = description.lower().strip()
-        components = {}
+        if self.attributes is None:
+            self._load_attributes()
 
-        # Remove common words that don't help with matching
-        desc = re.sub(r'\b(lumber|wood|board|construction|grade|treated|pressure)\b', '', desc)
-        desc = ' '.join(desc.split())  # Clean up whitespace
-
+        desc = self._cleanup(description)
         if debug:
             print(f"    Cleaned description: '{desc}'")
 
-        # Extract dimensions - handle various formats
-        # 2x4, 2x6, 4x4, etc.
-        dim_match = re.search(r'(\d+(?:\s*1/2)?)\s*x\s*(\d+(?:\s*1/2)?)', desc)
-        if dim_match:
-            width = dim_match.group(1).replace(' ', '')
-            height = dim_match.group(2).replace(' ', '')
-            components['dimensions'] = f"{width}x{height}"
-            if debug:
-                print(f"    Found dimensions: {components['dimensions']}")
+        components = {}
 
-        # Extract length - look for numbers followed by ' or ft
-        length_match = re.search(r'(\d+)(?:\s*(?:\'|ft|feet))?(?:\s|$)', desc)
-        if length_match:
-            components['length'] = length_match.group(1)
-            if debug:
-                print(f"    Found length: {components['length']}")
-
-        # Extract material/treatment indicators
-        if 'pt' in desc or 'pressure' in desc:
-            components['treatment'] = 'pt'
-
-        # Look for specific material types
-        for material in ['cedar', 'pine', 'fir', 'poc']:
-            if material in desc:
-                components['material'] = material
-                break
-
-        # Look for product type indicators
-        if 'glu' in desc or 'glulam' in desc or 'glue' in desc:
-            components['type'] = 'glulam'
-        elif 'post' in desc:
-            components['type'] = 'post'
-        elif 'advantage' in desc or 'adv' in desc:
-            components['type'] = 'advantage'
+        for d in desc:
+            if self._looks_like_dimension(d, requirex=True) and 'dimensions' not in components:
+                components['dimensions'] = d
+                if debug:
+                    print(f'    Found dimensions: {d}')
+            elif d in self.attributes:
+                if 'attributes' not in components:
+                    components['attributes'] = []
+                components['attributes'].append(d)
+                if debug:
+                    print(f'    Found attribute: {d}')
+            elif self._looks_like_length(d) and 'length' not in components:
+                components['length'] = d
+                if debug:
+                    print(f'    Found length: {d}')
+            else:
+                if 'other' not in components:
+                    components['other'] = []
+                if debug:
+                    print(f'    Found other: {d}')
+                components['other'].append(d)
 
         return components
 
-    def match_lumber_item(self, item: ScannedItem, database_name: str, debug: bool = False) -> List[PartMatch]:
+    def _calculate_lumber_match_score(self, item_components: dict, db_components: dict, debug: bool = False) -> float:
+        """Calculate how well an item matches a database entry"""
+        score = 0.0
+
+        for name,dbc in db_components.items():
+            if name not in item_components:
+                continue
+            if type(dbc) == type([]):
+                for d in dbc:
+                    if d in item_components[name]:
+                        score += 0.10
+            elif dbc == item_components[name]:
+                score += 0.3
+        return score
+
+    def match_lumber_item(self, item: str, database_name: str=None, debug: bool = False) -> List[PartMatch]:
         """Specialized matching for lumber database format"""
+        if database_name is None:
+            matches = []
+            for db in sorted(self.databases):
+                matches += self.match_lumber_item(item, db, debug)
+            return matches
         if debug:
-            print(f"\nDEBUG: Lumber-specific matching for '{item.description}' in {database_name}")
+            print(f"\nDEBUG: Lumber-specific matching for '{item}' in {database_name}")
 
         database = self.databases[database_name]
-        parts = database['parts']
+        parts = []
         headers = database['headers']
 
-        if not parts:
-            return []
-
         # Parse the scanned item to extract lumber components
-        item_components = self._parse_lumber_item(item.description, debug)
-        if debug:
+        item_components = self._parse_lumber_item(item, debug)
+        if True: # debug:
             print(f"  Parsed item components: {item_components}")
+
+        if "attributes" in item_components:
+            # I would really expect only one attribute.
+            for attr in item_components["attributes"]:
+                parts += self.attrmap[attr]
+        if len(parts) == 0:
+            parts = database['parts']
 
         matches = []
         confidence_scores = []
@@ -94,103 +285,51 @@ class Matcher:
             item_desc = part.get('Item Description', '').strip()
             customer_terms = part.get('Customer Terms', '').strip()
             stocking_multiple = part.get('Stocking Multiple', '').strip()
+            attr = part.get('attr')
 
             if not item_number or not item_desc:
                 continue
 
             # Parse the database entry
-            db_components = self._parse_database_entry(item_desc, customer_terms, debug)
+            if 'components' in part:
+                db_components = part['components']
+            else:
+                db_components = self._parse_lumber_item(item_desc, debug)
+                part['components'] = db_components
+
+            if 'attributes' not in db_components:
+                db_components['attributes'] = part.get('attr')
 
             # Calculate match score
             match_score = self._calculate_lumber_match_score(item_components, db_components, debug)
-
-            if match_score > 0.5:  # Threshold for considering it a match
-                confidence = "high" if match_score > 0.8 else "medium" if match_score > 0.65 else "low"
-
+            if match_score > 0.50:  # Threshold for considering it a match
                 match = PartMatch(
-                    description=item.description,
+                    description=item,
                     part_number=item_number,
                     database_name=database_name,
-                    database_description=f"{item_desc} | Terms: {customer_terms} | Unit: {stocking_multiple} | Score: {match_score:.2f}",
-                    confidence=confidence
+                    database_description=f"{item_desc} | Attr: {attr} | components: {db_components} | Score: {match_score:.2f}",
+                    score=match_score,
+                    confidence=str(match_score)
                 )
                 matches.append(match)
-                confidence_scores.append(match_score)
 
                 if debug:
                     print(f"    MATCH: {item_number} -> {item_desc} (score: {match_score:.2f})")
 
         # Sort by match score (highest first)
         # Use a stable sort that handles ties by using the index as a secondary key
-        sorted_indices = sorted(range(len(confidence_scores)), key=lambda i: confidence_scores[i], reverse=True)
-        sorted_matches = [matches[i] for i in sorted_indices]
+        sorted_matches = sorted(matches, key=lambda m: -m.score)
 
         if debug:
             print(f"  Found {len(sorted_matches)} matches")
 
-        return sorted_matches[:3]  # Return top 3 matches
-
-    def _calculate_lumber_match_score(self, item_components: dict, db_components: dict, debug: bool = False) -> float:
-        """Calculate how well an item matches a database entry"""
-        score = 0.0
-        max_score = 0.0
-
-        # Dimensions are most important (40% weight)
-        if 'dimensions' in item_components or 'dimensions' in db_components:
-            max_score += 0.4
-            if ('dimensions' in item_components and 'dimensions' in db_components and
-                item_components['dimensions'] == db_components['dimensions']):
-                score += 0.4
-                if debug:
-                    print(f"      Dimension match: {item_components['dimensions']} == {db_components['dimensions']}")
-            elif debug and 'dimensions' in item_components and 'dimensions' in db_components:
-                print(f"      Dimension mismatch: {item_components['dimensions']} != {db_components['dimensions']}")
-
-        # Length is important (25% weight)
-        if 'length' in item_components or 'length' in db_components:
-            max_score += 0.25
-            if ('length' in item_components and 'length' in db_components and
-                item_components['length'] == db_components['length']):
-                score += 0.25
-                if debug:
-                    print(f"      Length match: {item_components['length']} == {db_components['length']}")
-            elif debug and 'length' in item_components and 'length' in db_components:
-                print(f"      Length mismatch: {item_components['length']} != {db_components['length']}")
-
-        # Material type (20% weight)
-        if 'material' in item_components or 'material' in db_components:
-            max_score += 0.2
-            if ('material' in item_components and 'material' in db_components and
-                item_components['material'] == db_components['material']):
-                score += 0.2
-                if debug:
-                    print(f"      Material match: {item_components['material']} == {db_components['material']}")
-
-        # Product type (10% weight)
-        if 'type' in item_components or 'type' in db_components:
-            max_score += 0.1
-            if ('type' in item_components and 'type' in db_components and
-                item_components['type'] == db_components['type']):
-                score += 0.1
-                if debug:
-                    print(f"      Type match: {item_components['type']} == {db_components['type']}")
-
-        # Treatment (5% weight)
-        if 'treatment' in item_components or 'treatment' in db_components:
-            max_score += 0.05
-            if ('treatment' in item_components and 'treatment' in db_components and
-                item_components['treatment'] == db_components['treatment']):
-                score += 0.05
-                if debug:
-                    print(f"      Treatment match: {item_components['treatment']} == {db_components['treatment']}")
-
-        # Normalize score
-        final_score = score / max_score if max_score > 0 else 0
-
-        if debug:
-            print(f"      Final score: {score:.2f}/{max_score:.2f} = {final_score:.2f}")
-
-        return final_score
+        # only return matches that are at least as good as the best score and a max of 5
+        n = 5
+        for i,match in enumerate(sorted_matches[:n]):
+           if match.score < sorted_matches[0].score:
+               n = i
+               break
+        return sorted_matches[:n]  # Return top matches
 
     def _parse_database_entry(self, item_desc: str, customer_terms: str, debug: bool = False) -> dict:
         """Parse a database entry into components"""
@@ -241,7 +380,7 @@ class Matcher:
         
         return components
 
-    def match_general_item(self, item: ScannedItem, database_name: str, debug: bool = False) -> List[PartMatch]:
+    def match_general_item(self, item: str, database_name: str, debug: bool = False) -> List[PartMatch]:
         """General matching for non-lumber items (hardware, screws, etc.)"""
         if debug:
             print(f"  Using general matching for non-lumber item")
@@ -254,7 +393,7 @@ class Matcher:
             return []
 
         matches = []
-        item_desc_lower = item.description.lower()
+        item_desc_lower = item.lower()
 
         # Extract key terms from the scanned item
         item_terms = set(re.findall(r'\w+', item_desc_lower))
@@ -284,10 +423,11 @@ class Matcher:
                     confidence = "high" if overlap_ratio > 0.5 else "medium" if overlap_ratio > 0.35 else "low"
 
                     match = PartMatch(
-                        description=item.description,
+                        description=item,
                         part_number=item_number,
                         database_name=database_name,
                         database_description=f"{item_desc} | Terms: {customer_terms} | Overlap: {overlap_ratio:.2f}",
+                        score=overlap_ratio,
                         confidence=confidence
                     )
                     matches.append(match)
@@ -329,7 +469,7 @@ class Matcher:
                     print(f"\n  Checking database: {db_name}")
 
                 # Use original keyword matching
-                matches = self.match_item(item, db_name, debug=debug)
+                matches = self.match_item(item.description, db_name, debug=debug)
                 all_matches.extend(matches)
 
                 if debug:
@@ -369,12 +509,12 @@ class Matcher:
         
         print(f"\n✓ Detailed matching log saved to: {debug_log_file}")
 
-    def match_item(self, item: ScannedItem, database_name: str, debug: bool = False) -> List[PartMatch]:
+    def match_item(self, item: str, database_name: str, debug: bool = False) -> List[PartMatch]:
         if debug:
-            print(f"\nDEBUG: Keyword matching for '{item.description}' in {database_name}")
+            print(f"\nDEBUG: Keyword matching for '{item}' in {database_name}")
 
         # Determine if this looks like a lumber item
-        desc_lower = item.description.lower()
+        desc_lower = item.lower()
         is_lumber = bool(re.search(r'\d+\s*x\s*\d+', desc_lower)) or any(term in desc_lower for term in
                          ['post', 'beam', 'lumber', 'cedar', 'pine', 'pt', 'advantage', 'glu lam', 'glulam'])
 
