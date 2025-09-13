@@ -138,6 +138,7 @@ class Scanner:
                 with open(cached_file, 'r', encoding='utf-8') as f:
                     json_text = f.read()
                 
+                page_items = []
                 if json_text.strip():
                     items_data = json.loads(json_text)
                     
@@ -148,7 +149,10 @@ class Scanner:
                             original_text=item_data.get('original_text', ''),
                             matches=[]
                         )
-                        all_items.append(item)
+                        page_items.append(item)
+
+                    page_items = self._fix_missing_specifications(page_items)
+                    all_items.extend(page_items)
             
             print(f"✓ Loaded {len(all_items)} cached items from {len(cached_files)} pages")
             return all_items

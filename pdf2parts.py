@@ -17,6 +17,7 @@ import csv
 import json
 import base64
 import argparse
+import subprocess
 from typing import Dict, List, Tuple, Optional
 from pathlib import Path
 import anthropic
@@ -502,6 +503,7 @@ Examples:
   %(prog)s --output-dir ./results lumber_list.pdf database.csv
   %(prog)s --training-data training1.csv training2.csv document.pdf database.csv
   %(prog)s --use-keyword-matching document.pdf database.csv
+  %(prog)s --view document.pdf database.csv
   
 Note: All output files (reports, debug files, CSV exports) will be saved in a 
 subdirectory named after the input file (e.g., 'document_results/', 'lumber_list_results/')
@@ -548,6 +550,9 @@ subdirectory named after the input file (e.g., 'document_results/', 'lumber_list
     parser.add_argument('--use-keyword-matching', '-mk',
                        action='store_true',
                        help='Use keyword-based matching instead of Claude AI (for comparison)')
+    
+    parser.add_argument('--view', action='store_true',
+                       help='Run the viewer program to display results in a formatted table')
     
     return parser.parse_args()
 
@@ -726,6 +731,48 @@ def main():
     print(f"  Output files saved to: {output_dir}")
     print(f"    Report: {args.report_name}")
     print(f"    CSV: {args.csv_name}")
+    
+    # Run viewer if requested
+    if args.view:
+        run_viewer(str(csv_path), args.databases[0], args.quiet)
+
+def run_viewer(csv_path: str, database_path: str, quiet: bool = False) -> None:
+    """
+    Run the viewer program to display results in a formatted table.
+    
+    Args:
+        csv_path: Path to the CSV file with matching results
+        database_path: Path to the first database file for the viewer
+        quiet: Whether to suppress output
+    """
+    try:
+        # Get the path to the viewer script (same directory as this script)
+        script_dir = Path(__file__).parent
+        viewer_path = script_dir / "viewer.py"
+        
+        if not viewer_path.exists():
+            print(f"Error: Viewer script not found at {viewer_path}")
+            return
+        
+        if not quiet:
+            print(f"\nRunning viewer with results...")
+            print(f"  CSV file: {csv_path}")
+            print(f"  Database: {database_path}")
+        
+        # Run the viewer program
+        result = subprocess.run([
+            sys.executable, str(viewer_path), csv_path, database_path
+        ], capture_output=False, text=True)
+        
+        if result.returncode != 0:
+            print(f"Error: Viewer program exited with code {result.returncode}")
+        elif not quiet:
+            print("✓ Viewer completed successfully")
+            
+    except FileNotFoundError:
+        print("Error: Python interpreter not found")
+    except Exception as e:
+        print(f"Error running viewer: {e}")
 
 ###############################################################################
 if __name__ == "__main__":
