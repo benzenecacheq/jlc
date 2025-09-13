@@ -5,6 +5,7 @@ CSV and Database Table Combiner
 This program takes a CSV file with matching results and a database file,
 then creates a table showing:
 - Item number from the CSV
+- Quantity from the CSV
 - Original text from the CSV  
 - Part number (if exists, otherwise blank)
 - Item description from the database that matches that part number
@@ -64,6 +65,7 @@ def process_csv_file(csv_file: str, database_mapping: Dict[str, str]) -> List[Di
             for row in reader:
                 # Extract data from CSV
                 item_number = row.get('Item_Number', '').strip()
+                quantity = row.get('Quantity', '').strip()
                 original_text = row.get('Original_Text', '').strip()
                 part_number = row.get('Part_Number', '').strip()
                 confidence = row.get('Confidence', '').strip()
@@ -76,6 +78,7 @@ def process_csv_file(csv_file: str, database_mapping: Dict[str, str]) -> List[Di
                 # Create result row
                 result_row = {
                     'item_number': item_number,
+                    'quantity': quantity,
                     'original_text': original_text,
                     'part_number': part_number if part_number else '',
                     'item_description': item_description,
@@ -107,6 +110,7 @@ def print_table(results: List[Dict]) -> None:
     # Calculate column widths
     col_widths = {
         'item_number': max(len('Item Number'), max(len(str(r['item_number'])) for r in results)),
+        'quantity': max(len('Quantity'), max(len(str(r['quantity'])) for r in results)),
         'original_text': max(len('Original Text'), max(len(r['original_text']) for r in results)),
         'part_number': max(len('Part Number'), max(len(r['part_number']) for r in results)),
         'item_description': max(len('Item Description'), max(len(r['item_description']) for r in results)),
@@ -115,6 +119,7 @@ def print_table(results: List[Dict]) -> None:
     
     # Ensure minimum widths for readability
     col_widths['item_number'] = max(col_widths['item_number'], 12)
+    col_widths['quantity'] = max(col_widths['quantity'], 8)
     col_widths['original_text'] = max(col_widths['original_text'], 20)
     col_widths['part_number'] = max(col_widths['part_number'], 12)
     col_widths['item_description'] = max(col_widths['item_description'], 30)
@@ -122,6 +127,7 @@ def print_table(results: List[Dict]) -> None:
     
     # Print header
     header = (f"{'Item Number':<{col_widths['item_number']}} | "
+              f"{'Quantity':<{col_widths['quantity']}} | "
               f"{'Original Text':<{col_widths['original_text']}} | "
               f"{'Part Number':<{col_widths['part_number']}} | "
               f"{'Item Description':<{col_widths['item_description']}} | "
@@ -131,13 +137,28 @@ def print_table(results: List[Dict]) -> None:
     print("-" * len(header))
     
     # Print data rows
+    previous_item_number = None
     for row in results:
-        data_row = (f"{row['item_number']:<{col_widths['item_number']}} | "
+        # Show item number only if it's different from the previous row
+        display_item_number = row['item_number'] if row['item_number'] != previous_item_number else ''
+        
+        # Format confidence to 2 decimal places
+        confidence_value = row['confidence']
+        try:
+            confidence_formatted = f"{float(confidence_value):.2f}"
+        except (ValueError, TypeError):
+            confidence_formatted = confidence_value
+        
+        data_row = (f"{display_item_number:<{col_widths['item_number']}} | "
+                   f"{row['quantity']:<{col_widths['quantity']}} | "
                    f"{row['original_text']:<{col_widths['original_text']}} | "
                    f"{row['part_number']:<{col_widths['part_number']}} | "
                    f"{row['item_description']:<{col_widths['item_description']}} | "
-                   f"{row['confidence']:<{col_widths['confidence']}}")
+                   f"{confidence_formatted:<{col_widths['confidence']}}")
         print(data_row)
+        
+        # Update previous item number for next iteration
+        previous_item_number = row['item_number']
 
 def save_to_csv(results: List[Dict], output_file: str) -> None:
     """
@@ -150,7 +171,7 @@ def save_to_csv(results: List[Dict], output_file: str) -> None:
     try:
         with open(output_file, 'w', newline='', encoding='utf-8') as f:
             if results:
-                fieldnames = ['item_number', 'original_text', 'part_number', 'item_description', 'confidence']
+                fieldnames = ['item_number', 'quantity', 'original_text', 'part_number', 'item_description', 'confidence']
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
                 writer.writeheader()
                 writer.writerows(results)
@@ -176,9 +197,9 @@ def main():
     results = process_csv_file(csv_file, database_mapping)
     print(f"Processed {len(results)} rows from CSV")
     
-    print("\n" + "="*100)
+    print("\n" + "="*120)
     print("COMBINED RESULTS TABLE")
-    print("="*100)
+    print("="*120)
     print_table(results)
     
     # Save to CSV
