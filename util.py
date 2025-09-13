@@ -1,6 +1,10 @@
+import os
+import re
+
 from dataclasses import dataclass
 from typing import List
 from pathlib import Path
+
 ###############################################################################
 @dataclass
 class PartMatch:
@@ -21,6 +25,29 @@ class ScannedItem:
     description: str
     original_text: str
     matches: List[PartMatch]
+
+###############################################################################
+submap = {}
+def do_subs(subtype, word):
+    global submap
+    if subtype not in submap:
+        exe_dir = str(Path(__file__).parent)
+        fn = exe_dir + "/" + subtype + ".subs"
+        if not os.path.exists(fn):
+            print(f"Missing substitution file {fn}", file=sys.stderr)
+            exit(1)
+        subs = []
+        with open(fn, "r") as f:
+            for line in f:
+                if "`" not in line:     # comment line
+                    continue
+                subs.append(line.split("`", 1))
+        submap[subtype] = subs
+    subs = submap[subtype]
+    for sub in subs:
+       word = re.sub(sub[0], sub[1], word)
+    
+    return word
 
 ###############################################################################
 def load_prompt(name, **kwargs):

@@ -1,14 +1,5 @@
 Please scan this handwritten lumber/materials list and extract each item with its quantity and description.
 
-`database_context`
-
-CRITICAL INSTRUCTIONS:
-1. Use the database examples above to format your descriptions to MATCH the database style
-2. For lumber: Use format like "2X4  16" not "2x4 x 16' lumber"
-3. For hardware: Use format like "#8 SCREWS" not "2x4 construction screws #8"
-4. Keep descriptions SHORT and match the database terminology
-5. When unsure, pick the closest database format
-
 IMPORTANT PATTERN RECOGNITION:
 - If a line is missing material specifications (like "4X8 16'" instead of "4X8 PT 16'"), look at the PREVIOUS non-empty line to see what material was specified
 - Carry forward the material specification from the most recent line that had one

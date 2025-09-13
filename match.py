@@ -62,14 +62,22 @@ class Matcher:
         return re.fullmatch(valid_pattern, word) is not None
 
     def _looks_like_length(self, word):
+        if word == "104-1/4" or word == "116-1/4":
+            return True
         return re.match(r'(\d+)(?:\s*(?:\'|ft|feet))?(?:\s|$)', word) != None
         return re.search(r'(\d+)(?:\s*(?:\'|ft|feet))?(?:\s|$)', word) != None
+
+    def _lengthsequal(self, word1, word2):
+        # strip out anything that's not a number
+        if type(word1) != type('') or type(word2) != type(''):
+            return False
+        return re.sub(r'[^0-9]', '', word1) == re.sub(r'[^0-9]', '', word2)
 
     def _cleanup(self, description):
         # perform obvious fixing of things that look like OCR errors and other
         # things that will confuse the matcher
         # this takes a string and returns a list of words
-        desc = description.lower().strip().split()
+        desc = do_subs("cleanup",description.lower()).strip().split()
         i = 0
         gotdim = False
         gotlen = False
@@ -243,11 +251,13 @@ class Matcher:
         for name,dbc in db_components.items():
             if name not in item_components:
                 continue
-            if type(dbc) == type([]):
+            if type(dbc) == type([]) and name in item_components:
                 for d in dbc:
                     if d in item_components[name]:
                         score += 0.10
-            elif dbc == item_components[name]:
+            elif name == "length" and self._lengthsequal(dbc, item_components.get(name)):
+                score += 0.3
+            elif dbc == item_components.get(name):
                 score += 0.3
         return score
 
@@ -268,7 +278,7 @@ class Matcher:
         # Parse the scanned item to extract lumber components
         item_components = self._parse_lumber_item(item, debug)
         if True: # debug:
-            print(f"  Parsed item components: {item_components}")
+            print(f"  Parsed item components: {item} -> {item_components}")
 
         if "attributes" in item_components:
             # I would really expect only one attribute.

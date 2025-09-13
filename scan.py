@@ -152,6 +152,13 @@ class Scanner:
                         page_items.append(item)
 
                     page_items = self._fix_missing_specifications(page_items)
+
+                    debug_file = Path(output_dir) / (Path(cached_file).stem + "_context_extracted_json_fixed.json")
+                    with open(debug_file, 'w', encoding='utf-8') as f:
+                        for item in page_items:
+                           print(item, file=f)
+                        print(f"Fixed items written to {debug_file}")
+
                     all_items.extend(page_items)
             
             print(f"✓ Loaded {len(all_items)} cached items from {len(cached_files)} pages")
@@ -363,6 +370,7 @@ class Scanner:
             # Create the message with image using the current model
             message = self.client.messages.create(
                 model="claude-sonnet-4-20250514",
+                temperature=0,
                 max_tokens=8000,
                 messages=[
                     {
@@ -468,6 +476,7 @@ class Scanner:
 
             # Post-process to fix missing specifications
             scanned_items = self._fix_missing_specifications(scanned_items)
+
             return scanned_items
 
         except Exception as e:
