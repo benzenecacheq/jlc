@@ -139,8 +139,11 @@ def print_table(results: List[Dict]) -> None:
     # Print data rows
     previous_item_number = None
     for row in results:
-        # Show item number only if it's different from the previous row
-        display_item_number = row['item_number'] if row['item_number'] != previous_item_number else ''
+        # Show item number, quantity, and original text only if different from the previous row
+        is_new_item = row['item_number'] != previous_item_number
+        display_item_number = row['item_number'] if is_new_item else ''
+        display_quantity = row['quantity'] if is_new_item else ''
+        display_original_text = row['original_text'] if is_new_item else ''
         
         # Format confidence to 2 decimal places
         confidence_value = row['confidence']
@@ -150,8 +153,8 @@ def print_table(results: List[Dict]) -> None:
             confidence_formatted = confidence_value
         
         data_row = (f"{display_item_number:<{col_widths['item_number']}} | "
-                   f"{row['quantity']:<{col_widths['quantity']}} | "
-                   f"{row['original_text']:<{col_widths['original_text']}} | "
+                   f"{display_quantity:<{col_widths['quantity']}} | "
+                   f"{display_original_text:<{col_widths['original_text']}} | "
                    f"{row['part_number']:<{col_widths['part_number']}} | "
                    f"{row['item_description']:<{col_widths['item_description']}} | "
                    f"{confidence_formatted:<{col_widths['confidence']}}")
