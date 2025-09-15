@@ -20,36 +20,36 @@ class Matcher:
     def __init__(self, databases):
         """Initialize with Claude API key"""
         self.databases = databases
-        self.attributes = None
+        self.attrs = None
         self.attrmap = None
         self.debug_item = None
         self.current_item = None
         self.debug_part = None
     
-    def _load_attributes(self):
-        if self.attributes is not None:
+    def _load_attrs(self):
+        if self.attrs is not None:
             return
         # load attributes from the database.  Map the attribute to the first value and the entry
         # in the database
-        self.attributes = {}    # map alternative attribute names
+        self.attrs = {}    # map alternative attribute names
         self.attrmap = {}       # list of database entries by attribute
 
         for fname,database in self.databases.items():
             for entry in database["parts"]:
                 # Assume the first column is the attributes
-                attributes = entry[database["headers"][0]].split(',')
-                for i,attr in enumerate(attributes):
-                    attributes[i] = attr.lower().strip().replace(' ', '')
+                attrs = entry[database["headers"][0]].split(',')
+                for i,attr in enumerate(attrs):
+                    attrs[i] = attr.lower().strip().replace(' ', '')
 
                 # the first attributes in the list is the name we will map others to
-                name = attributes[0]
+                name = attrs[0]
                 if name not in self.attrmap:
                     self.attrmap[name] = []
                 self.attrmap[name].append(entry)
 
-                for attr in attributes:
-                    if attr not in self.attributes:
-                       self.attributes[attr] = name
+                for attr in attrs:
+                    if attr not in self.attrs:
+                       self.attrs[attr] = name
 
                 entry["attr"] = name
 
@@ -62,7 +62,9 @@ class Matcher:
 
     def _dimensions_match(self, word1, word2):
         # replace everythign that's not a number with a space and compare
-        return re.sub(r'[^0-9]', ' ', word1) == re.sub(r'[^0-9]', ' ', word2)
+        word1 = " ".join(re.sub(r'[^0-9]', ' ', word1).split())
+        word2 = " ".join(re.sub(r'[^0-9]', ' ', word2).split())
+        return word1 == word2
 
     def _looks_like_fraction(self, word):
         valid_pattern = "[0-9]* */ *[0-9]*"
@@ -104,14 +106,14 @@ class Matcher:
                 index = word.find('/')
                 next = word[index+1:]
                 word = word[:index]
-                if word+next in self.attributes:
+                if word+next in self.attrs:
                     # join together without /
                     desc[i] = word+next
                     continue
-                elif next+word in self.attributes:
+                elif next+word in self.attrs:
                     desc[i] = next+word
                     continue
-                elif word in self.attributes or next in self.attributes:
+                elif word in self.attrs or next in self.attrs:
                     # split in two
                     desc[i] = word
                     desc.insert(i+1, next)
@@ -125,7 +127,7 @@ class Matcher:
                     # assume this is a grade
                     gotgrade = True
                 else:
-                    if word[:index] in self.attributes:
+                    if word[:index] in self.attrs:
                         # break the word here
                         if index == len(word)-1:
                             # just smoke the # if it's at the end of an attr
@@ -142,7 +144,7 @@ class Matcher:
                 # this only matters if the stuff before the h is an attr and the stuff
                 # after the h is a number
                 index = word.find('h')
-                if index == len(word)-2 and word[index+1].isdigit() and word[:index] in self.attributes:
+                if index == len(word)-2 and word[index+1].isdigit() and word[:index] in self.attrs:
                     desc[i] = word[:index] + "#" + word[index+1:]
                     continue    # reprocess with number sign instead
                 
@@ -151,14 +153,14 @@ class Matcher:
                 nextword = desc[i+1]
                 # sometimes there are multi-word attributes that may have 
                 # an attribute as a subset, such as KD and KD Doug Fir is three word example
-                if i < len(desc)-2 and word + nextword + desc[i+2] in self.attributes:
-                    desc[i] = self.attributes[word + nextword + desc[i+2]]
+                if i < len(desc)-2 and word + nextword + desc[i+2] in self.attrs:
+                    desc[i] = self.attrs[word + nextword + desc[i+2]]
                     del desc[i+1]
                     del desc[i+1]
                     continue
                 # two word example, such as KD DF
-                if word + nextword in self.attributes:
-                    desc[i] = self.attributes[word + nextword]
+                if word + nextword in self.attrs:
+                    desc[i] = self.attrs[word + nextword]
                     del desc[i+1]
                     continue
 
@@ -166,7 +168,7 @@ class Matcher:
                 if 'h' in word:
                     # this only matters if the stuff before the h is an attr and the next word is a number
                     index = word.find('h')
-                    if index == len(word)-1 and nextword.isdigit() and word[:index] in self.attributes:
+                    if index == len(word)-1 and nextword.isdigit() and word[:index] in self.attrs:
                         # just smoke the #
                         desc[i] = word[:index]
                         continue
@@ -211,9 +213,9 @@ class Matcher:
 
             if self._looks_like_dimension(word, requirex=True):
                 gotdim = True
-            elif word in self.attributes:
+            elif word in self.attrs:
                 # change to universal attribute name
-                desc[i] = self.attributes[word]
+                desc[i] = self.attrs[word]
                 gotattr = True
             elif self._looks_like_length(word):
                 gotlen = True
@@ -223,8 +225,8 @@ class Matcher:
         return desc
 
     def _parse_lumber_item(self, description: str, debug: bool = False) -> dict:
-        if self.attributes is None:
-            self._load_attributes()
+        if self.attrs is None:
+            self._load_attrs()
 
         desc = self._cleanup(description)
         if debug:
@@ -237,10 +239,10 @@ class Matcher:
                 components['dimensions'] = d
                 if debug:
                     print(f'    Found dimensions: {d}')
-            elif d in self.attributes:
-                if 'attributes' not in components:
-                    components['attributes'] = []
-                components['attributes'].append(d)
+            elif d in self.attrs:
+                if 'attrs' not in components:
+                    components['attrs'] = []
+                components['attrs'].append(d)
                 if debug:
                     print(f'    Found attribute: {d}')
             elif self._looks_like_length(d) and 'length' not in components:
@@ -256,9 +258,27 @@ class Matcher:
 
         return components
 
-    def _calculate_lumber_match_score(self, item_components: dict, db_components: dict, debug: bool = False) -> float:
+    def _calculate_lumber_match_score(self, item_components: dict, db_components: dict, sku: str='') -> float:
         """Calculate how well an item matches a database entry"""
         score = 0.0
+
+        # some special cases:
+        if len(item_components) == 1 and 'other' in item_components and 'other' in db_components:
+            # need a good match for the attributes we have
+            divisor = (len(item_components['other'])*2 + len(db_components['other'])) / 3
+            for i in item_components['other']:
+                skumatch = fuzzy_match(i, sku)
+                skumatch = skumatch if skumatch > 0.6 else 0.0
+                maxmatch = 0.0
+                for d in db_components['other']:
+                    maxmatch = max(maxmatch, fuzzy_match(i, d))
+                    if maxmatch > 0.8:
+                        break
+                if maxmatch > skumatch:
+                    score += maxmatch / divisor
+                else:
+                    score += skumatch / len(item_components['other'])
+            return score
 
         for name,dbc in db_components.items():
             if name not in item_components:
@@ -272,8 +292,9 @@ class Matcher:
                             maxmatch = 1.0
                             break
                     score += 0.05 * maxmatch * len(i)
-            elif name == "dimensions" and self._dimensions_match(dbc, item_components.get(name)):
-                score += 0.3
+            elif name == "dimensions" and name in item_components:
+                if self._dimensions_match(dbc, item_components[name]):
+                    score += 0.3
             elif name == "length" and self._lengths_equal(dbc, item_components.get(name)):
                 score += 0.3
             elif dbc == item_components.get(name):
@@ -306,9 +327,9 @@ class Matcher:
         if self.debug_item == self.current_item and self.debug_part is None:
             pdb.set_trace()     # debug the processing of this item.
 
-        if "attributes" in item_components:
+        if "attrs" in item_components:
             # I would really expect only one attribute.
-            for attr in item_components["attributes"]:
+            for attr in item_components["attrs"]:
                 parts += self.attrmap[attr]
         if len(parts) == 0:
             parts = database['parts']
@@ -335,14 +356,13 @@ class Matcher:
 
             if (self.debug_item == self.current_item and 
                 self.debug_part.lower() == item_number.lower()):
+                print(f"item_components={item_components}")
+                print(f"db_components={db_components}")
                 pdb.set_trace()
 
-            if 'attributes' not in db_components:
-                db_components['attributes'] = part.get('attr')
-
             # Calculate match score
-            match_score = self._calculate_lumber_match_score(item_components, db_components, debug)
-            if match_score > 0.59:  # Threshold for considering it a match
+            match_score = self._calculate_lumber_match_score(item_components, db_components, item_number)
+            if match_score > 0.58:  # Threshold for considering it a match
                 match = PartMatch(
                     description=item,
                     part_number=item_number,
