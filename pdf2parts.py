@@ -540,18 +540,15 @@ subdirectory named after the input file (e.g., 'document_results/', 'lumber_list
     parser.add_argument('--verbose-matching', action='store_true',
                        help='Show detailed matching debug output on console (default: save to files)')
     
-    parser.add_argument('--test-match', '-tm', action='store_true', help='Test matching function')
+    parser.add_argument('-tm', '--test-match', action='store_true', help='Test matching function')
 
-    parser.add_argument('--training-data',
-                       nargs='*',
-                       default=[],
+    parser.add_argument('--training-data', nargs='*', default=[],
                        help='One or more CSV files containing training data (original_text, correct_sku columns)')
     
-    parser.add_argument('--use-keyword-matching', '-mk',
-                       action='store_true',
+    parser.add_argument('-mk', '--use-keyword-matching', action='store_true',
                        help='Use keyword-based matching instead of Claude AI (for comparison)')
     
-    parser.add_argument('--view', action='store_true',
+    parser.add_argument('-v', '--view', action='store_true',
                        help='Run the viewer program to display results in a formatted table')
     
     return parser.parse_args()

@@ -22,6 +22,9 @@ class Matcher:
         self.databases = databases
         self.attributes = None
         self.attrmap = None
+        self.debug_item = None
+        self.current_item = None
+        self.debug_part = None
     
     def _load_attributes(self):
         if self.attributes is not None:
@@ -57,6 +60,10 @@ class Matcher:
         invalid_pattern = "[^0-9 x/-]"
         return re.search(invalid_pattern, word) is None
 
+    def _dimensions_match(self, word1, word2):
+        # replace everythign that's not a number with a space and compare
+        return re.sub(r'[^0-9]', ' ', word1) == re.sub(r'[^0-9]', ' ', word2)
+
     def _looks_like_fraction(self, word):
         valid_pattern = "[0-9]* */ *[0-9]*"
         return re.fullmatch(valid_pattern, word) is not None
@@ -64,10 +71,13 @@ class Matcher:
     def _looks_like_length(self, word):
         if word == "104-1/4" or word == "116-1/4":
             return True
+        if word == "1" or word == "2": # these are probably a grade.
+            return False
+
         return re.match(r'(\d+)(?:\s*(?:\'|ft|feet))?(?:\s|$)', word) != None
         return re.search(r'(\d+)(?:\s*(?:\'|ft|feet))?(?:\s|$)', word) != None
 
-    def _lengthsequal(self, word1, word2):
+    def _lengths_equal(self, word1, word2):
         # strip out anything that's not a number
         if type(word1) != type('') or type(word2) != type(''):
             return False
@@ -252,13 +262,23 @@ class Matcher:
             if name not in item_components:
                 continue
             if type(dbc) == type([]) and name in item_components:
-                for d in dbc:
-                    if d in item_components[name]:
-                        score += 0.10
-            elif name == "length" and self._lengthsequal(dbc, item_components.get(name)):
+                for i in item_components[name]:
+                    found = False
+                    for d in dbc:
+                        if fuzzy_match(d,i):
+                            score += 0.05 * len(i)
+                            break
+            elif name == "dimensions" and self._dimensions_match(dbc, item_components.get(name)):
+                score += 0.3
+            elif name == "length" and self._lengths_equal(dbc, item_components.get(name)):
                 score += 0.3
             elif dbc == item_components.get(name):
-                score += 0.3
+                score += 0.1
+        if "length" not in item_components and "length" not in db_components:
+            score *= 1.6
+        if "dimensions" not in item_components and "dimensions" not in db_components:
+            # this is probably not lumber
+            score *= 1.6
         return score
 
     def match_lumber_item(self, item: str, database_name: str=None, debug: bool = False) -> List[PartMatch]:
@@ -277,8 +297,10 @@ class Matcher:
 
         # Parse the scanned item to extract lumber components
         item_components = self._parse_lumber_item(item, debug)
-        if True: # debug:
+        if debug:
             print(f"  Parsed item components: {item} -> {item_components}")
+        if self.debug_item == self.current_item and self.debug_part is None:
+            pdb.set_trace()     # debug the processing of this item.
 
         if "attributes" in item_components:
             # I would really expect only one attribute.
@@ -299,6 +321,9 @@ class Matcher:
 
             if not item_number or not item_desc:
                 continue
+            if (self.debug_item == self.current_item and 
+                self.debug_part.lower() == item_number.lower()):
+                pdb.set_trace()
 
             # Parse the database entry
             if 'components' in part:
@@ -452,6 +477,13 @@ class Matcher:
 
     def find_all_matches(self, scanned_items, debug: bool = False, output_dir: str = ".") -> None:
         """Find matches using original keyword-based matching (for comparison)"""
+        if os.getenv("DEBUG_ITEM"):
+            di = os.getenv("DEBUG_ITEM")
+            if ':' in di:
+                self.debug_part = di[di.find(':')+1:]
+                di = di[:di.find(':')]
+            self.debug_item = int(di)
+
         if debug:
             print("\n" + "="*60)
             print("SEARCHING FOR MATCHES USING KEYWORD MATCHING")
@@ -465,13 +497,13 @@ class Matcher:
             log_file.write("=" * 60 + "\n\n")
 
         for i, item in enumerate(scanned_items, 1):
+            self.current_item = i
             if debug:
                 print(f"\n[{i:2d}] Searching for: {item.description}")
                 print(f"     Original: {item.original_text}")
                 print(f"     Quantity: {item.quantity}")
                 print("-" * 50)
-            else:
-                print(f"  [{i:2d}] {item.description}")
+            print(f"  [{i:2d}] {item.description}")
 
             all_matches = []
             for db_name in self.databases:
@@ -531,10 +563,11 @@ class Matcher:
         if debug:
             print(f"  Classified as lumber: {is_lumber}")
 
-        if is_lumber:
-            # Use lumber-specific matching
-            return self.match_lumber_item(item, database_name, debug)
-        else:
-            # Use enhanced general matching for hardware, etc.
-            return self.match_general_item(item, database_name, debug)
+        matches = self.match_lumber_item(item, database_name, debug)
+        return matches
+        if len(matches) > 0:
+            return matches
+
+        # Use enhanced general matching for hardware, etc.
+        return self.match_general_item(item, database_name, debug)
 

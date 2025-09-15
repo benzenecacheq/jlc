@@ -157,7 +157,6 @@ class Scanner:
                     with open(debug_file, 'w', encoding='utf-8') as f:
                         for item in page_items:
                            print(item, file=f)
-                        print(f"Fixed items written to {debug_file}")
 
                     all_items.extend(page_items)
             

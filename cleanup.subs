@@ -8,3 +8,16 @@
 "`
 "`
 "`
+
+# sometimes claude matches fractions
+¼`-1/4
+⅛`-1/8
+⅝`-5/8
+½`-1/2
+
+# These are sizes that round to what we see in the customer list
+23/32`3/4
+15/32`1/2
+
+# PT/DF confuses things
+pt/df`pt
