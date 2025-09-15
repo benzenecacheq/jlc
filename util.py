@@ -27,7 +27,7 @@ class ScannedItem:
     matches: List[PartMatch]
 
 ###############################################################################
-def fuzzy_match(str1, str2, threshold_ratio=0.6):
+def fuzzy_match(str1, str2, new_algo=True):
     """
     Perform fuzzy matching between two strings with length-based forgiveness.
     
@@ -40,12 +40,56 @@ def fuzzy_match(str1, str2, threshold_ratio=0.6):
     """
     # Handle exact matches and very short strings
     if str1 == str2:
-        return True
+        return 1.0
     
     # Convert to lowercase and remove non-alphanumeric for comparison
     s1, s2 = re.sub(r'[^a-zA-Z0-9]', '', str1).lower(), re.sub(r'[^a-zA-Z0-9]', '', str2).lower()
     
     # Calculate Levenshtein distance
+    def damerau_levenshtein_distance(a, b):
+        """Damerau-Levenshtein distance with transposition support"""
+        len_a, len_b = len(a), len(b)
+        
+        # Create a dictionary of unique characters
+        char_array = list(set(a + b))
+        char_dict = {char: i for i, char in enumerate(char_array)}
+        
+        # Create the distance matrix
+        max_dist = len_a + len_b
+        H = {}
+        H[-1, -1] = max_dist
+        
+        # Initialize first row and column
+        for i in range(0, len_a + 1):
+            H[i, -1] = max_dist
+            H[i, 0] = i
+        for j in range(0, len_b + 1):
+            H[-1, j] = max_dist
+            H[0, j] = j
+        
+        # Track last occurrence of each character
+        last_match_col = {char: 0 for char in char_dict}
+        
+        for i in range(1, len_a + 1):
+            last_match_row = 0
+            for j in range(1, len_b + 1):
+                i1 = last_match_col[b[j-1]]
+                j1 = last_match_row
+                cost = 1
+                if a[i-1] == b[j-1]:
+                    cost = 0
+                    last_match_row = j
+                
+                H[i, j] = min(
+                    H[i-1, j] + 1,      # deletion
+                    H[i, j-1] + 1,      # insertion
+                    H[i-1, j-1] + cost, # substitution
+                    H[i1-1, j1-1] + (i-i1-1) + 1 + (j-j1-1)  # transposition
+                )
+            
+            last_match_col[a[i-1]] = i
+        
+        return H[len_a, len_b]
     def levenshtein_distance(a, b):
         if len(a) < len(b):
             a, b = b, a
@@ -66,22 +110,15 @@ def fuzzy_match(str1, str2, threshold_ratio=0.6):
         return previous_row[-1]
     
     # Calculate similarity ratio
-    max_len = max(len(s1), len(s2))
-    distance = levenshtein_distance(s1, s2)
-    similarity = 1 - (distance / max_len)
-    
-    if False:
-       # Make threshold more forgiving for longer strings
-       avg_len = (len(s1) + len(s2)) / 2
-       if avg_len > 10:
-           adjusted_threshold = threshold_ratio * 0.5   # More forgiving
-       elif avg_len > 6:
-           adjusted_threshold = threshold_ratio * 0.7   # Slightly more forgiving
-       else:
-           adjusted_threshold = threshold_ratio         # Standard threshold
-    
-    return similarity >= threshold_ratio
+    if new_algo:
+       distance = damerau_levenshtein_distance(s1, s2)
+    else:
+       distance = levenshtein_distance(s1, s2)
 
+    max_len = max(len(s1), len(s2))
+    similarity = 1 - (distance / max_len)
+    return similarity
+    
 ###############################################################################
 submap = {}
 def do_subs(subtype, word):

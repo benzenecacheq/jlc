@@ -74,6 +74,7 @@ class Matcher:
         if word == "1" or word == "2": # these are probably a grade.
             return False
 
+        return re.match(r'([\d\-/]+)(?:\s*(?:\'|ft|feet))?(?:\s|$)', word) != None
         return re.match(r'(\d+)(?:\s*(?:\'|ft|feet))?(?:\s|$)', word) != None
         return re.search(r'(\d+)(?:\s*(?:\'|ft|feet))?(?:\s|$)', word) != None
 
@@ -81,6 +82,7 @@ class Matcher:
         # strip out anything that's not a number
         if type(word1) != type('') or type(word2) != type(''):
             return False
+        return re.sub(r'[^0-9/]', '', word1) == re.sub(r'[^0-9/]', '', word2)
         return re.sub(r'[^0-9]', '', word1) == re.sub(r'[^0-9]', '', word2)
 
     def _cleanup(self, description):
@@ -263,11 +265,13 @@ class Matcher:
                 continue
             if type(dbc) == type([]) and name in item_components:
                 for i in item_components[name]:
-                    found = False
+                    maxmatch = 0.0
                     for d in dbc:
-                        if fuzzy_match(d,i):
-                            score += 0.05 * len(i)
+                        maxmatch = max(maxmatch, fuzzy_match(i, d))
+                        if maxmatch > 0.8:
+                            maxmatch = 1.0
                             break
+                    score += 0.05 * maxmatch * len(i)
             elif name == "dimensions" and self._dimensions_match(dbc, item_components.get(name)):
                 score += 0.3
             elif name == "length" and self._lengths_equal(dbc, item_components.get(name)):
@@ -321,9 +325,6 @@ class Matcher:
 
             if not item_number or not item_desc:
                 continue
-            if (self.debug_item == self.current_item and 
-                self.debug_part.lower() == item_number.lower()):
-                pdb.set_trace()
 
             # Parse the database entry
             if 'components' in part:
@@ -332,12 +333,16 @@ class Matcher:
                 db_components = self._parse_lumber_item(item_desc, debug)
                 part['components'] = db_components
 
+            if (self.debug_item == self.current_item and 
+                self.debug_part.lower() == item_number.lower()):
+                pdb.set_trace()
+
             if 'attributes' not in db_components:
                 db_components['attributes'] = part.get('attr')
 
             # Calculate match score
             match_score = self._calculate_lumber_match_score(item_components, db_components, debug)
-            if match_score > 0.50:  # Threshold for considering it a match
+            if match_score > 0.59:  # Threshold for considering it a match
                 match = PartMatch(
                     description=item,
                     part_number=item_number,

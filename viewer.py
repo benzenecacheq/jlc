@@ -7,6 +7,7 @@ then creates a table showing:
 - Item number from the CSV
 - Quantity from the CSV
 - Original text from the CSV  
+- Processed text from the CSV
 - Part number (if exists, otherwise blank)
 - Item description from the database that matches that part number
 - Confidence value from the CSV
@@ -66,6 +67,7 @@ def process_csv_file(csv_file: str, database_mapping: Dict[str, str]) -> List[Di
                 # Extract data from CSV
                 item_number = row.get('Item_Number', '').strip()
                 quantity = row.get('Quantity', '').strip()
+                processed_text = row.get('Description', '').strip()
                 original_text = row.get('Original_Text', '').strip()
                 part_number = row.get('Part_Number', '').strip()
                 confidence = row.get('Confidence', '').strip()
@@ -79,6 +81,7 @@ def process_csv_file(csv_file: str, database_mapping: Dict[str, str]) -> List[Di
                 result_row = {
                     'item_number': item_number,
                     'quantity': quantity,
+                    'processed_text': processed_text,
                     'original_text': original_text,
                     'part_number': part_number if part_number else '',
                     'item_description': item_description,
@@ -109,29 +112,32 @@ def print_table(results: List[Dict]) -> None:
     
     # Calculate column widths
     col_widths = {
-        'item_number': max(len('Item Number'), max(len(str(r['item_number'])) for r in results)),
-        'quantity': max(len('Quantity'), max(len(str(r['quantity'])) for r in results)),
+        'item_number': max(len('Item'), max(len(str(r['item_number'])) for r in results)),
+        'quantity': max(len('Qty'), max(len(str(r['quantity'])) for r in results)),
+        'processed_text' : max(len('Text'), max(len(r['processed_text']) for r in results)),
         'original_text': max(len('Original Text'), max(len(r['original_text']) for r in results)),
-        'part_number': max(len('Part Number'), max(len(r['part_number']) for r in results)),
+        'part_number': max(len('SKU'), max(len(r['part_number']) for r in results)),
         'item_description': max(len('Item Description'), max(len(r['item_description']) for r in results)),
-        'confidence': max(len('Confidence'), max(len(str(r['confidence'])) for r in results))
+        'confidence': max(len('Conf'), max(len(str(r['confidence'])) for r in results))
     }
     
     # Ensure minimum widths for readability
-    col_widths['item_number'] = max(col_widths['item_number'], 12)
-    col_widths['quantity'] = max(col_widths['quantity'], 8)
+    col_widths['item_number'] = max(col_widths['item_number'], 4)
+    col_widths['quantity'] = max(col_widths['quantity'], 4)
+    col_widths['processed_text'] = max(col_widths['processed_text'], 20)
     col_widths['original_text'] = max(col_widths['original_text'], 20)
-    col_widths['part_number'] = max(col_widths['part_number'], 12)
-    col_widths['item_description'] = max(col_widths['item_description'], 30)
-    col_widths['confidence'] = max(col_widths['confidence'], 10)
+    col_widths['part_number'] = max(col_widths['part_number'], 4)
+    col_widths['item_description'] = max(col_widths['item_description'], 20)
+    col_widths['confidence'] = 5
     
     # Print header
-    header = (f"{'Item Number':<{col_widths['item_number']}} | "
-              f"{'Quantity':<{col_widths['quantity']}} | "
+    header = (f"{'Item':<{col_widths['item_number']}} | "
+              f"{'Qty':<{col_widths['quantity']}} | "
+              f"{'Text':<{col_widths['processed_text']}} | "
               f"{'Original Text':<{col_widths['original_text']}} | "
-              f"{'Part Number':<{col_widths['part_number']}} | "
+              f"{'SKU':<{col_widths['part_number']}} | "
               f"{'Item Description':<{col_widths['item_description']}} | "
-              f"{'Confidence':<{col_widths['confidence']}}")
+              f"{'Conf':<{col_widths['confidence']}}")
     
     print(header)
     print("-" * len(header))
@@ -143,6 +149,7 @@ def print_table(results: List[Dict]) -> None:
         is_new_item = row['item_number'] != previous_item_number
         display_item_number = row['item_number'] if is_new_item else ''
         display_quantity = row['quantity'] if is_new_item else ''
+        display_processed_text = row['processed_text'] if is_new_item else ''
         display_original_text = row['original_text'] if is_new_item else ''
         
         # Format confidence to 2 decimal places
@@ -154,10 +161,12 @@ def print_table(results: List[Dict]) -> None:
         
         data_row = (f"{display_item_number:<{col_widths['item_number']}} | "
                    f"{display_quantity:<{col_widths['quantity']}} | "
+                   f"{display_processed_text:<{col_widths['processed_text']}} | "
                    f"{display_original_text:<{col_widths['original_text']}} | "
                    f"{row['part_number']:<{col_widths['part_number']}} | "
                    f"{row['item_description']:<{col_widths['item_description']}} | "
                    f"{confidence_formatted:<{col_widths['confidence']}}")
+        data_row.strip()
         print(data_row)
         
         # Update previous item number for next iteration
@@ -174,7 +183,7 @@ def save_to_csv(results: List[Dict], output_file: str) -> None:
     try:
         with open(output_file, 'w', newline='', encoding='utf-8') as f:
             if results:
-                fieldnames = ['item_number', 'quantity', 'original_text', 'part_number', 'item_description', 'confidence']
+                fieldnames = ['item_number', 'quantity', 'processed_text', 'original_text', 'part_number', 'item_description', 'confidence']
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
                 writer.writeheader()
                 writer.writerows(results)
