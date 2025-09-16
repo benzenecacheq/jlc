@@ -24,7 +24,6 @@ from dataclasses import dataclass
 import re
 import shutil
 from util import *
-from match import Matcher
 
 # PDF processing imports
 try:
@@ -38,12 +37,10 @@ except ImportError:
 
 ###############################################################################
 class Scanner:
-    def __init__(self, client, databases):
+    def __init__(self, api_key, databases):
         """Initialize with Claude API key"""
-        self.client = client
+        self.client = anthropic.Anthropic(api_key=api_key)
         self.databases = databases
-
-        self.keyword_matcher = Matcher(self.databases)
 
     def _fix_missing_specifications(self, scanned_items: List[ScannedItem]) -> List[ScannedItem]:
         """Post-process scanned items to carry forward missing material specifications"""

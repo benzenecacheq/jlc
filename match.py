@@ -16,7 +16,7 @@ from util import *
 import re
 
 
-class Matcher:
+class RulesMatcher:
     def __init__(self, databases):
         """Initialize with Claude API key"""
         self.databases = databases

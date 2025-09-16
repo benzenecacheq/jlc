@@ -39,11 +39,14 @@ def fuzzy_match(str1, str2, new_algo=True):
         bool: True if strings are considered a match
     """
     # Handle exact matches and very short strings
+
     if str1 == str2:
         return 1.0
     
     # Convert to lowercase and remove non-alphanumeric for comparison
     s1, s2 = re.sub(r'[^a-zA-Z0-9]', '', str1).lower(), re.sub(r'[^a-zA-Z0-9]', '', str2).lower()
+    if len(s1) == 0 | len(s2) == 0:
+        return 0
     
     # Calculate Levenshtein distance
     def damerau_levenshtein_distance(a, b):
