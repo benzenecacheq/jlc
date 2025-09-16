@@ -214,6 +214,8 @@ def main():
     print("="*120)
     print_table(results)
     
+    exit(0)
+
     # Save to CSV
     output_file = "combined_results.csv"
     save_to_csv(results, output_file)

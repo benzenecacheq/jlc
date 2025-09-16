@@ -8,6 +8,7 @@ import os
 import sys
 import csv
 import json
+import copy
 import anthropic
 from typing import Dict, List, Tuple, Optional
 from pathlib import Path
@@ -198,7 +199,7 @@ class RulesMatcher:
                     continue
 
             # look for grade. currently 1 and 2 are the only grades I've seen
-            if not gotgrade and word in ["1","2"]:
+            if not gotgrade and word in ["1","2"] and gotdim:
                 found = gotlen
                 if not found:
                     # unlikely given it's a 1 or 2, but this could be a length.  
@@ -304,6 +305,19 @@ class RulesMatcher:
         if "dimensions" not in item_components and "dimensions" not in db_components:
             # this is probably not lumber
             score *= 1.6
+
+        if ("length" not in item_components and "dimensions" in item_components and 
+            'x' in item_components['dimensions']):
+            # call the last dimension the length and see if you can find a better match.
+            newic = copy.deepcopy(item_components)
+            i = newic['dimensions']
+            lastx = i.rfind('x')
+            if lastx > 0 and lastx < len(i)-1:
+                newic['length'] = i[lastx+1:]
+                newic['dimensions'] = i[:lastx]
+                newscore = self._calculate_lumber_match_score(newic, db_components, sku)
+                if newscore > score:
+                    return newscore
         return score
 
     def match_lumber_item(self, item: str, database_name: str=None, debug: bool = False) -> List[PartMatch]:
@@ -324,8 +338,11 @@ class RulesMatcher:
         item_components = self._parse_lumber_item(item, debug)
         if debug:
             print(f"  Parsed item components: {item} -> {item_components}")
+
         if self.debug_item == self.current_item and self.debug_part is None:
+            print(f"  Parsed item components: {item} -> {item_components}")
             pdb.set_trace()     # debug the processing of this item.
+            self._parse_lumber_item(item, True)
 
         if "attrs" in item_components:
             # I would really expect only one attribute.

@@ -29,3 +29,8 @@ coupling`couple
 coupler`couple
 all threaded`allthrd
 all thread`allthrd
+
+# PSL is used for glu-lams
+\bpsl-`glulam 
+\bpsl\b`glulam 
+\bdf-`df 
