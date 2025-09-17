@@ -28,19 +28,28 @@ class ScannedItem:
     matches: List[PartMatch]
 
 ###############################################################################
-def fuzzy_match(str1, str2, new_algo=True):
+def fuzzy_match(arg1, str2, new_algo=True):
     """
     Perform fuzzy matching between two strings with length-based forgiveness.
     
     Args:
-        str1, str2: Strings to compare
-        threshold_ratio: Base similarity ratio (0.0 to 1.0)
+        arg1 is either a list or a string
+        str1 is a string
     
     Returns:
-        bool: True if strings are considered a match
+        Closeness metric where 1 is equal
     """
-    # Handle exact matches and very short strings
+    if type(arg1) == type([]):
+        # if the first arg is a list, return a sorted list of matching words
+        found = []
+        for s in arg1:
+            score = fuzzy_match(s, str2)
+            if score > 0:
+                found.append([s,score])
+        return sorted(found, key=lambda x: -x[1])
+    str1 = arg1
 
+    # Handle exact matches and very short strings
     if str1 == str2:
         return 1.0
     
