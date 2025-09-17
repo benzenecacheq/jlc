@@ -29,6 +29,7 @@ def load_database(database_file: str) -> Dict[str, str]:
         Dictionary mapping part numbers to descriptions
     """
     part_to_description = {}
+    part_to_type = {}
     
     try:
         with open(database_file, 'r', encoding='utf-8') as f:
@@ -36,8 +37,16 @@ def load_database(database_file: str) -> Dict[str, str]:
             for row in reader:
                 part_number = row.get('Item Number', '').strip()
                 description = row.get('Item Description', '').strip()
+                # irritatingly, the first column has a funky leading character 
+                # so we have to do this the hard way
+                type = ""
+                for key,val in row.items():
+                   if "Terms" in key:
+                       type = val
                 if part_number and description:
                     part_to_description[part_number] = description
+                    part_to_type[part_number] = type
+
     except FileNotFoundError:
         print(f"Error: Database file '{database_file}' not found.")
         sys.exit(1)
@@ -45,15 +54,17 @@ def load_database(database_file: str) -> Dict[str, str]:
         print(f"Error reading database file '{database_file}': {e}")
         sys.exit(1)
     
-    return part_to_description
+    return part_to_description, part_to_type
 
-def process_csv_file(csv_file: str, database_mapping: Dict[str, str]) -> List[Dict]:
+def process_csv_file(csv_file: str, description_mapping: Dict[str, str], 
+                                    type_mapping: Dict[str, str]) -> List[Dict]:
     """
     Process the CSV file and combine with database information.
     
     Args:
         csv_file: Path to the CSV file with matching results
-        database_mapping: Dictionary mapping part numbers to descriptions
+        description_mapping: Dictionary mapping part numbers to descriptions
+        type_mapping: Dictionary mapping part numbers to types
         
     Returns:
         List of dictionaries containing the combined data
@@ -74,8 +85,10 @@ def process_csv_file(csv_file: str, database_mapping: Dict[str, str]) -> List[Di
                 
                 # Get description from database if part number exists
                 item_description = ""
-                if part_number and part_number in database_mapping:
-                    item_description = database_mapping[part_number]
+                item_type = ""
+                if part_number and part_number in description_mapping:
+                    item_description = description_mapping[part_number]
+                    item_type = type_mapping[part_number]
                 
                 # Create result row
                 result_row = {
@@ -85,7 +98,8 @@ def process_csv_file(csv_file: str, database_mapping: Dict[str, str]) -> List[Di
                     'original_text': original_text,
                     'part_number': part_number if part_number else '',
                     'item_description': item_description,
-                    'confidence': confidence
+                    'item_type' : item_type,
+                    'confidence': confidence,
                 }
                 
                 results.append(result_row)
@@ -128,7 +142,8 @@ def print_table(results: List[Dict]) -> None:
     col_widths['original_text'] = max(col_widths['original_text'], 20)
     col_widths['part_number'] = max(col_widths['part_number'], 4)
     col_widths['item_description'] = max(col_widths['item_description'], 20)
-    col_widths['confidence'] = 5
+    col_widths['item_type'] = 6         # truncate if necessary
+    col_widths['confidence'] = 5        # truncate if necessary
     
     # Print header
     header = (f"{'Item':<{col_widths['item_number']}} | "
@@ -137,6 +152,7 @@ def print_table(results: List[Dict]) -> None:
               f"{'Original Text':<{col_widths['original_text']}} | "
               f"{'SKU':<{col_widths['part_number']}} | "
               f"{'Item Description':<{col_widths['item_description']}} | "
+              f"{'Type':<{col_widths['item_type']}} | "
               f"{'Conf':<{col_widths['confidence']}}")
     
     print(header)
@@ -165,7 +181,8 @@ def print_table(results: List[Dict]) -> None:
                    f"{display_original_text:<{col_widths['original_text']}} | "
                    f"{row['part_number']:<{col_widths['part_number']}} | "
                    f"{row['item_description']:<{col_widths['item_description']}} | "
-                   f"{confidence_formatted:<{col_widths['confidence']}}")
+                   f"{row['item_type'][:col_widths['item_type']]:<{col_widths['item_type']}} | "
+                   f"{confidence_formatted[:col_widths['confidence']]:<{col_widths['confidence']}}")
         data_row.strip()
         print(data_row)
         
@@ -183,7 +200,7 @@ def save_to_csv(results: List[Dict], output_file: str) -> None:
     try:
         with open(output_file, 'w', newline='', encoding='utf-8') as f:
             if results:
-                fieldnames = ['item_number', 'quantity', 'processed_text', 'original_text', 'part_number', 'item_description', 'confidence']
+                fieldnames = ['item_number', 'quantity', 'processed_text', 'original_text', 'part_number', 'item_description', 'item_type', 'confidence']
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
                 writer.writeheader()
                 writer.writerows(results)
@@ -202,12 +219,15 @@ def main():
     database_file = sys.argv[2]
     
     print(f"Loading database from: {database_file}")
-    database_mapping = load_database(database_file)
-    print(f"Loaded {len(database_mapping)} items from database")
+    description_mapping,type_mapping = load_database(database_file)
+    print(f"Loaded {len(description_mapping)} items from database")
     
     print(f"\nProcessing CSV file: {csv_file}")
-    results = process_csv_file(csv_file, database_mapping)
+    results = process_csv_file(csv_file, description_mapping, type_mapping)
     print(f"Processed {len(results)} rows from CSV")
+    
+    # add type to list
+
     
     print("\n" + "="*120)
     print("COMBINED RESULTS TABLE")
