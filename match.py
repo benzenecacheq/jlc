@@ -26,6 +26,10 @@ class RulesMatcher:
         self.debug_item = None
         self.current_item = None
         self.debug_part = None
+
+        self.sku_parts = None           # parts that are in the SKU-only lookup
+        self.board_parts = None         # parts that have dimensions and length
+        self.dim_parts = None           # parts with dimensions but no length
     
     def _load_attrs(self):
         if self.attrs is not None:
@@ -53,6 +57,21 @@ class RulesMatcher:
                        self.attrs[attr] = name
 
                 entry["attr"] = name
+
+        # load the board parts
+        self.board_parts = []
+        self.dim_parts = []
+        self.sku_parts = []
+        for fname,database in self.databases.items():
+            for entry in database["parts"]:
+                db_components = self._parse_lumber_item(entry["Item Description"])
+                entry['components'] = db_components
+                if 'dimensions' in db_components and 'length' in db_components:
+                    self.board_parts.append(entry)
+                elif 'dimensions' in db_components:
+                    self.dim_parts.append(entry)
+        
+            self.sku_parts += self.select_parts(database["parts"], 'usuallyusethesku')
 
     def _looks_like_dimension(self, word, requirex=False):
         # dimensions look like 2x4 or 4x8x1/2
@@ -320,6 +339,54 @@ class RulesMatcher:
                     return newscore
         return score
 
+    # add a found item to the list of matches
+    def add_match(self, matches: List[PartMatch], item: str, part: Dict, score: float, length: str=""):
+        item_number = part.get('Item Number', '').strip()
+        item_desc = part.get('Item Description', '').strip()
+        db_components = self._parse_lumber_item(item_desc)
+        attr = part.get('attr')
+        match = PartMatch(
+            description=item,
+            part_number=item_number,
+            database_name=part['database'],
+            database_description=f"{item_desc} | Attr: {attr} | "
+                                 f"components: {db_components} | Score: {score:.2f}",
+            score=score,
+            lf=length,
+            confidence=str(score)
+        )
+        matches.append(match)
+
+    def select_parts(self, parts, categories):
+        selected = []
+        if type(categories) == type([]):
+            for c in categories:
+                selected += self.select_parts(parts, c)
+            return selected
+
+        # there are misspellings so use fuzzy matching
+        scores = fuzzy_match(sorted(self.attrmap), categories)
+        for cat, score in scores:
+            if score > 0.5:
+                selected += self.attrmap[cat]
+        return selected
+
+    def try_sku_match(self, item_str: str, parts_list: List[Dict]) -> List[PartMatch]:
+        item_components = self._parse_lumber_item(item_str)
+        matches = []
+        items = item_components['attrs'] if 'attrs' in item_components else []
+        items += item_components['other'] if 'other' in item_components else []
+        for part in parts_list:
+            if (self.debug_item == self.current_item and self.debug_part and
+                self.debug_part.lower() == part['Item Number'].lower()):
+                print(f"items={items}")
+                pdb.set_trace()
+            scores = fuzzy_match(items, part['Item Number'])
+            if len(scores) and scores[0][1] > 0.7:
+                self.add_match(matches, item_str, part, scores[0][1])
+
+        return matches
+
     def match_lumber_item(self, item: ScannedItem, database_name: str=None, debug: bool = False) -> List[PartMatch]:
         """Specialized matching for lumber database format"""
         if database_name is None:
@@ -348,15 +415,28 @@ class RulesMatcher:
             # I would really expect only one attribute.
             for attr in item_components["attrs"]:
                 parts += self.attrmap[attr]
+
+        # If we don't have a category for the item, special treatment applies
         if len(parts) == 0:
-            parts = database['parts']
+            if 'dimensions' in item_components and 'length' in item_components:
+                # if there are dimensions and length, it's probably a board
+                parts = self.board_parts
+            elif 'dimensions' in item_components:
+                # if there are dimensions and length, it's probably a board
+                parts = self.dim_parts
+            else:
+                # try to match SKU-only parts
+                matches = self.try_sku_match(item.description, self.sku_parts)
+                if len(matches) > 0:
+                    return self.sort_matches(item, matches)
+
+            #parts = database['parts']
 
         matches = []
         confidence_scores = []
         for idx,part in enumerate(parts):
             item_number = part.get('Item Number', '').strip()
             item_desc = part.get('Item Description', '').strip()
-            customer_terms = part.get('Customer Terms', '').strip()
             stocking_multiple = part.get('Stocking Multiple', '').strip()
             attr = part.get('attr')
 
@@ -404,21 +484,13 @@ class RulesMatcher:
                     length = new_length
 
             if match_score > 0.58:  # Threshold for considering it a match
-                match = PartMatch(
-                    description=item.description,
-                    part_number=item_number,
-                    database_name=database_name,
-                    database_description=f"{item_desc} | Attr: {attr} | components: {db_components} | Score: {match_score:.2f}",
-                    score=match_score,
-                    lf=length,
-                    confidence=str(match_score)
-                )
-                matches.append(match)
-
+                self.add_match(matches, item.description, part, match_score, length)
                 if debug:
                     print(f"    MATCH: {item_number} -> {item_desc} (score: {match_score:.2f})")
+            
+        return self.sort_matches(item, matches)
 
-
+    def sort_matches(self, item, matches, debug=False):
         # Sort by match score (highest first)
         # Use a stable sort that handles ties by using the index as a secondary key
         # Prefer precut to variable length
@@ -433,11 +505,13 @@ class RulesMatcher:
            if match.score < sorted_matches[0].score:
                n = i
                break
+
         # if we are doing variable length, set the quantity to the length
         if len(sorted_matches) > 0 and sorted_matches[0].lf != "":
             item.quantity = sorted_matches[0].lf
 
         return sorted_matches[:n]  # Return top matches
+
 
     def _parse_database_entry(self, item_desc: str, customer_terms: str, debug: bool = False) -> dict:
         """Parse a database entry into components"""
