@@ -14,8 +14,9 @@ class PartMatch:
     database_name: str
     database_description: str
     score: float
-    confidence: str  # "exact", "partial", "similar"
-    reason: str = ""  # Explanation for the match
+    confidence: str     # "exact", "partial", "similar" or float
+    part_idx: int = -1  # not set in AI match
+    lf: str = ""        # linear feet if the match is for that kind of lumber
 
 ###############################################################################
 @dataclass
@@ -135,6 +136,8 @@ def do_subs(subtype, word):
         subs = []
         with open(fn, "r") as f:
             for line in f:
+                if line[-1] == '\n':
+                   line = line[:-1]
                 if "`" not in line:     # comment line
                     continue
                 subs.append(line.split("`", 1))

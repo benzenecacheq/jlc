@@ -30,7 +30,6 @@ coupler`couple
 all threaded`allthrd
 all thread`allthrd
 
-# PSL is used for glu-lams
-\bpsl-`glulam 
-\bpsl\b`glulam 
+# look for cerain keywords followed by hyphen and convert to space
+\bpsl-`psl  
 \bdf-`df 
