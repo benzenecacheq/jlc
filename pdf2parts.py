@@ -58,7 +58,8 @@ def load_database(csv_path: str, database_name: str, output_dir: str = None) -> 
             
             for row in reader:
                 # Clean up whitespace in all fields
-                clean_row = {k.strip(): v.strip() if v else '' for k, v in row.items()}
+                clean_row = {re.sub('[^a-zA-Z0-9 ]','', k.strip()): v.strip() if v else '' 
+                                for k, v in row.items()}
                 
                 # Get the first column name and value
                 if first_column_name is None:
@@ -72,6 +73,8 @@ def load_database(csv_path: str, database_name: str, output_dir: str = None) -> 
                 elif first_column_value:
                     last_first_column_value = first_column_value
                 
+                # add database name
+                clean_row['database'] = database_name
                 parts.append(clean_row)
                 
         # Save the fixed CSV to output directory if provided
