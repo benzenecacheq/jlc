@@ -18,15 +18,15 @@ import re
 
 
 class RulesMatcher:
-    def __init__(self, databases):
-        """Initialize with Claude API key"""
+    def __init__(self, databases, global_debug=False):
+        self.debug = global_debug
+
         self.databases = databases
         self.attrs = None
         self.attrmap = None
         self.debug_item = None
         self.current_item = None
         self.debug_part = None
-
         self.hardware_json = None
         self.hardware_categories = None
         self.hardware_terms = None
@@ -276,12 +276,12 @@ class RulesMatcher:
 
         return desc
 
-    def _parse_lumber_item(self, description: str, debug: bool = False) -> dict:
+    def _parse_lumber_item(self, description: str) -> dict:
         if self.attrs is None:
             self._load_attrs()
 
         desc = self._cleanup(description)
-        if debug:
+        if self.debug:
             print(f"    Cleaned description: '{desc}'")
 
         components = {}
@@ -289,22 +289,22 @@ class RulesMatcher:
         for d in desc:
             if self._looks_like_dimension(d, requirex=True) and 'dimensions' not in components:
                 components['dimensions'] = d
-                if debug:
+                if self.debug:
                     print(f'    Found dimensions: {d}')
             elif d in self.attrs:
                 if 'attrs' not in components:
                     components['attrs'] = []
                 components['attrs'].append(d)
-                if debug:
+                if self.debug:
                     print(f'    Found attribute: {d}')
             elif self._looks_like_length(d) and 'length' not in components:
                 components['length'] = d
-                if debug:
+                if self.debug:
                     print(f'    Found length: {d}')
             else:
                 if 'other' not in components:
                     components['other'] = []
-                if debug:
+                if self.debug:
                     print(f'    Found other: {d}')
                 components['other'].append(d)
 
@@ -420,29 +420,40 @@ class RulesMatcher:
 
         return matches
 
-    def match_lumber_item(self, item: ScannedItem, database_name: str=None, debug: bool = False) -> List[PartMatch]:
+    def match_lumber_item(self, item: ScannedItem, database_name: str=None, use_original=False) -> List[PartMatch]:
         """Specialized matching for lumber database format"""
+        item_desc = item.description
+        if use_original:
+            # try using the original text
+            otext = item.original_text.strip()
+
+            # strip off quantity
+            if otext.startswith(str(item.quantity) + " "):
+                otext = otext[len(str(item.quantity))+1:]
+
+            item_desc = otext
+
         if database_name is None:
             matches = []
             for db in sorted(self.databases):
-                matches += self.match_lumber_item(item, db, debug)
+                matches += self.match_lumber_item(item, db)
             return matches
-        if debug:
-            print(f"\nDEBUG: Lumber-specific matching for '{item.description}' in {database_name}")
+        if self.debug:
+            print(f"\nDEBUG: Lumber-specific matching for '{item_desc}' in {database_name}")
 
         database = self.databases[database_name]
         parts = []
         headers = database['headers']
 
         # Parse the scanned item to extract lumber components
-        item_components = self._parse_lumber_item(item.description, debug)
-        if debug:
-            print(f"  Parsed item components: {item.description} -> {item_components}")
+        item_components = self._parse_lumber_item(item_desc)
+        if self.debug:
+            print(f"  Parsed item components: {item_desc} -> {item_components}")
 
         if self.debug_item == self.current_item and self.debug_part is None:
-            print(f"  Parsed item components: {item.description} -> {item_components}")
+            print(f"  Parsed item components: {item_desc} -> {item_components}")
             pdb.set_trace()     # debug the processing of this item.
-            self._parse_lumber_item(item.description, True)
+            self._parse_lumber_item(item_desc)
 
         if "attrs" in item_components:
             # I would really expect only one attribute.
@@ -459,7 +470,7 @@ class RulesMatcher:
                 parts = self.dim_parts
             else:
                 # try to match SKU-only parts
-                matches = self.try_sku_match(item.description, self.sku_parts)
+                matches = self.try_sku_match(item_desc, self.sku_parts)
                 if len(matches) > 0:
                     return self.sort_matches(item, matches)
 
@@ -468,29 +479,29 @@ class RulesMatcher:
         matches = []
         confidence_scores = []
         for idx,part in enumerate(parts):
-            item_number = part.get('Item Number', '').strip()
-            item_desc = part.get('Item Description', '').strip()
+            part_number = part.get('Item Number', '').strip()
+            part_desc = part.get('Item Description', '').strip()
             stocking_multiple = part.get('Stocking Multiple', '').strip()
             attr = part.get('attr')
 
-            if not item_number or not item_desc:
+            if not part_number or not part_desc:
                 continue
 
             # Parse the database entry
             if 'components' in part:
                 db_components = part['components']
             else:
-                db_components = self._parse_lumber_item(item_desc, debug)
+                db_components = self._parse_lumber_item(part_desc)
                 part['components'] = db_components
 
             if (self.debug_item == self.current_item and self.debug_part and
-                self.debug_part.lower() == item_number.lower()):
+                self.debug_part.lower() == part_number.lower()):
                 print(f"item_components={item_components}")
                 print(f"db_components={db_components}")
                 pdb.set_trace()
 
             # Calculate match score
-            match_score = self._calculate_lumber_match_score(item_components, db_components, item_number)
+            match_score = self._calculate_lumber_match_score(item_components, db_components, part_number)
 
             # match cases where we are selling by linear feet instead of each item
             length = ""
@@ -503,30 +514,42 @@ class RulesMatcher:
                     del newic['length']
                     if 'length' in db_components:
                         del db_components['length']   # this shouldn't happen
-                    new_score = self._calculate_lumber_match_score(newic, db_components, item_number)
+                    new_score = self._calculate_lumber_match_score(newic, db_components, part_number)
                 elif 'dimensions' in item_components:
                     dims = newic.get('dimensions')
                     lastx = dims.rfind('x')
                     if lastx > 0 and lastx < len(dims)-1:
                         new_length = dims[lastx+1:]
                         newic['dimensions'] = dims[:lastx]
-                        new_score = self._calculate_lumber_match_score(newic, db_components, item_number)
+                        new_score = self._calculate_lumber_match_score(newic, db_components, part_number)
 
                 if new_score > match_score:
                     match_score = new_score
                     length = new_length
 
             if match_score > 0.58:  # Threshold for considering it a match
-                self.add_match(matches, item.description, part, match_score, length)
-                if debug:
-                    print(f"    MATCH: {item_number} -> {item_desc} (score: {match_score:.2f})")
-            
-        if debug:
+                self.add_match(matches, item_desc, part, match_score, length)
+                if self.debug:
+                    print(f"    MATCH: {part_number} -> {part_desc} (score: {match_score:.2f})")
+
+        matches = self.sort_matches(item, matches)
+        if self.debug:
             print(f"  Found {len(sorted_matches)} matches")
+        
+        if False: # not use_original:
+            # see if we get a better answer with the original text
+            new_matches = self.match_lumber_item(item, database_name, True)
+            if len(matches) == 0 or (len(new_matches) > 0 and matches[0].score <= new_matches[0].score):
+                matches = new_matches
 
-        return self.sort_matches(item, matches)
+        # if we are doing variable length, set the quantity to the length
+        if len(matches) > 0 and matches[0].lf != "":
+            item.quantity = matches[0].lf
+            matches[0].lf = ""
 
-    def sort_matches(self, item, matches, n=5, debug=False):
+        return matches
+
+    def sort_matches(self, item, matches, n=5):
         # Sort by match score (highest first)
         # Use a stable sort that handles ties by using the index as a secondary key
         # Prefer precut to variable length
@@ -538,65 +561,12 @@ class RulesMatcher:
                n = i
                break
 
-        # if we are doing variable length, set the quantity to the length
-        if len(sorted_matches) > 0 and sorted_matches[0].lf != "":
-            item.quantity = sorted_matches[0].lf
-
         return sorted_matches[:n]  # Return top matches
 
 
-    def _parse_database_entry(self, item_desc: str, customer_terms: str, debug: bool = False) -> dict:
-        """Parse a database entry into components"""
-        desc = item_desc.lower().strip()
-        terms = customer_terms.lower().strip()
-        components = {}
-        
-        if debug:
-            print(f"    Parsing DB entry: '{item_desc}' | Terms: '{customer_terms}'")
-        
-        # Extract dimensions from database format: "2X4", "3 1/2  X  3 1/2", etc.
-        dim_match = re.search(r'(\d+(?:\s*1/2)?)\s*x\s*(\d+(?:\s*1/2)?)', desc)
-        if dim_match:
-            width = dim_match.group(1).replace(' ', '')
-            height = dim_match.group(2).replace(' ', '')
-            components['dimensions'] = f"{width}x{height}"
-        
-        # Extract length
-        length_match = re.search(r'\b(\d+)\s+(?!x|1/2)', desc)  # Number not followed by x or 1/2
-        if length_match:
-            components['length'] = length_match.group(1)
-        
-        # Material identification
-        if 'poc' in desc:
-            components['material'] = 'poc'
-        elif 'cedar' in desc or 'wrc' in desc or 'cdr' in desc:
-            components['material'] = 'cedar'
-        elif 'spf' in desc or 'pine' in desc:
-            components['material'] = 'pine'
-        elif 'df' in desc:
-            components['material'] = 'fir'
-        
-        # Product type from terms and description
-        if 'glu lam' in terms or 'glulam' in desc or 'glu lam' in desc:
-            components['type'] = 'glulam'
-        elif 'post' in desc:
-            components['type'] = 'post'
-        elif 'advantage' in terms or 'adv' in terms or 'advantage' in desc:
-            components['type'] = 'advantage'
-        elif 'fascia' in terms:
-            components['type'] = 'fascia'
-        elif 'boral' in desc or 'bor' in terms:
-            components['type'] = 'boral'
-        
-        # Treatment indicators
-        if 'trtd' in desc or 'treated' in desc:
-            components['treatment'] = 'pt'
-        
-        return components
-
-    def match_general_item(self, item: ScannedItem, database_name: str, debug: bool = False) -> List[PartMatch]:
+    def match_general_item(self, item: ScannedItem, database_name: str) -> List[PartMatch]:
         """General matching for non-lumber items (hardware, screws, etc.)"""
-        if debug:
+        if self.debug:
             print(f"  Using general matching for non-lumber item")
 
         database = self.databases[database_name]
@@ -646,7 +616,7 @@ class RulesMatcher:
                     )
                     matches.append(match)
 
-                    if debug:
+                    if self.debug:
                         print(f"    General match: {item_number} -> {item_desc} (overlap: {overlap_ratio:.2f})")
 
         # Sort by overlap ratio (stored in description for now)
@@ -654,7 +624,7 @@ class RulesMatcher:
 
         return matches[:3]
 
-    def find_all_matches(self, scanned_items, debug: bool = False, output_dir: str = ".") -> None:
+    def find_all_matches(self, scanned_items, output_dir: str = ".") -> None:
         """Find matches using original keyword-based matching (for comparison)"""
         if os.getenv("DEBUG_ITEM"):
             di = os.getenv("DEBUG_ITEM")
@@ -663,7 +633,7 @@ class RulesMatcher:
                 di = di[:di.find(':')]
             self.debug_item = int(di)
 
-        if debug:
+        if self.debug:
             print("\n" + "="*60)
             print("SEARCHING FOR MATCHES USING KEYWORD MATCHING")
             print("(Original keyword-based approach for comparison)")
@@ -677,7 +647,7 @@ class RulesMatcher:
 
         for i, item in enumerate(scanned_items, 1):
             self.current_item = i
-            if debug:
+            if self.debug:
                 print(f"\n[{i:2d}] Searching for: {item.description}")
                 print(f"     Original: {item.original_text}")
                 print(f"     Quantity: {item.quantity}")
@@ -686,14 +656,14 @@ class RulesMatcher:
 
             all_matches = []
             for db_name in self.databases:
-                if debug:
+                if self.debug:
                     print(f"\n  Checking database: {db_name}")
 
                 # Use rules-based
-                matches = self.match_item(item, db_name, debug=debug)
+                matches = self.match_item(item, db_name)
                 all_matches.extend(matches)
 
-                if debug:
+                if self.debug:
                     print(f"    Found {len(matches)} matches in {db_name}")
                 
                 # Always write to debug log file for detailed analysis
@@ -721,7 +691,7 @@ class RulesMatcher:
 
             item.matches = unique_matches[:3]  # Keep top 3 matches
 
-            if debug:
+            if self.debug:
                 if item.matches:
                     for match in item.matches:
                         print(f"  ✓ {match.confidence.upper():8s} | {match.part_number:15s} | {match.database_description[:80]}...")
@@ -730,16 +700,16 @@ class RulesMatcher:
         
         print(f"\n✓ Detailed matching log saved to: {debug_log_file}")
 
-    def match_item(self, item: ScannedItem, database_name: str, debug: bool = False) -> List[PartMatch]:
-        if debug:
+    def match_item(self, item: ScannedItem, database_name: str) -> List[PartMatch]:
+        if self.debug:
             print(f"\nDEBUG: Keyword matching for '{item}' in {database_name}")
 
-        matches = self.match_lumber_item(item, database_name, debug)
+        matches = self.match_lumber_item(item, database_name)
         return matches
 
         if len(matches) > 0:
             return matches
 
         # Use enhanced general matching for hardware, etc.
-        return self.match_general_item(item, database_name, debug)
+        return self.match_general_item(item, database_name)
 

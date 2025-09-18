@@ -263,7 +263,7 @@ def main():
     
     # Initialize matcher
     scanner = Scanner(api_key, databases)
-    matcher = RulesMatcher(databases)
+    matcher = RulesMatcher(databases, global_debug=args.verbose_matching)
     ai_matcher = AIMatcher(api_key, databases)
     
     if databases_loaded == 0:
@@ -358,8 +358,7 @@ def main():
     scanned_items = items
     
     # Find matches using selected approach
-    matcher.find_all_matches(scanned_items, 
-                             debug=args.verbose_matching, output_dir=str(output_dir))
+    matcher.find_all_matches(scanned_items, output_dir=str(output_dir))
     if args.use_ai_matching:
         ai_matcher.find_all_matches_ai(scanned_items, 
                              debug=args.verbose_matching, output_dir=str(output_dir))
