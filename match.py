@@ -385,7 +385,9 @@ class RulesMatcher:
                 pdb.set_trace()
             scores = fuzzy_match(items, part['Item Number'])
             if len(scores) and scores[0][1] > 0.7:
-                self.add_match(matches, item_str, part, scores[0][1])
+                # add any other information that might help improve match
+                score = self._calculate_lumber_match_score(item_components, part['components']) / 10
+                self.add_match(matches, item_str, part, scores[0][1] + score)
 
         return matches
 
@@ -490,19 +492,18 @@ class RulesMatcher:
                 if debug:
                     print(f"    MATCH: {item_number} -> {item_desc} (score: {match_score:.2f})")
             
+        if debug:
+            print(f"  Found {len(sorted_matches)} matches")
+
         return self.sort_matches(item, matches)
 
-    def sort_matches(self, item, matches, debug=False):
+    def sort_matches(self, item, matches, n=5, debug=False):
         # Sort by match score (highest first)
         # Use a stable sort that handles ties by using the index as a secondary key
         # Prefer precut to variable length
         sorted_matches = sorted(matches, key=lambda m: -m.score + 0 if m.lf == "" else 0.001)
 
-        if debug:
-            print(f"  Found {len(sorted_matches)} matches")
-
-        # only return matches that are at least as good as the best score and a max of 5
-        n = 5
+        # only return matches that are at least as good as the best score and a max of N
         for i,match in enumerate(sorted_matches[:n]):
            if match.score < sorted_matches[0].score:
                n = i
