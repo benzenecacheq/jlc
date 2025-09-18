@@ -56,7 +56,7 @@ class RulesMatcher:
                     if attr not in self.attrs:
                        self.attrs[attr] = name
 
-                entry["attr"] = name
+                entry['attr'] = name
 
         # load the board parts
         self.board_parts = []
@@ -65,6 +65,8 @@ class RulesMatcher:
         for fname,database in self.databases.items():
             for entry in database["parts"]:
                 db_components = self._parse_lumber_item(entry["Item Description"])
+                if 'attrs' not in db_components:
+                    db_components['attrs'] = [entry['attr']]
                 entry['components'] = db_components
                 if 'dimensions' in db_components and 'length' in db_components:
                     self.board_parts.append(entry)
