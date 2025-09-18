@@ -28,7 +28,7 @@ class ScannedItem:
     matches: List[PartMatch]
 
 ###############################################################################
-def fuzzy_match(arg1, str2, is_dimension=False, new_algo=True):
+def fuzzy_match(arg1, arg2, is_dimension=False, new_algo=True):
     """
     Perform fuzzy matching between two strings with length-based forgiveness.
     
@@ -39,15 +39,21 @@ def fuzzy_match(arg1, str2, is_dimension=False, new_algo=True):
     Returns:
         Closeness metric where 1 is equal
     """
+    # if there is a list make it arg1; this works if arg1 is also a list
+    if type(arg2) == type([]):
+        save = arg2
+        arg2 = arg1
+        arg1 = save
     if type(arg1) == type([]):
         # if the first arg is a list, return a sorted list of matching words
         found = []
         for s in arg1:
-            score = fuzzy_match(s, str2)
+            score = fuzzy_match(arg2, s) # arg2 could also be a list
             if score > 0:
                 found.append([s,score])
         return sorted(found, key=lambda x: -x[1])
     str1 = arg1
+    str2 = arg2
 
     # Handle exact matches and very short strings
     if str1 == str2:

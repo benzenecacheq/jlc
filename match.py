@@ -27,10 +27,15 @@ class RulesMatcher:
         self.current_item = None
         self.debug_part = None
 
+        self.hardware_json = None
+        self.hardware_categories = None
+        self.hardware_terms = None
+    
         self.sku_parts = None           # parts that are in the SKU-only lookup
         self.board_parts = None         # parts that have dimensions and length
         self.dim_parts = None           # parts with dimensions but no length
-    
+        self.hardware_parts = None
+
     def _load_attrs(self):
         if self.attrs is not None:
             return
@@ -58,22 +63,39 @@ class RulesMatcher:
 
                 entry['attr'] = name
 
+        # Get the hardware description JSON
+        exe_dir = str(Path(__file__).parent)
+        fn = exe_dir + "/hardware.json"
+        if os.path.exists(fn):
+            with open(fn, "r") as file:
+                self.hardware_json = json.load(file)
+            self.hardware_categories = self.hardware_json.get('categories')
+            self.hardware_terms = self.hardware_json.get('terms')
+
+        if self.hardware_terms is None or self.hardware_categories is None:
+            print(f"Hardware JSON file is not found or not complete", file=sys.stderr)
+            exit(1)
+
         # load the board parts
         self.board_parts = []
         self.dim_parts = []
         self.sku_parts = []
+        self.hardware_parts = []
+
         for fname,database in self.databases.items():
             for entry in database["parts"]:
                 db_components = self._parse_lumber_item(entry["Item Description"])
                 if 'attrs' not in db_components:
                     db_components['attrs'] = [entry['attr']]
                 entry['components'] = db_components
-                if 'dimensions' in db_components and 'length' in db_components:
+                if 'dimensions' in db_components and ('length' in db_components or 
+                                                      entry['Stocking Multiple'] == 'LF'):
                     self.board_parts.append(entry)
                 elif 'dimensions' in db_components:
                     self.dim_parts.append(entry)
         
             self.sku_parts += self.select_parts(database["parts"], 'usuallyusethesku')
+            self.hardware_parts += self.select_parts(database["parts"], self.hardware_categories)
 
     def _looks_like_dimension(self, word, requirex=False):
         # dimensions look like 2x4 or 4x8x1/2
