@@ -84,9 +84,14 @@ class RulesMatcher:
 
     def _dimensions_match(self, word1, word2):
         # replace everythign that's not a number with a space and compare
-        word1 = " ".join(re.sub(r'[^0-9]', ' ', word1).split())
-        word2 = " ".join(re.sub(r'[^0-9]', ' ', word2).split())
-        return word1 == word2
+        newword1 = " ".join(re.sub(r'[^0-9]', ' ', word1).split())
+        newword2 = " ".join(re.sub(r'[^0-9]', ' ', word2).split())
+
+        if newword1 != newword2 and '/' in (word1+word2) and len(word1) > 4:
+            # sometimes there are issues with fractions
+            return fuzzy_match(word1, word2, is_dimension=True)
+
+        return newword1 == newword2
 
     def _looks_like_fraction(self, word):
         valid_pattern = "[0-9]* */ *[0-9]*"
@@ -106,8 +111,11 @@ class RulesMatcher:
         # strip out anything that's not a number
         if type(word1) != type('') or type(word2) != type(''):
             return False
-        return re.sub(r'[^0-9/]', '', word1) == re.sub(r'[^0-9/]', '', word2)
-        return re.sub(r'[^0-9]', '', word1) == re.sub(r'[^0-9]', '', word2)
+        ret = re.sub(r'[^0-9/]', '', word1) == re.sub(r'[^0-9/]', '', word2)
+        if not ret and '/' in (word1+word2):
+            # The scan has trouble with fractions so do a fuzzy match
+            return fuzzy_match(word1, word2, is_dimension=True)
+        return ret
 
     def _cleanup(self, description):
         # perform obvious fixing of things that look like OCR errors and other
@@ -286,7 +294,7 @@ class RulesMatcher:
 
         # some special cases:
         if len(item_components) == 1 and 'other' in item_components and 'other' in db_components:
-            # need a good match for the attributes we have
+            # All we have is 'other'
             divisor = (len(item_components['other'])*2 + len(db_components['other'])) / 3
             for i in item_components['other']:
                 skumatch = fuzzy_match(i, sku)
@@ -315,10 +323,9 @@ class RulesMatcher:
                             break
                     score += 0.05 * maxmatch * len(i)
             elif name == "dimensions" and name in item_components:
-                if self._dimensions_match(dbc, item_components[name]):
-                    score += 0.3
-            elif name == "length" and self._lengths_equal(dbc, item_components.get(name)):
-                score += 0.3
+                score += 0.3 * self._dimensions_match(dbc, item_components[name])
+            elif name == "length" and name in item_components:
+                score += 0.3 * self._lengths_equal(dbc, item_components.get(name))
             elif dbc == item_components.get(name):
                 score += 0.1
         if "length" not in item_components and "length" not in db_components:
@@ -501,7 +508,7 @@ class RulesMatcher:
         # Sort by match score (highest first)
         # Use a stable sort that handles ties by using the index as a secondary key
         # Prefer precut to variable length
-        sorted_matches = sorted(matches, key=lambda m: -m.score + 0 if m.lf == "" else 0.001)
+        sorted_matches = sorted(matches, key=lambda m: -m.score + (0 if m.lf == "" else 0.001))
 
         # only return matches that are at least as good as the best score and a max of N
         for i,match in enumerate(sorted_matches[:n]):

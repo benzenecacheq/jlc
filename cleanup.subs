@@ -1,13 +1,21 @@
-\bdt#2\b`df#2
-\b10' 1/4\b`104-1/4
-\b10'1/4\b`104-1/4
-\b16'1/4\b`116-1/4
-\b16' 1/4\b`116-1/4
 # I do a bunch of these in case there's more than one
 "`
 "`
 "`
 "`
+
+# people in a hurry don't write things so clearly sometims
+\bdt#2\b`df#2
+\bjt#2\b`df#2
+
+# certain sizes with fractions cause issues.
+\b10' 1/4\b`104-1/4
+\b10'1/4\b`104-1/4
+\b16'1/4\b`116-1/4
+\b16' 1/4\b`116-1/4
+
+# some common sizes that get chewed up
+92⅝`92-1/4
 
 # sometimes claude matches fractions
 ¼`-1/4
@@ -15,6 +23,7 @@
 ⅝`-5/8
 ½`-1/2
 ¾`-3/4
+
 
 # These are sizes that round to what we see in the customer list
 23/32`3/4

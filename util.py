@@ -28,7 +28,7 @@ class ScannedItem:
     matches: List[PartMatch]
 
 ###############################################################################
-def fuzzy_match(arg1, str2, new_algo=True):
+def fuzzy_match(arg1, str2, is_dimension=False, new_algo=True):
     """
     Perform fuzzy matching between two strings with length-based forgiveness.
     
@@ -54,7 +54,11 @@ def fuzzy_match(arg1, str2, new_algo=True):
         return 1.0
     
     # Convert to lowercase and remove non-alphanumeric for comparison
-    s1, s2 = re.sub(r'[^a-zA-Z0-9]', '', str1).lower(), re.sub(r'[^a-zA-Z0-9]', '', str2).lower()
+    if is_dimension:
+        # keep fractions
+        s1, s2 = re.sub(r'[^a-zA-Z0-9/\-]', '', str1).lower(), re.sub(r'[^a-zA-Z0-9/\-]', '', str2).lower()
+    else:
+        s1, s2 = re.sub(r'[^a-zA-Z0-9/\-]', '', str1).lower(), re.sub(r'[^a-zA-Z0-9/\-]', '', str2).lower()
     if len(s1) == 0 | len(s2) == 0:
         return 0
     
