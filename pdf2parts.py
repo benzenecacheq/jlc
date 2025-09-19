@@ -198,7 +198,7 @@ def run_matcher(document, api_key, database_names, training_data, use_ai_matchin
     databases_loaded = 0
     for db_path in database_names:
         if not os.path.exists(db_path):
-            errexit(f"Database file not found: {db_path}")
+            error_func(f"Database file not found: {db_path}")
             return None, None
         
         # Use filename as database name
@@ -208,7 +208,7 @@ def run_matcher(document, api_key, database_names, training_data, use_ai_matchin
             databases_loaded += 1
             databases[db_name] = db
         else:
-            errexit(f"Failure loading database {db_path}")
+            error_func(f"Failure loading database {db_path}")
             return None, None
     
     # Initialize matcher
@@ -217,7 +217,7 @@ def run_matcher(document, api_key, database_names, training_data, use_ai_matchin
     ai_matcher = AIMatcher(api_key, databases)
     
     if databases_loaded == 0:
-        errexit("No databases loaded")
+        error_func("No databases loaded")
         return None, None
     
     # Count tokens in loaded databases
@@ -253,13 +253,13 @@ def run_matcher(document, api_key, database_names, training_data, use_ai_matchin
         training_loaded = 0
         for training_path in training_data:
             if not os.path.exists(training_path):
-                errexit(f"Missing training file {training_path}")
+                error_func(f"Missing training file {training_path}")
                 return None, None
             
             if ai_matcher.load_training_data(training_path):
                 training_loaded += 1
             else:
-                errexit(f"Failure loading training file {training_path}")
+                error_func(f"Failure loading training file {training_path}")
                 return None, None
         
         if training_loaded > 0:
@@ -273,7 +273,7 @@ def run_matcher(document, api_key, database_names, training_data, use_ai_matchin
     notify_func(f"Scanning document: {document}")
     scanned_items = scanner.scan_document_with_database_context(document, output_dir=str(output_dir), verbose=debug)
     if not scanned_items:
-        errexit("No items found in document")
+        error_func("No items found in document")
         return None, None
     
     # Find matches using selected approach
@@ -283,7 +283,7 @@ def run_matcher(document, api_key, database_names, training_data, use_ai_matchin
         ai_matcher.find_all_matches_ai(scanned_items, 
                              debug=debug, output_dir=str(output_dir))
 
-    notify_func(f"Matching complete. Exporting results to {str(output_dir) + "/matches.csv"}")
+    notify_func(f"Matching complete. Exporting results to {str(output_dir) + '/matches.csv'}")
     export_csv(scanned_items, str(output_dir) + "/matches.csv")
 
     return databases, scanned_items
