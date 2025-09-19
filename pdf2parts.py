@@ -185,16 +185,21 @@ def run_viewer(csv_path: str, database_path: str) -> None:
         print(f"Error running viewer: {e}")
 
 ###############################################################################
-def run_matcher(document, api_key, database_names, training_data, use_ai_matching, output_dir, debug=False):
+def errexit(error_string):
+    print(f"ERROR: {error_string}", file=sys.stderr)
+    exit(1)
+
+def run_matcher(document, api_key, database_names, training_data, use_ai_matching, output_dir, 
+                error_func=errexit, notify_func=print, debug=False):
     # Load databases from command line arguments
-    print(f"\nLoading {len(database_names)} parts database(s)...")
+    notify_func(f"\nLoading {len(database_names)} parts database(s)...")
     
     databases = {}
     databases_loaded = 0
     for db_path in database_names:
         if not os.path.exists(db_path):
-            print(f"Warning: Database file not found: {db_path}")
-            continue
+            errexit(f"Database file not found: {db_path}")
+            return None, None
         
         # Use filename as database name
         db_name = Path(db_path).stem
@@ -203,8 +208,8 @@ def run_matcher(document, api_key, database_names, training_data, use_ai_matchin
             databases_loaded += 1
             databases[db_name] = db
         else:
-            print(f"Failed to load database: {db_path}")
-            exit(1)
+            errexit(f"Failure loading database {db_path}")
+            return None, None
     
     # Initialize matcher
     scanner = Scanner(api_key, databases)
@@ -212,8 +217,8 @@ def run_matcher(document, api_key, database_names, training_data, use_ai_matchin
     ai_matcher = AIMatcher(api_key, databases)
     
     if databases_loaded == 0:
-        print("Error: No databases loaded successfully")
-        sys.exit(1)
+        errexit("No databases loaded")
+        return None, None
     
     # Count tokens in loaded databases
     if debug:
@@ -237,47 +242,49 @@ def run_matcher(document, api_key, database_names, training_data, use_ai_matchin
             db_text = "\n".join(db_entries)
             db_tokens = count_tokens(ai_matcher.client, db_text)
             total_db_tokens += db_tokens
-            print(f"  {db_name} database tokens: {db_tokens:,}")
+            notify_func(f"  {db_name} database tokens: {db_tokens:,}")
         
-        print(f"  Total database tokens: {total_db_tokens:,}")
+        notify_func(f"  Total database tokens: {total_db_tokens:,}")
     
     # Load training data if provided
     if training_data:
-        print(f"\nLoading {len(training_data)} training data file(s)...")
+        notify_func(f"\nLoading {len(training_data)} training data file(s)...")
         
         training_loaded = 0
         for training_path in training_data:
             if not os.path.exists(training_path):
-                print(f"Warning: Training file not found: {training_path}")
-                continue
+                errexit(f"Missing training file {training_path}")
+                return None, None
             
             if ai_matcher.load_training_data(training_path):
                 training_loaded += 1
             else:
-                print(f"Failed to load training data: {training_path}")
-                exit(1)
+                errexit(f"Failure loading training file {training_path}")
+                return None, None
         
         if training_loaded > 0:
             # Count tokens in training data
             training_text = ai_matcher._build_training_examples_text()
             training_tokens = count_tokens(ai_matcher.client, training_text)
-            print(f"✓ Loaded {training_loaded} training data file(s) with {len(ai_matcher.training_data)} total examples")
-            print(f"  Training data tokens: {training_tokens:,}")
+            notify_func(f"✓ Loaded {training_loaded} training data file(s) with {len(ai_matcher.training_data)} total examples")
+            notify_func(f"  Training data tokens: {training_tokens:,}")
     
     # Scan document
-    print(f"\nScanning document: {document}")
-    items = scanner.scan_document_with_database_context(document, output_dir=str(output_dir), verbose=debug)
-    if not items:
-        print("Error: No items found in document")
-        sys.exit(1)
-    scanned_items = items
+    notify_func(f"Scanning document: {document}")
+    scanned_items = scanner.scan_document_with_database_context(document, output_dir=str(output_dir), verbose=debug)
+    if not scanned_items:
+        errexit("No items found in document")
+        return None, None
     
     # Find matches using selected approach
+    notify_func(f"Matching items in document: {document}")
     matcher.find_all_matches(scanned_items, output_dir=str(output_dir))
     if use_ai_matching:
         ai_matcher.find_all_matches_ai(scanned_items, 
                              debug=debug, output_dir=str(output_dir))
-    export_csv(scanned_items, str(output_dir / "matches.csv"))
+
+    notify_func(f"Matching complete. Exporting results to {str(output_dir) + "/matches.csv"}")
+    export_csv(scanned_items, str(output_dir) + "/matches.csv")
 
     return databases, scanned_items
 
@@ -387,7 +394,7 @@ def main():
     
     # Run viewer if requested
     if args.view:
-        run_viewer(str(csv_path), args.databases[0])
+        run_viewer(output_dir / "matches.csv", args.databases[0])
 
 ###############################################################################
 if __name__ == "__main__":

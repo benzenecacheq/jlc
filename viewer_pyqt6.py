@@ -8,6 +8,9 @@ Features a table view with embedded listboxes for items with multiple SKU matche
 
 import sys
 import csv
+import os
+import subprocess
+import configparser
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from PyQt6.QtWidgets import (
@@ -15,9 +18,10 @@ from PyQt6.QtWidgets import (
     QTableWidget, QTableWidgetItem, QComboBox, QPushButton, QLabel, 
     QLineEdit, QSpinBox, QCheckBox, QHeaderView, QMessageBox, 
     QFileDialog, QStatusBar, QSplitter, QTextEdit, QFrame, QMenuBar,
-    QMenu, QToolBar, QDialog, QListWidget, QListWidgetItem
+    QMenu, QToolBar, QDialog, QListWidget, QListWidgetItem, QFormLayout,
+    QGroupBox, QScrollArea, QProgressBar
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QTimer
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QThread, QObject
 from PyQt6.QtGui import QFont, QPalette, QColor, QAction, QKeyEvent
 
 class SKUSelectionDialog(QDialog):
@@ -101,6 +105,485 @@ class SKUSelectionDialog(QDialog):
             self.accept()
         else:
             self.reject()
+
+class DocumentProcessor(QObject):
+    """Worker thread for processing documents"""
+    finished = pyqtSignal(object, object)  # Signal with databases and scanned_items
+    error = pyqtSignal(str)
+    notify = pyqtSignal(str)  # Signal for status updates
+    
+    def __init__(self, pdf_file, api_key, database_files, output_dir, processing_dialog):
+        super().__init__()
+        self.pdf_file = pdf_file
+        self.api_key = api_key
+        self.database_files = database_files
+        self.output_dir = output_dir
+        self.processing_dialog = processing_dialog
+        self.error_occurred = False
+    
+    def notify_function(self, message):
+        """Notify function that updates the processing dialog"""
+        self.notify.emit(message)
+    
+    def error_function(self, error_message):
+        """Error function that shows modal error dialog"""
+        self.error_occurred = True
+        self.error.emit(error_message)
+    
+    def run(self):
+        """Run the document processing in a separate thread"""
+        try:
+            from pdf2parts import run_matcher
+            from pathlib import Path
+            
+            # Ensure output_dir is a Path object
+            output_dir_path = Path(self.output_dir)
+            
+            # Run the matcher with notify and error functions
+            result = run_matcher(
+                document=self.pdf_file,
+                api_key=self.api_key,
+                database_names=self.database_files,
+                training_data=None,
+                use_ai_matching=False,
+                output_dir=output_dir_path,
+                debug=False,
+                notify_func=self.notify_function,
+                error_func=self.error_function
+            )
+            
+            # Check if an error occurred (run_matcher returns None, None on error)
+            if result is None or self.error_occurred:
+                return  # Error was already handled by error_function
+            
+            # Extract databases and scanned_items from the result
+            databases, scanned_items = result
+            self.finished.emit(databases, scanned_items)
+            
+        except Exception as e:
+            self.error.emit(str(e))
+
+class ProcessingDialog(QDialog):
+    """Dialog that shows processing status without OK button"""
+    
+    def __init__(self, pdf_file, api_key, database_files, output_dir, parent=None):
+        super().__init__(parent)
+        self.pdf_file = pdf_file
+        self.api_key = api_key
+        self.database_files = database_files
+        self.output_dir = output_dir
+        self.init_ui()
+        self.start_processing()
+        
+    def init_ui(self):
+        """Initialize the processing dialog UI"""
+        self.setWindowTitle("Processing Document")
+        self.setModal(True)
+        self.setFixedSize(450, 220)
+        
+        layout = QVBoxLayout(self)
+        
+        # Processing message
+        self.status_label = QLabel("Processing document...")
+        self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.status_label.setFont(QFont("Arial", 12))
+        self.status_label.setWordWrap(True)
+        self.status_label.setMaximumHeight(60)  # Allow for 3 lines max
+        layout.addWidget(self.status_label)
+        
+        # Progress bar
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 0)  # Indeterminate progress
+        layout.addWidget(self.progress_bar)
+        
+        # Details
+        details_text = f"PDF: {Path(self.pdf_file).name}\n"
+        details_text += f"Output: {Path(self.output_dir).name}\n"
+        details_text += f"Databases: {len(self.database_files)}"
+        
+        self.details_label = QLabel(details_text)
+        self.details_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.details_label.setWordWrap(True)
+        layout.addWidget(self.details_label)
+        
+        # Cancel button (optional)
+        self.cancel_btn = QPushButton("Cancel")
+        self.cancel_btn.clicked.connect(self.cancel_processing)
+        layout.addWidget(self.cancel_btn)
+        
+    def start_processing(self):
+        """Start the document processing in a separate thread"""
+        # Create worker thread
+        self.thread = QThread()
+        self.worker = DocumentProcessor(
+            self.pdf_file, self.api_key, self.database_files, self.output_dir, self
+        )
+        
+        # Move worker to thread
+        self.worker.moveToThread(self.thread)
+        
+        # Connect signals
+        self.thread.started.connect(self.worker.run)
+        self.worker.finished.connect(self.processing_finished)
+        self.worker.error.connect(self.processing_error)
+        self.worker.notify.connect(self.update_status)  # Connect notify signal
+        self.worker.finished.connect(self.thread.quit)
+        self.worker.error.connect(self.thread.quit)
+        self.thread.finished.connect(self.thread.deleteLater)
+        
+        # Start thread
+        self.thread.start()
+        
+    def cancel_processing(self):
+        """Cancel the processing"""
+        if hasattr(self, 'thread') and self.thread.isRunning():
+            self.thread.terminate()
+            self.thread.wait()
+        self.reject()
+        
+    def processing_finished(self, databases, scanned_items):
+        """Handle successful processing completion"""
+        self.status_label.setText("Processing completed successfully!")
+        self.progress_bar.setRange(0, 1)
+        self.progress_bar.setValue(1)
+        self.cancel_btn.setText("Close")
+        self.cancel_btn.clicked.disconnect()
+        self.cancel_btn.clicked.connect(self.accept)
+        
+        # Show summary dialog and close immediately after
+        self.show_summary_dialog(databases, scanned_items)
+        
+    def update_status(self, message):
+        """Update the status label with a new message"""
+        self.status_label.setText(message)
+    
+    def show_summary_dialog(self, databases, scanned_items):
+        """Show a summary dialog with processing results"""
+        # Calculate summary statistics
+        matched_items = sum(1 for item in scanned_items if item.matches)
+        total_items = len(scanned_items)
+        match_rate = (matched_items / total_items * 100) if total_items > 0 else 0
+        
+        # Create summary message
+        summary_text = f"SUMMARY:\n\n"
+        summary_text += f"Items scanned: {total_items}\n"
+        summary_text += f"Items matched: {matched_items}\n"
+        summary_text += f"Match rate: {match_rate:.1f}%\n"
+        summary_text += f"Databases searched: {len(databases)}\n"
+        summary_text += f"Output files saved to: {Path(self.output_dir).name}\n"
+        summary_text += f"  Report: report.txt\n"
+        summary_text += f"  CSV: matches.csv"
+        
+        # Show summary dialog
+        summary_dialog = QMessageBox(self)
+        summary_dialog.setWindowTitle("Processing Complete")
+        summary_dialog.setText(summary_text)
+        summary_dialog.setIcon(QMessageBox.Icon.Information)
+        summary_dialog.exec()
+        
+        # Auto-load the results
+        self.auto_load_results()
+        
+        # Close this dialog immediately after summary is closed
+        self.accept()
+    
+    def auto_load_results(self):
+        """Automatically load the generated CSV results"""
+        try:
+            # Look for the matches.csv file in the output directory
+            matches_csv = Path(self.output_dir) / "matches.csv"
+            if matches_csv.exists():
+                # Find the corresponding database file
+                # Look for *_fixed.csv files in the output directory
+                fixed_csv_files = list(Path(self.output_dir).glob("*_fixed.csv"))
+                if fixed_csv_files:
+                    database_file = fixed_csv_files[0]  # Use the first one found
+                else:
+                    # Fallback to looking for skulist_fixed.csv
+                    database_file = Path(self.output_dir) / "skulist_fixed.csv"
+                    if not database_file.exists():
+                        database_file = None
+                
+                if database_file and database_file.exists():
+                    # Load the results
+                    self.parent().csv_file = str(matches_csv)
+                    self.parent().database_file = str(database_file)
+                    self.parent().load_data()
+                    
+                    # Save the loaded results to config
+                    self.parent().save_settings()
+                    
+        except Exception as e:
+            print(f"Error auto-loading results: {e}")
+    
+    def processing_error(self, error_message):
+        """Handle processing error"""
+        self.status_label.setText("Processing failed!")
+        self.progress_bar.setRange(0, 1)
+        self.progress_bar.setValue(0)
+        self.cancel_btn.setText("Close")
+        self.cancel_btn.clicked.disconnect()
+        self.cancel_btn.clicked.connect(self.reject)
+        
+        # Show error details
+        QMessageBox.critical(self, "Processing Error", 
+                           f"Error processing document:\n\n{error_message}")
+
+class ProcessDocumentDialog(QDialog):
+    """Dialog for processing documents with PDF2Parts"""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.api_key = ""
+        self.pdf_file = ""
+        self.database_files = []
+        self.parent_gui = parent
+        self.init_ui()
+        self.load_settings()
+        
+    def init_ui(self):
+        """Initialize the dialog UI"""
+        self.setWindowTitle("Process Document")
+        self.setModal(True)
+        self.resize(600, 500)
+        
+        layout = QVBoxLayout(self)
+        
+        # API Key section
+        api_group = QGroupBox("API Configuration")
+        api_layout = QFormLayout(api_group)
+        
+        self.api_key_input = QLineEdit()
+        # Preload with environment variable
+        self.api_key_input.setText(os.getenv('ANTHROPIC_API_KEY', ''))
+        self.api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
+        api_layout.addRow("API Key:", self.api_key_input)
+        
+        layout.addWidget(api_group)
+        
+        # PDF File section
+        pdf_group = QGroupBox("Document")
+        pdf_layout = QFormLayout(pdf_group)
+        
+        pdf_file_layout = QHBoxLayout()
+        self.pdf_file_input = QLineEdit()
+        self.pdf_file_input.setReadOnly(True)
+        pdf_file_layout.addWidget(self.pdf_file_input)
+        
+        browse_pdf_btn = QPushButton("Browse...")
+        browse_pdf_btn.clicked.connect(self.browse_pdf_file)
+        pdf_file_layout.addWidget(browse_pdf_btn)
+        
+        pdf_layout.addRow("PDF File:", pdf_file_layout)
+        layout.addWidget(pdf_group)
+        
+        # Database Files section
+        db_group = QGroupBox("Part Databases")
+        db_layout = QVBoxLayout(db_group)
+        
+        # Add/Remove database files
+        db_controls_layout = QHBoxLayout()
+        add_db_btn = QPushButton("Add Database...")
+        add_db_btn.clicked.connect(self.add_database_file)
+        db_controls_layout.addWidget(add_db_btn)
+        
+        remove_db_btn = QPushButton("Remove Selected")
+        remove_db_btn.clicked.connect(self.remove_database_file)
+        db_controls_layout.addWidget(remove_db_btn)
+        
+        db_layout.addLayout(db_controls_layout)
+        
+        # Database list
+        self.database_list = QListWidget()
+        db_layout.addWidget(self.database_list)
+        
+        # Preload with skulist.csv from executable directory
+        self.load_default_database()
+        
+        layout.addWidget(db_group)
+        
+        # Buttons
+        button_layout = QHBoxLayout()
+        
+        process_btn = QPushButton("Process Document")
+        process_btn.clicked.connect(self.process_document)
+        process_btn.setDefault(True)
+        button_layout.addWidget(process_btn)
+        
+        cancel_btn = QPushButton("Cancel")
+        cancel_btn.clicked.connect(self.reject)
+        button_layout.addWidget(cancel_btn)
+        
+        layout.addLayout(button_layout)
+    
+    def load_settings(self):
+        """Load settings from parent GUI"""
+        try:
+            if not self.parent_gui:
+                return
+                
+            # Load API key
+            if hasattr(self.parent_gui, 'last_api_key') and self.parent_gui.last_api_key:
+                self.api_key_input.setText(self.parent_gui.last_api_key)
+            
+            # Load PDF directory
+            if hasattr(self.parent_gui, 'last_pdf_dir') and self.parent_gui.last_pdf_dir:
+                self.last_pdf_dir = self.parent_gui.last_pdf_dir
+            
+            # Load database directory
+            if hasattr(self.parent_gui, 'last_db_dir') and self.parent_gui.last_db_dir:
+                self.last_db_dir = self.parent_gui.last_db_dir
+            
+            # Load database files
+            if hasattr(self.parent_gui, 'last_database_files') and self.parent_gui.last_database_files:
+                for db_file in self.parent_gui.last_database_files:
+                    if db_file and os.path.exists(db_file) and db_file not in self.database_files:
+                        self.database_files.append(db_file)
+                        self.database_list.addItem(db_file)
+                            
+        except Exception as e:
+            print(f"Error loading ProcessDocument settings: {e}")
+    
+    def save_settings(self):
+        """Save settings to config file"""
+        try:
+            if not self.parent_gui:
+                return
+                
+            # Update parent GUI with current settings
+            self.parent_gui.last_api_key = self.api_key_input.text().strip()
+            # Save the directory, not the full file path
+            if hasattr(self, 'last_pdf_dir') and self.last_pdf_dir:
+                self.parent_gui.last_pdf_dir = self.last_pdf_dir
+            elif self.pdf_file_input.text().strip():
+                self.parent_gui.last_pdf_dir = str(Path(self.pdf_file_input.text().strip()).parent)
+            # Save database directory
+            if hasattr(self, 'last_db_dir') and self.last_db_dir:
+                self.parent_gui.last_db_dir = self.last_db_dir
+            self.parent_gui.last_database_files = self.database_files.copy()
+            
+            # Save to config file
+            self.parent_gui.save_settings()
+            
+        except Exception as e:
+            print(f"Error saving ProcessDocument settings: {e}")
+    
+    def closeEvent(self, event):
+        """Handle dialog close event"""
+        self.save_settings()
+        event.accept()
+        
+    def load_default_database(self):
+        """Load the default skulist.csv from the executable directory"""
+        try:
+            # Get the directory where the executable is located
+            if getattr(sys, 'frozen', False):
+                # Running as compiled executable
+                exe_dir = Path(sys.executable).parent
+            else:
+                # Running as script
+                exe_dir = Path(__file__).parent
+            
+            default_db = exe_dir / "skulist.csv"
+            if default_db.exists():
+                self.database_files.append(str(default_db))
+                self.database_list.addItem(str(default_db))
+        except Exception as e:
+            print(f"Could not load default database: {e}")
+    
+    def browse_pdf_file(self):
+        """Browse for PDF file"""
+        # Start from the last used directory if available
+        start_dir = ""
+        if hasattr(self, 'last_pdf_dir') and self.last_pdf_dir:
+            start_dir = self.last_pdf_dir
+        elif hasattr(self.parent_gui, 'last_pdf_dir') and self.parent_gui.last_pdf_dir:
+            start_dir = self.parent_gui.last_pdf_dir
+        
+        filename, _ = QFileDialog.getOpenFileName(
+            self, "Select PDF File", start_dir, "PDF Files (*.pdf);;All Files (*)"
+        )
+        if filename:
+            self.pdf_file_input.setText(filename)
+            self.pdf_file = filename
+            # Save the directory (not the full path) for next time
+            self.last_pdf_dir = str(Path(filename).parent)
+    
+    def add_database_file(self):
+        """Add a database file to the list"""
+        # Start from the last used directory if available
+        start_dir = ""
+        if hasattr(self, 'last_db_dir') and self.last_db_dir:
+            start_dir = self.last_db_dir
+        elif hasattr(self.parent_gui, 'last_db_dir') and self.parent_gui.last_db_dir:
+            start_dir = self.parent_gui.last_db_dir
+        
+        filename, _ = QFileDialog.getOpenFileName(
+            self, "Select Database File", start_dir, "CSV Files (*.csv);;All Files (*)"
+        )
+        if filename and filename not in self.database_files:
+            self.database_files.append(filename)
+            self.database_list.addItem(filename)
+            # Save the directory for next time
+            self.last_db_dir = str(Path(filename).parent)
+    
+    def remove_database_file(self):
+        """Remove selected database file from the list"""
+        current_row = self.database_list.currentRow()
+        if current_row >= 0:
+            item = self.database_list.takeItem(current_row)
+            if item:
+                filename = item.text()
+                if filename in self.database_files:
+                    self.database_files.remove(filename)
+    
+    def process_document(self):
+        """Process the document using pdf2parts.py"""
+        # Validate inputs
+        api_key = self.api_key_input.text().strip()
+        if not api_key:
+            QMessageBox.warning(self, "Missing API Key", "Please enter an API key.")
+            return
+        
+        pdf_file = self.pdf_file_input.text().strip()
+        if not pdf_file:
+            QMessageBox.warning(self, "Missing PDF File", "Please select a PDF file.")
+            return
+        
+        if not os.path.exists(pdf_file):
+            QMessageBox.warning(self, "File Not Found", f"PDF file not found: {pdf_file}")
+            return
+        
+        if not self.database_files:
+            QMessageBox.warning(self, "No Databases", "Please add at least one database file.")
+            return
+        
+        # Validate database files exist
+        for db_file in self.database_files:
+            if not os.path.exists(db_file):
+                QMessageBox.warning(self, "File Not Found", f"Database file not found: {db_file}")
+                return
+        
+        # Store values
+        self.api_key = api_key
+        self.pdf_file = pdf_file
+        
+        # Create output directory
+        pdf_path = Path(pdf_file)
+        output_dir = pdf_path.parent / f"{pdf_path.stem}_results"
+        output_dir.mkdir(exist_ok=True)
+        
+        # Save settings before processing
+        self.save_settings()
+        
+        # Close this dialog and open the processing dialog
+        self.accept()
+        
+        # Open the processing dialog
+        processing_dialog = ProcessingDialog(
+            pdf_file, api_key, self.database_files, str(output_dir), self.parent()
+        )
+        processing_dialog.exec()
 
 class FilterSpinBox(QSpinBox):
     """Custom SpinBox that only triggers filtering on specific events"""
@@ -188,7 +671,18 @@ class LumberViewerGUI(QMainWindow):
         self.filter_timer.timeout.connect(self.apply_filters)
         self.row_item_data = {}  # Store item data for each row
         self.manual_overrides = {}  # Store manual SKU selections
+        
+        # Config file path
+        self.config_file = Path.home() / ".jlc.ini"
+        
+        # Initialize settings attributes
+        self.last_api_key = ""
+        self.last_pdf_dir = ""
+        self.last_db_dir = ""
+        self.last_database_files = []
+        
         self.init_ui()
+        self.load_settings()  # Load settings after UI is initialized
         
     def init_ui(self):
         """Initialize the user interface"""
@@ -214,10 +708,82 @@ class LumberViewerGUI(QMainWindow):
         self.setStatusBar(self.status_bar)
         
         # Initial status message
-        self.status_bar.showMessage("Ready - Use File menu to load CSV data. Database will be auto-detected.")
+        self.status_bar.showMessage("Ready - Use Process Document to scan PDFs or File menu to load CSV data.")
         
         # Apply styling
         self.apply_styling()
+    
+    def save_settings(self):
+        """Save current settings to config file"""
+        try:
+            config = configparser.ConfigParser()
+            
+            # Create sections
+            config['ProcessDocument'] = {}
+            config['LastResults'] = {}
+            
+            # Save ProcessDocument settings (will be populated by ProcessDocumentDialog)
+            if hasattr(self, 'last_api_key') and self.last_api_key:
+                config['ProcessDocument']['api_key'] = self.last_api_key
+            if hasattr(self, 'last_pdf_dir') and self.last_pdf_dir:
+                config['ProcessDocument']['pdf_dir'] = self.last_pdf_dir
+            if hasattr(self, 'last_db_dir') and self.last_db_dir:
+                config['ProcessDocument']['db_dir'] = self.last_db_dir
+            if hasattr(self, 'last_database_files') and self.last_database_files:
+                config['ProcessDocument']['database_files'] = '|'.join(self.last_database_files)
+            
+            # Save LastResults settings
+            if self.csv_file:
+                config['LastResults']['csv_file'] = str(self.csv_file)
+            if self.database_file:
+                config['LastResults']['database_file'] = str(self.database_file)
+            
+            # Write to file
+            with open(self.config_file, 'w') as f:
+                config.write(f)
+                
+        except Exception as e:
+            print(f"Error saving settings: {e}")
+    
+    def load_settings(self):
+        """Load settings from config file"""
+        try:
+            if not self.config_file.exists():
+                return
+                
+            config = configparser.ConfigParser()
+            config.read(self.config_file)
+            
+            # Load ProcessDocument settings
+            if 'ProcessDocument' in config:
+                self.last_api_key = config.get('ProcessDocument', 'api_key', fallback='')
+                self.last_pdf_dir = config.get('ProcessDocument', 'pdf_dir', fallback='')
+                self.last_db_dir = config.get('ProcessDocument', 'db_dir', fallback='')
+                db_files_str = config.get('ProcessDocument', 'database_files', fallback='')
+                if db_files_str:
+                    self.last_database_files = db_files_str.split('|')
+                else:
+                    self.last_database_files = []
+                
+            
+            # Load LastResults settings
+            if 'LastResults' in config:
+                csv_file = config.get('LastResults', 'csv_file', fallback='')
+                database_file = config.get('LastResults', 'database_file', fallback='')
+                
+                if csv_file and os.path.exists(csv_file):
+                    self.csv_file = csv_file
+                    if database_file and os.path.exists(database_file):
+                        self.database_file = database_file
+                        self.load_data()
+                        
+        except Exception as e:
+            print(f"Error loading settings: {e}")
+    
+    def closeEvent(self, event):
+        """Handle application close event"""
+        self.save_settings()
+        event.accept()
         
     def delayed_apply_filters(self):
         """Apply filters with a delay to prevent crashes while typing"""
@@ -230,6 +796,15 @@ class LumberViewerGUI(QMainWindow):
         
         # File menu
         file_menu = menubar.addMenu('&File')
+        
+        # Process Document action (moved to top)
+        process_doc_action = QAction('&Process Document...', self)
+        process_doc_action.setShortcut('Ctrl+P')
+        process_doc_action.setStatusTip('Process PDF document with PDF2Parts')
+        process_doc_action.triggered.connect(self.process_document)
+        file_menu.addAction(process_doc_action)
+        
+        file_menu.addSeparator()
         
         # Load CSV action
         load_csv_action = QAction('&Load CSV Results...', self)
@@ -429,6 +1004,11 @@ class LumberViewerGUI(QMainWindow):
         if filename:
             self.database_file = filename
             self.load_data()
+    
+    def process_document(self):
+        """Open the process document dialog"""
+        dialog = ProcessDocumentDialog(self)
+        dialog.exec()
             
     def load_data(self):
         """Load data from current CSV and database files"""
@@ -459,6 +1039,9 @@ class LumberViewerGUI(QMainWindow):
             
             self.export_action.setEnabled(True)
             self.status_bar.showMessage(f"Loaded {len(self.raw_data)} rows, {len(self.grouped_data)} unique items")
+            
+            # Save the loaded files to config
+            self.save_settings()
             
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Error loading files: {str(e)}")
