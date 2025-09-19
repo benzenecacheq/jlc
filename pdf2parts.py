@@ -150,6 +150,139 @@ def export_csv(scanned_items, output_file: str = "lumber_matches.csv") -> None:
     print(f"✓ CSV export saved to: {output_file}")
 
 ###############################################################################
+def run_viewer(csv_path: str, database_path: str) -> None:
+    """
+    Run the viewer program to display results in a formatted table.
+    
+    Args:
+        csv_path: Path to the CSV file with matching results
+        database_path: Path to the first database file for the viewer
+    """
+    try:
+        # Get the path to the viewer script (same directory as this script)
+        script_dir = Path(__file__).parent
+        viewer_path = script_dir / "viewer.py"
+        
+        if not viewer_path.exists():
+            print(f"Error: Viewer script not found at {viewer_path}")
+            return
+        
+        print(f"\nRunning viewer with results...")
+        print(f"  CSV file: {csv_path}")
+        print(f"  Database: {database_path}")
+    
+        # Run the viewer program
+        result = subprocess.run([
+            sys.executable, str(viewer_path), csv_path, database_path
+        ], capture_output=False, text=True)
+        
+        if result.returncode != 0:
+            print(f"Error: Viewer program exited with code {result.returncode}")
+            
+    except FileNotFoundError:
+        print("Error: Python interpreter not found")
+    except Exception as e:
+        print(f"Error running viewer: {e}")
+
+###############################################################################
+def run_matcher(document, api_key, database_names, training_data, use_ai_matching, output_dir, debug=False):
+    # Load databases from command line arguments
+    print(f"\nLoading {len(database_names)} parts database(s)...")
+    
+    databases = {}
+    databases_loaded = 0
+    for db_path in database_names:
+        if not os.path.exists(db_path):
+            print(f"Warning: Database file not found: {db_path}")
+            continue
+        
+        # Use filename as database name
+        db_name = Path(db_path).stem
+        db = load_database(db_path, db_name, str(output_dir))
+        if db:
+            databases_loaded += 1
+            databases[db_name] = db
+        else:
+            print(f"Failed to load database: {db_path}")
+            exit(1)
+    
+    # Initialize matcher
+    scanner = Scanner(api_key, databases)
+    matcher = RulesMatcher(databases, global_debug=debug)
+    ai_matcher = AIMatcher(api_key, databases)
+    
+    if databases_loaded == 0:
+        print("Error: No databases loaded successfully")
+        sys.exit(1)
+    
+    # Count tokens in loaded databases
+    if debug:
+        total_db_tokens = 0
+        for db_name, db_info in databases.items():
+            # Build database text similar to what's used in matching
+            parts = db_info['parts']
+            headers = db_info['headers']
+            
+            db_entries = []
+            header_line = "|".join(headers)
+            db_entries.append(f"HEADERS: {header_line}")
+            
+            for part in parts:
+                row_data = []
+                for header in headers:
+                    value = part.get(header, '').strip()
+                    row_data.append(value)
+                db_entries.append("|".join(row_data))
+            
+            db_text = "\n".join(db_entries)
+            db_tokens = count_tokens(ai_matcher.client, db_text)
+            total_db_tokens += db_tokens
+            print(f"  {db_name} database tokens: {db_tokens:,}")
+        
+        print(f"  Total database tokens: {total_db_tokens:,}")
+    
+    # Load training data if provided
+    if training_data:
+        print(f"\nLoading {len(training_data)} training data file(s)...")
+        
+        training_loaded = 0
+        for training_path in training_data:
+            if not os.path.exists(training_path):
+                print(f"Warning: Training file not found: {training_path}")
+                continue
+            
+            if ai_matcher.load_training_data(training_path):
+                training_loaded += 1
+            else:
+                print(f"Failed to load training data: {training_path}")
+                exit(1)
+        
+        if training_loaded > 0:
+            # Count tokens in training data
+            training_text = ai_matcher._build_training_examples_text()
+            training_tokens = count_tokens(ai_matcher.client, training_text)
+            print(f"✓ Loaded {training_loaded} training data file(s) with {len(ai_matcher.training_data)} total examples")
+            print(f"  Training data tokens: {training_tokens:,}")
+    
+    # Scan document
+    print(f"\nScanning document: {document}")
+    items = scanner.scan_document_with_database_context(document, output_dir=str(output_dir), verbose=debug)
+    if not items:
+        print("Error: No items found in document")
+        sys.exit(1)
+    scanned_items = items
+    
+    # Find matches using selected approach
+    matcher.find_all_matches(scanned_items, output_dir=str(output_dir))
+    if use_ai_matching:
+        ai_matcher.find_all_matches_ai(scanned_items, 
+                             debug=debug, output_dir=str(output_dir))
+    export_csv(scanned_items, str(output_dir / "matches.csv"))
+
+    return databases, scanned_items
+
+###############################################################################
+
 def parse_arguments():
     """Parse command line arguments"""
     parser = argparse.ArgumentParser(
@@ -184,23 +317,12 @@ subdirectory named after the input file (e.g., 'document_results/', 'lumber_list
     parser.add_argument('--report-name', default='lumber_match_report.txt',
                        help='Name for the text report file (default: lumber_match_report.txt)')
     
-    parser.add_argument('--csv-name', default='lumber_matches.csv',
-                       help='Name for the CSV export file (default: lumber_matches.csv)')
-    
-    parser.add_argument('-q', '--quiet', action='store_true',
-                       help='Reduce output verbosity')
-    
-    parser.add_argument('--use-claude-matching', action='store_true',
-                       help='Use Claude AI for intelligent parts matching (slower but more accurate)')
-    
     parser.add_argument('--full-database', action='store_true',
                        help='Send full database to Claude for matching (use with large SKU lists)')
     
     parser.add_argument('--verbose-matching', action='store_true',
                        help='Show detailed matching debug output on console (default: save to files)')
     
-    parser.add_argument('-tm', '--test-match', action='store_true', help='Test matching function')
-
     parser.add_argument('--training-data', nargs='*', default=[],
                        help='One or more CSV files containing training data (original_text, correct_sku columns)')
     
@@ -216,9 +338,8 @@ def main():
     """Main program execution"""
     args = parse_arguments()
     
-    if not args.quiet:
-        print("LUMBER LIST SCANNER AND PARTS MATCHER")
-        print("="*50)
+    print("LUMBER LIST SCANNER AND PARTS MATCHER")
+    print("="*50)
     
     # Get API key from argument, environment, or user input
     api_key = args.api_key or os.getenv('ANTHROPIC_API_KEY')
@@ -237,144 +358,18 @@ def main():
     input_file_stem = Path(args.document).stem
     output_dir = Path(args.output_dir) / f"{input_file_stem}_results"
     output_dir.mkdir(parents=True, exist_ok=True)
+    print(f"Output directory: {output_dir}")
     
-    if not args.quiet:
-        print(f"Output directory: {output_dir}")
-    
-    # Load databases from command line arguments
-    print(f"\nLoading {len(args.databases)} parts database(s)...")
-    
-    databases = {}
-    databases_loaded = 0
-    for db_path in args.databases:
-        if not os.path.exists(db_path):
-            print(f"Warning: Database file not found: {db_path}")
-            continue
-        
-        # Use filename as database name
-        db_name = Path(db_path).stem
-        db = load_database(db_path, db_name, str(output_dir))
-        if db:
-            databases_loaded += 1
-            databases[db_name] = db
-        else:
-            print(f"Failed to load database: {db_path}")
-            exit(1)
-    
-    # Initialize matcher
-    scanner = Scanner(api_key, databases)
-    matcher = RulesMatcher(databases, global_debug=args.verbose_matching)
-    ai_matcher = AIMatcher(api_key, databases)
-    
-    if databases_loaded == 0:
-        print("Error: No databases loaded successfully")
-        sys.exit(1)
-    
-    # Count tokens in loaded databases
-    if not args.quiet:
-        total_db_tokens = 0
-        for db_name, db_info in databases.items():
-            # Build database text similar to what's used in matching
-            parts = db_info['parts']
-            headers = db_info['headers']
-            
-            db_entries = []
-            header_line = "|".join(headers)
-            db_entries.append(f"HEADERS: {header_line}")
-            
-            for part in parts:
-                row_data = []
-                for header in headers:
-                    value = part.get(header, '').strip()
-                    row_data.append(value)
-                db_entries.append("|".join(row_data))
-            
-            db_text = "\n".join(db_entries)
-            db_tokens = count_tokens(ai_matcher.client, db_text)
-            total_db_tokens += db_tokens
-            print(f"  {db_name} database tokens: {db_tokens:,}")
-        
-        print(f"  Total database tokens: {total_db_tokens:,}")
-    
-    # Load training data if provided
-    if args.training_data:
-        if not args.quiet:
-            print(f"\nLoading {len(args.training_data)} training data file(s)...")
-        
-        training_loaded = 0
-        for training_path in args.training_data:
-            if not os.path.exists(training_path):
-                print(f"Warning: Training file not found: {training_path}")
-                continue
-            
-            if ai_matcher.load_training_data(training_path):
-                training_loaded += 1
-            elif not args.quiet:
-                print(f"Failed to load training data: {training_path}")
-        
-        if not args.quiet and training_loaded > 0:
-            # Count tokens in training data
-            training_text = ai_matcher._build_training_examples_text()
-            training_tokens = count_tokens(ai_matcher.client, training_text)
-            print(f"✓ Loaded {training_loaded} training data file(s) with {len(ai_matcher.training_data)} total examples")
-            print(f"  Training data tokens: {training_tokens:,}")
-    
-    if args.test_match:
-        matcher._load_attributes()
-        print("Testing match_lumber_items()")
-        print("Enter strings to test (type 'exit' to quit):")
-        print("-" * 40)
-        
-        while True:
-            # Get input from user
-            user_input = input("Enter a string: ")
-            
-            # Check if user wants to exit
-            if user_input.lower() == "exit":
-                print("Exiting test function.")
-                break
-            
-            # Call cleanup function and print result
-            result = matcher.match_lumber_item(user_input)
-            if len(result) == 0:
-                print(f'No result matched "{user_input}".')
-            else:
-                print("-" * 40)
-                print(f'Original: "{user_input}"')
-                print(f'matched:')
-                for match in result:
-                   print(f' -> {match.part_number}: {match.database_description}')
+    databases, scanned_items = run_matcher(args.document, api_key, args.databases, args.training_data, 
+                                           args.use_ai_matching, output_dir, debug=args.verbose_matching)
 
-            print("-" * 40)
-
-    # Scan document
-    if not args.quiet:
-        print(f"\nScanning document: {args.document}")
-    items = scanner.scan_document_with_database_context(args.document, output_dir=str(output_dir), 
-                                                        verbose=args.verbose_matching)
-    if not items:
-        print("Error: No items found in document")
-        sys.exit(1)
-    scanned_items = items
-    
-    # Find matches using selected approach
-    matcher.find_all_matches(scanned_items, output_dir=str(output_dir))
-    if args.use_ai_matching:
-        ai_matcher.find_all_matches_ai(scanned_items, 
-                             debug=args.verbose_matching, output_dir=str(output_dir))
-    
     # Generate outputs with specified names and directory
-    if not args.quiet:
-        print("\nGenerating reports...")
+    print("\nGenerating report...")
     
     report_path = output_dir / args.report_name
-    csv_path = output_dir / args.csv_name
-    
     generate_report(databases, scanned_items, str(report_path))
-    export_csv(scanned_items, str(csv_path))
     
-    if not args.quiet:
-        print("\n✓ Processing complete!")
+    print("\n✓ Processing complete!")
     
     # Summary
     matched_items = sum(1 for item in scanned_items if item.matches)
@@ -388,49 +383,11 @@ def main():
     print(f"  Databases searched: {len(databases)}")
     print(f"  Output files saved to: {output_dir}")
     print(f"    Report: {args.report_name}")
-    print(f"    CSV: {args.csv_name}")
+    print(f"    CSV: matches.csv")
     
     # Run viewer if requested
     if args.view:
-        run_viewer(str(csv_path), args.databases[0], args.quiet)
-
-def run_viewer(csv_path: str, database_path: str, quiet: bool = False) -> None:
-    """
-    Run the viewer program to display results in a formatted table.
-    
-    Args:
-        csv_path: Path to the CSV file with matching results
-        database_path: Path to the first database file for the viewer
-        quiet: Whether to suppress output
-    """
-    try:
-        # Get the path to the viewer script (same directory as this script)
-        script_dir = Path(__file__).parent
-        viewer_path = script_dir / "viewer.py"
-        
-        if not viewer_path.exists():
-            print(f"Error: Viewer script not found at {viewer_path}")
-            return
-        
-        if not quiet:
-            print(f"\nRunning viewer with results...")
-            print(f"  CSV file: {csv_path}")
-            print(f"  Database: {database_path}")
-        
-        # Run the viewer program
-        result = subprocess.run([
-            sys.executable, str(viewer_path), csv_path, database_path
-        ], capture_output=False, text=True)
-        
-        if result.returncode != 0:
-            print(f"Error: Viewer program exited with code {result.returncode}")
-        elif not quiet:
-            print("✓ Viewer completed successfully")
-            
-    except FileNotFoundError:
-        print("Error: Python interpreter not found")
-    except Exception as e:
-        print(f"Error running viewer: {e}")
+        run_viewer(str(csv_path), args.databases[0])
 
 ###############################################################################
 if __name__ == "__main__":
