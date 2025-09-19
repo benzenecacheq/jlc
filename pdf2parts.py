@@ -30,17 +30,6 @@ from match import RulesMatcher
 from aimatch import AIMatcher
 
 ###############################################################################
-# PDF processing imports
-try:
-    from pdf2image import convert_from_path
-    from PIL import Image
-    PDF_SUPPORT = True
-except ImportError:
-    PDF_SUPPORT = False
-    print("Warning: pdf2image not installed. PDF support will be disabled.")
-    print("Install with: pip install pdf2image")
-
-###############################################################################
 def load_database(csv_path: str, database_name: str, output_dir: str = None) -> bool:
     """Load a parts database from CSV file"""
     try:
@@ -99,7 +88,7 @@ def load_database(csv_path: str, database_name: str, output_dir: str = None) -> 
 ###############################################################################
 def generate_report(databases, scanned_items, output_file: str = "lumber_match_report.txt") -> None:
     """Generate a detailed report of all matches"""
-    with open(output_file, 'w') as f:
+    with open(output_file, 'w', encoding='utf-8') as f:
         f.write("LUMBER LIST MATCHING REPORT\n")
         f.write("="*60 + "\n\n")
         f.write(f"Databases searched: {', '.join(databases.keys())}\n")
@@ -127,7 +116,7 @@ def generate_report(databases, scanned_items, output_file: str = "lumber_match_r
 ###############################################################################
 def export_csv(scanned_items, output_file: str = "lumber_matches.csv") -> None:
     """Export matches to CSV for further processing"""
-    with open(output_file, 'w', newline='') as f:
+    with open(output_file, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         writer.writerow(['Item_Number', 'Quantity', 'Description', 'Original_Text', 
                        'Match_Found', 'Part_Number', 'Database', 'Database_Description', 

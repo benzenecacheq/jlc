@@ -11,12 +11,13 @@
 # - Multiple parts databases
 # - Intelligent matching with Claude AI
 ###############################################################################
+import pdb
 import os
 import sys
 import csv
 import json
 import base64
-import argparse
+import platform
 from typing import Dict, List, Tuple, Optional
 from pathlib import Path
 import anthropic
@@ -30,6 +31,16 @@ try:
     from pdf2image import convert_from_path
     from PIL import Image
     PDF_SUPPORT = True
+    if platform.system() == "Windows":
+        poppler_path = None
+        script_dir = Path(__file__).parent
+        # make sure that the poppler library is there
+        if not os.path.exists(str(script_dir) + "/poppler/Library/bin/pdftoppm.exe"):
+            print(f"Warning: poppler package not installed.  "
+                  f"Please install it in {str(script_dir / 'poppler')}")
+        else:
+            poppler_path = str(script_dir) + "/poppler/Library/bin"
+            
 except ImportError:
     PDF_SUPPORT = False
     print("Warning: pdf2image not installed. PDF support will be disabled.")
@@ -185,7 +196,12 @@ class Scanner:
             
             for attempt in range(3):  # Try up to 3 different DPI settings
                 try:
-                    images = convert_from_path(pdf_path, dpi=dpi)
+                    if platform.system() == "Windows":
+                        print(f"Calling convert_from_path({pdf_path}, dpi={dpi}, popplerpath={poppler_path})")
+                        images = convert_from_path(pdf_path, dpi=dpi, poppler_path=poppler_path)
+                    else:
+                        images = convert_from_path(pdf_path, dpi=dpi)
+                    print(f"Converted {len(images)} pages")
                     
                     for i, image in enumerate(images):
                         # Save as JPEG with compression to reduce file size

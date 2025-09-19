@@ -153,7 +153,7 @@ def do_subs(subtype, word):
             print(f"Missing substitution file {fn}", file=sys.stderr)
             exit(1)
         subs = []
-        with open(fn, "r") as f:
+        with open(fn, "r", encoding='utf-8') as f:
             for line in f:
                 if line[-1] == '\n':
                    line = line[:-1]
