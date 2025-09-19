@@ -897,11 +897,15 @@ class LumberViewerGUI(QMainWindow):
                                 writer.writerow(row_values)
                             else:
                                 # Specific match was selected - update the relevant fields
-                                export_row = self.create_export_row(item, export_columns)
-                                export_row['Part_Number'] = override['part_number']
-                                # Keep original Description field - don't override with database description
-                                export_row['Type'] = override['type']
-                                export_row['Confidence'] = override['confidence']
+                                # Create a copy of the item with the override data
+                                item_with_override = item.copy()
+                                item_with_override['part_number'] = override['part_number']
+                                item_with_override['item_description'] = override['description']
+                                item_with_override['item_type'] = override['type']
+                                item_with_override['confidence'] = override['confidence']
+                                
+                                # Pass the override data to create_export_row so it can set the correct database description
+                                export_row = self.create_export_row(item_with_override, export_columns, override)
                                 
                                 # Write the row
                                 row_values = [export_row.get(col, '') for col in export_columns]
@@ -909,13 +913,15 @@ class LumberViewerGUI(QMainWindow):
                         elif len(item['matches']) > 0:
                             # No manual override - create one row for each match
                             for match in item['matches']:
-                                # Pass the match data to create_export_row so it can set the correct database description
-                                export_row = self.create_export_row(item, export_columns, match)
-                                export_row['Part_Number'] = match['part_number']
-                                # Keep original Description field - don't override with database description
+                                # Create a copy of the item with the specific match data
+                                item_with_match = item.copy()
+                                item_with_match['part_number'] = match['part_number']
+                                item_with_match['item_description'] = match['description']
+                                item_with_match['item_type'] = match['type']
+                                item_with_match['confidence'] = match['confidence']
                                 
-                                export_row['Type'] = match['type']
-                                export_row['Confidence'] = match['confidence']
+                                # Pass the match data to create_export_row so it can set the correct database description
+                                export_row = self.create_export_row(item_with_match, export_columns, match)
                                 
                                 # Write the row
                                 row_values = [export_row.get(col, '') for col in export_columns]
@@ -956,20 +962,27 @@ class LumberViewerGUI(QMainWindow):
             export_row['Quantity'] = item.get('quantity', '')
         if 'Description' in export_columns:
             # Description should be the original CSV "Description" field (processed_text)
-            # This will be overridden later if there's a match with database description
             export_row['Description'] = item.get('processed_text', '')
         if 'Original_Text' in export_columns:
             export_row['Original_Text'] = item.get('original_text', '')
+        
+        # Set Part_Number - prioritize match_data over item data
+        part_number = None
+        if match_data and 'part_number' in match_data:
+            part_number = match_data['part_number']
+        else:
+            part_number = item.get('part_number', '')
+        
         if 'Part_Number' in export_columns:
-            export_row['Part_Number'] = item.get('part_number', '')
+            export_row['Part_Number'] = part_number
         if 'Confidence' in export_columns:
             export_row['Confidence'] = item.get('confidence', '')
         
-        # If match_data is provided, update the database description for this specific match
-        if match_data and 'Database_description' in export_columns:
-            part_number = match_data.get('part_number', '')
-            if part_number and hasattr(self, 'description_mapping') and part_number in self.description_mapping:
-                export_row['Database_description'] = self.description_mapping[part_number]
+        if 'Database_Description' in export_columns and part_number != item.get('Part_Number'):
+            # look up the raw data for the description
+            for r in self.raw_data:
+                if r.get('Item_Number') == item['Item_Number'] and r.get('Part_Number') == part_number:
+                    export_row['Database_Description'] = r.get('Database_Description')
             
         return export_row
 
