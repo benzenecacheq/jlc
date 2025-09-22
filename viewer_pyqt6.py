@@ -436,8 +436,12 @@ class ProcessDocumentDialog(QDialog):
             
             # Load database files
             if hasattr(self.parent_gui, 'last_database_files') and self.parent_gui.last_database_files:
+                # Clear existing entries
+                self.database_files.clear()
+                self.database_list.clear()
+                
                 for db_file in self.parent_gui.last_database_files:
-                    if db_file and os.path.exists(db_file) and db_file not in self.database_files:
+                    if db_file and os.path.exists(db_file):
                         self.database_files.append(db_file)
                         self.database_list.addItem(db_file)
                             
