@@ -307,7 +307,7 @@ subdirectory named after the input file (e.g., 'document_results/', 'lumber_list
     parser.add_argument('-k', '--api-key',
                        help='Anthropic API key (can also use ANTHROPIC_API_KEY env var)')
     
-    parser.add_argument('-o', '--output-dir', default='.',
+    parser.add_argument('-o', '--output-dir', default="",
                        help='Base directory to save output files. A subdirectory named after the input file will be created (default: current directory)')
     
     parser.add_argument('--report-name', default='lumber_match_report.txt',
@@ -352,6 +352,8 @@ def main():
     
     # Create output directory based on input file name
     input_file_stem = Path(args.document).stem
+    if args.output_dir == "":
+        args.output_dir = Path(args.document).parent
     output_dir = Path(args.output_dir) / f"{input_file_stem}_results"
     output_dir.mkdir(parents=True, exist_ok=True)
     print(f"Output directory: {output_dir}")
