@@ -36,6 +36,13 @@ class RulesMatcher:
         self.dim_parts = None           # parts with dimensions but no length
         self.hardware_parts = None
 
+        # most of the words in a description are ignored unless they match
+        # this list subtracts if they appear in only one of the descriptions
+        # this should be in a json file at some point
+        self.detractors = {"t&g" : -0.03,       # the subtrahend is multiplied by the length
+                           "durastrand" : -0.02,
+                          }
+
     def _load_attrs(self):
         if self.attrs is not None:
             return
@@ -294,7 +301,8 @@ class RulesMatcher:
             elif d in self.attrs:
                 if 'attrs' not in components:
                     components['attrs'] = []
-                components['attrs'].append(d)
+                if d not in components['attrs']:
+                    components['attrs'].append(d)
                 if self.debug:
                     print(f'    Found attribute: {d}')
             elif self._looks_like_length(d) and 'length' not in components:
@@ -332,6 +340,19 @@ class RulesMatcher:
                     score += skumatch / len(item_components['other'])
             return score
 
+        # check for keywords that are required to be in both if found in either
+        for name in set(db_components).union(item_components):
+            i = item_components.get(name) if name in item_components else []
+            d = db_components.get(name) if name in db_components else []
+            if type(i) == type([]) and type(d) == type([]):
+                ifound = fuzzy_match(sorted(self.detractors), i, threshold=0.6) if len(i) > 0 else {}
+                dfound = fuzzy_match(sorted(self.detractors), d, threshold=0.6) if len(d) > 0 else {}
+                found = set(ifound) ^ set(dfound)
+                if found:
+                    penalty = sum([self.detractors[name] * len(name) * (ifound[name] if name in ifound else dfound[name])
+                                        for name in found])
+                    score += penalty
+
         for name,dbc in db_components.items():
             if name not in item_components:
                 continue
@@ -350,12 +371,14 @@ class RulesMatcher:
                 score += 0.3 * self._lengths_equal(dbc, item_components.get(name))
             elif dbc == item_components.get(name):
                 score += 0.1
+
         if "length" not in item_components and "length" not in db_components:
             score *= 1.6
         if "dimensions" not in item_components and "dimensions" not in db_components:
             # this is probably not lumber
             score *= 1.6
 
+        '''
         if ('length' not in item_components and 'dimensions' in item_components and 'x' in item_components['dimensions']):
             # call the last dimension the length and see if you can find a better match.
             newic = copy.deepcopy(item_components)
@@ -381,7 +404,6 @@ class RulesMatcher:
             score = max(score, self._calculate_lumber_match_score(a, b, sku))
             a['dimensions'] = dims + 'x' + length
             score = max(score, self._calculate_lumber_match_score(a, b, sku))
-        '''
 
         return score
 
@@ -410,11 +432,10 @@ class RulesMatcher:
                 selected += self.select_parts(parts, c)
             return selected
 
-        # there are misspellings so use fuzzy matching
-        scores = fuzzy_match(sorted(self.attrmap), categories)
-        for cat, score in scores:
-            if score > 0.5:
-                selected += self.attrmap[cat]
+        # there can be misspellings so use fuzzy matching
+        scores = fuzzy_match(sorted(self.attrmap), categories, threshold=0.5)
+        for cat, score in scores.items():
+             selected += self.attrmap[cat]
         return selected
 
     def try_sku_match(self, item_str: str, parts_list: List[Dict]) -> List[PartMatch]:
@@ -427,11 +448,11 @@ class RulesMatcher:
                 self.debug_part.lower() == part['Item Number'].lower()):
                 print(f"items={items}")
                 pdb.set_trace()
-            scores = fuzzy_match(items, part['Item Number'])
-            if len(scores) and scores[0][1] > 0.7:
+            scores = fuzzy_match(items, part['Item Number'], threshold=0.7)
+            if len(scores):
                 # add any other information that might help improve match
                 score = self._calculate_lumber_match_score(item_components, part['components']) / 10
-                self.add_match(matches, item_str, part, scores[0][1] + score)
+                self.add_match(matches, item_str, part, max(scores.values()) + score)
 
         return matches
 

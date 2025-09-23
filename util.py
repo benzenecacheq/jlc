@@ -28,30 +28,39 @@ class ScannedItem:
     matches: List[PartMatch]
 
 ###############################################################################
-def fuzzy_match(arg1, arg2, is_dimension=False, new_algo=True):
+def fuzzy_match(arg1, arg2, is_dimension=False, threshold = 0.00001):
     """
     Perform fuzzy matching between two strings with length-based forgiveness.
-    
+   
     Args:
-        arg1 is either a list or a string
-        str1 is a string
-    
+        arg1 is either a string or list of strings
+        arg2 is either a string or list of strings
+        is_dimension tells whether the strings are supposed to be dimensions (have x in them)
+        threshold is only used if one or both of the args is a list, in which case
+                  it will only return matches at or above the threshold
+   
     Returns:
-        Closeness metric where 1 is equal
+        if two strings, returns a closeness metric where 1 is equal
+        if arg1 or arg2 is a list, returns a dict of matches >= threshold with 
+        { matching_string1 : score1, matching_string2 : score2, .. }
     """
-    # if there is a list make it arg1; this works if arg1 is also a list
+    # if there is a list make it arg1; if arg1 is also a list then we want
+    # that one to be the keys on the results, so you still want to swap them
     if type(arg2) == type([]):
-        save = arg2
-        arg2 = arg1
-        arg1 = save
+        arg1, arg2 = arg2, arg1
     if type(arg1) == type([]):
         # if the first arg is a list, return a sorted list of matching words
-        found = []
+        found = {}
         for s in arg1:
-            score = fuzzy_match(arg2, s) # arg2 could also be a list
-            if score > 0:
-                found.append([s,score])
-        return sorted(found, key=lambda x: -x[1])
+            score = fuzzy_match(arg2, s, is_dimension=is_dimension, threshold=threshold )
+            if type(score) == type({}):  # arg2 could also be a list
+                found |= score
+            elif score >= threshold:
+                found[s] = score
+
+        return found
+
+    # we only get here if there are two strings passed in
     str1 = arg1
     str2 = arg2
 
@@ -65,6 +74,7 @@ def fuzzy_match(arg1, arg2, is_dimension=False, new_algo=True):
         s1, s2 = re.sub(r'[^a-zA-Z0-9/\-]', '', str1).lower(), re.sub(r'[^a-zA-Z0-9/\-]', '', str2).lower()
     else:
         s1, s2 = re.sub(r'[^a-zA-Z0-9/\-]', '', str1).lower(), re.sub(r'[^a-zA-Z0-9/\-]', '', str2).lower()
+
     if len(s1) == 0 | len(s2) == 0:
         return 0
     
@@ -113,6 +123,7 @@ def fuzzy_match(arg1, arg2, is_dimension=False, new_algo=True):
             last_match_col[a[i-1]] = i
         
         return H[len_a, len_b]
+
     def levenshtein_distance(a, b):
         if len(a) < len(b):
             a, b = b, a
@@ -133,7 +144,7 @@ def fuzzy_match(arg1, arg2, is_dimension=False, new_algo=True):
         return previous_row[-1]
     
     # Calculate similarity ratio
-    if new_algo:
+    if True:   # New algorithm does better with transposed characters
        distance = damerau_levenshtein_distance(s1, s2)
     else:
        distance = levenshtein_distance(s1, s2)
