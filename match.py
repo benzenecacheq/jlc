@@ -101,7 +101,7 @@ class RulesMatcher:
         # dimensions look like 2x4 or 4x8x1/2
         if requirex and 'x' not in word: 
             return False
-        invalid_pattern = "[^0-9 x/-]"
+        invalid_pattern = "[^0-9 'x/-]"
         return re.search(invalid_pattern, word) is None
 
     def _dimensions_match(self, word1, word2):
@@ -356,8 +356,7 @@ class RulesMatcher:
             # this is probably not lumber
             score *= 1.6
 
-        if ("length" not in item_components and "dimensions" in item_components and 
-            'x' in item_components['dimensions']):
+        if ('length' not in item_components and 'dimensions' in item_components and 'x' in item_components['dimensions']):
             # call the last dimension the length and see if you can find a better match.
             newic = copy.deepcopy(item_components)
             i = newic['dimensions']
@@ -368,6 +367,22 @@ class RulesMatcher:
                 newscore = self._calculate_lumber_match_score(newic, db_components, sku)
                 if newscore > score:
                     return newscore
+        '''
+        # sometimes people will put the length in with the dimensions
+        if ('dimensions' in item_components and 'dimensions' in db_components and 
+            ('length' in item_components) != ('length' in db_components)):
+            a,b = (db_components, item_components) if 'length' in db_components else (item_components, db_components)
+            length = a['length']
+            dims = a['dimensions']
+
+            a = copy.deepcopy(a)
+            del a['length']
+            a['dimensions'] = length + 'x' + dims
+            score = max(score, self._calculate_lumber_match_score(a, b, sku))
+            a['dimensions'] = dims + 'x' + length
+            score = max(score, self._calculate_lumber_match_score(a, b, sku))
+        '''
+
         return score
 
     # add a found item to the list of matches
@@ -505,7 +520,7 @@ class RulesMatcher:
 
             # match cases where we are selling by linear feet instead of each item
             length = ""
-            if stocking_multiple.lower() == 'lf' and int(item.quantity) == 1:
+            if stocking_multiple.lower() == 'lf' and item.quantity == '1':
                 new_score = 0.0
                 newic = copy.deepcopy(item_components)
                 if 'length' in item_components:
