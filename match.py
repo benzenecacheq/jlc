@@ -42,6 +42,7 @@ class RulesMatcher:
         self.detractors = {"t&g" : -0.03,       # the subtrahend is multiplied by the length
                            "durastrand" : -0.02,
                           }
+        self.detractor_map = {}         # so we don't have to keep recalculating
 
     def _load_attrs(self):
         if self.attrs is not None:
@@ -318,6 +319,19 @@ class RulesMatcher:
 
         return components
 
+    def _get_detractors(self, components, threshold=0.6):
+        check = []
+        for key,words in components.items():
+            if type(words) == type([]):
+                check += words
+        key = " ".join(check)
+        detractors = self.detractor_map.get(key)
+        if detractors is not None:
+            return detractors
+        detractors = fuzzy_match(sorted(self.detractors), check, threshold=threshold) if len(check) > 0 else {}
+        self.detractor_map[key] = detractors
+        return detractors
+
     def _calculate_lumber_match_score(self, item_components: dict, db_components: dict, sku: str='') -> float:
         """Calculate how well an item matches a database entry"""
         score = 0.0
@@ -341,17 +355,14 @@ class RulesMatcher:
             return score
 
         # check for keywords that are required to be in both if found in either
-        for name in set(db_components).union(item_components):
-            i = item_components.get(name) if name in item_components else []
-            d = db_components.get(name) if name in db_components else []
-            if type(i) == type([]) and type(d) == type([]):
-                ifound = fuzzy_match(sorted(self.detractors), i, threshold=0.6) if len(i) > 0 else {}
-                dfound = fuzzy_match(sorted(self.detractors), d, threshold=0.6) if len(d) > 0 else {}
-                found = set(ifound) ^ set(dfound)
-                if found:
-                    penalty = sum([self.detractors[name] * len(name) * (ifound[name] if name in ifound else dfound[name])
-                                        for name in found])
-                    score += penalty
+        ifound = self._get_detractors(item_components)
+        dfound = self._get_detractors(db_components, threshold=0.9)     # should be no typos
+
+        found = set(ifound) ^ set(dfound)
+        if found:
+            penalty = sum([self.detractors[name] * len(name) * (ifound[name] if name in ifound else dfound[name])
+                                for name in found])
+            score += penalty
 
         for name,dbc in db_components.items():
             if name not in item_components:
