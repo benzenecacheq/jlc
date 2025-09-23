@@ -716,6 +716,17 @@ class LumberViewerGUI(QMainWindow):
         
         # Apply styling
         self.apply_styling()
+
+        self.update_window_title()
+
+    def update_window_title(self):
+        """Update window title to include CSV filename if loaded"""
+        base_title = "Lumber List Matching Results Viewer"
+        if self.csv_file:
+            csv_filename = Path(self.csv_file).name
+            self.setWindowTitle(f"Lumber list {self.csv_file}")
+        else:
+            self.setWindowTitle(base_title)
     
     def save_settings(self):
         """Save current settings to config file"""
@@ -1040,6 +1051,7 @@ class LumberViewerGUI(QMainWindow):
             self.group_data()
             self.apply_filters()
             self.update_display()
+            self.update_window_title()  # Update window title with CSV filename
             
             self.export_action.setEnabled(True)
             self.status_bar.showMessage(f"Loaded {len(self.raw_data)} rows, {len(self.grouped_data)} unique items")
