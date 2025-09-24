@@ -1,0 +1,44 @@
+{
+   "comments":[
+      "This document contains the various configuration options for the rules-based part matcher.       ",
+      "                                                                                                 ",
+      " default catgories       - this is used to provide a bonus if we don't have any 'attr' to        ",
+      "                           specify the category of an item.  This bonus will be added to         ",
+      "                           items in the default category to encourage using that when matching   ",
+      " keywords                - this is used to pick up additional items that are not in a category.  ",
+      "                           When a keyword is seen in the item_components, all partslist items    ",
+      "                           containing that keyword will be added to the potential match list.    ",
+      " detractors              - If one of these is present in one of the items being matched but not  ",
+      "                           in the other, subtract the value times the length of the detractor.   ",
+   ""],
+   "default categories":{
+      "df" : 0.1
+   },
+   "keywords":[
+      "durastrand" 
+   ],
+   "detractors":{
+      "t&g" : -0.03,
+      "durastrand" : -0.02
+   },
+
+   "hardware categories":[
+      "Edge",
+      "Feeney",
+      "Fortress",
+      "FoundationBolts",
+      "Flashing",
+      "Fortress",
+      "HexNuts",
+      "Nails",
+      "Screws",
+      "end-of-list" 
+   ],
+   "hardware terms":[
+      "Box", "Boxes",
+      "Screw", "Screws",
+      "Hex", "Nut", "Nuts", "Bolt", "Bolts", "Washers",
+      "Anchor",
+      "end-of-list" 
+   ]
+}

@@ -20,6 +20,7 @@ import re
 class RulesMatcher:
     def __init__(self, databases, global_debug=False):
         self.debug = global_debug
+        self.settings = None            # these get loaded from matcher.json
 
         self.databases = databases
         self.attrs = None
@@ -27,26 +28,57 @@ class RulesMatcher:
         self.debug_item = None
         self.current_item = None
         self.debug_part = None
-        self.hardware_json = None
+
+        self.default_categories = None  # Encourage this category if none is otherwise present
+
+        # Idenfity things that are more likely hardware than lumber
         self.hardware_categories = None
         self.hardware_terms = None
     
+        self.default_categories = None  # if no category, assume these
+
+        # most of the words in the description are ignored unless the match
+        # below are some exceptions.
+        self.keywords = None            # these are parts that contain certain keywords
+                                        # loaded from the settings
+        self.detractors = None          # penalize some words if they appear in only one
+                                        # of the items being matched
+        self.detractor_map = {}         # so we don't have to keep recalculating
+
         self.sku_parts = None           # parts that are in the SKU-only lookup
         self.board_parts = None         # parts that have dimensions and length
         self.dim_parts = None           # parts with dimensions but no length
         self.hardware_parts = None
+        self.keyword_parts = None
 
-        # most of the words in a description are ignored unless they match
-        # this list subtracts if they appear in only one of the descriptions
-        # this should be in a json file at some point
-        self.detractors = {"t&g" : -0.03,       # the subtrahend is multiplied by the length
-                           "durastrand" : -0.02,
-                          }
-        self.detractor_map = {}         # so we don't have to keep recalculating
+    def get_setting(self, key):
+        if key not in self.settings:
+            raise Exception(f"Error in matcher.json: Missing setting for '{key}'")
+        return self.settings[key]
 
     def _load_attrs(self):
-        if self.attrs is not None:
+        if self.settings is not None:
             return
+
+        # load the global settings from the file
+        exe_dir = str(Path(__file__).parent)
+        fn = exe_dir + "/matcher.json"
+        try:
+            with open(fn, "r") as file:
+                self.settings = json.load(file)
+        except Exception as e:
+            print(f"Error loading global settings from {fn}: {e}")
+            raise e
+
+        # Load misc items from settings json
+        self.default_categories = self.get_setting("default categories")
+        self.keywords = self.get_setting("keywords")
+        self.detractors = self.get_setting("detractors")
+
+        # Get the hardware characteristics
+        self.hardware_categories = self.get_setting('hardware categories')
+        self.hardware_terms = self.get_setting('hardware terms')
+
         # load attributes from the database.  Map the attribute to the first value and the entry
         # in the database
         self.attrs = {}    # map alternative attribute names
@@ -71,40 +103,38 @@ class RulesMatcher:
 
                 entry['attr'] = name
 
-        # Get the hardware description JSON
-        exe_dir = str(Path(__file__).parent)
-        fn = exe_dir + "/hardware.json"
-        if os.path.exists(fn):
-            with open(fn, "r") as file:
-                self.hardware_json = json.load(file)
-            self.hardware_categories = self.hardware_json.get('categories')
-            self.hardware_terms = self.hardware_json.get('terms')
-
-        if self.hardware_terms is None or self.hardware_categories is None:
-            print(f"Hardware JSON file is not found or not complete", file=sys.stderr)
-            exit(1)
-
         # load the board parts
         self.board_parts = []
         self.dim_parts = []
         self.sku_parts = []
         self.hardware_parts = []
+        self.keyword_parts = {k:[] for k in self.keywords}
 
         for fname,database in self.databases.items():
             for entry in database["parts"]:
                 db_components = self._parse_lumber_item(entry["Item Description"])
+                entry['components'] = db_components
                 if 'attrs' not in db_components:
                     db_components['attrs'] = [entry['attr']]
-                entry['components'] = db_components
                 if 'dimensions' in db_components and ('length' in db_components or 
-                                                      entry['Stocking Multiple'] == 'LF'):
+                                                      entry['Stocking Multiple'].lower() == 'lf'):
                     self.board_parts.append(entry)
                 elif 'dimensions' in db_components:
                     self.dim_parts.append(entry)
-        
+                
+                keywords = self._has_keyword(db_components, threshold=0.9)
+                for k in keywords:
+                    self.keyword_parts[k].append(entry)
+
             self.sku_parts += self.select_parts(database["parts"], 'usuallyusethesku')
             self.hardware_parts += self.select_parts(database["parts"], self.hardware_categories)
 
+    def _has_keyword(self, components, threshold = 0.7):
+        # keyword can be a list or a single item
+        items = ((components["attrs"] if 'attrs' in components else []) +
+                 (components["other"] if 'other' in components else []))
+        return fuzzy_match(self.keywords, items, threshold=threshold)
+       
     def _looks_like_dimension(self, word, requirex=False):
         # dimensions look like 2x4 or 4x8x1/2
         if requirex and 'x' not in word: 
@@ -376,6 +406,12 @@ class RulesMatcher:
                             maxmatch = 1.0
                             break
                     score += 0.05 * maxmatch * len(i)
+            elif name == "attrs":
+                # the item doesn't have a category.  See if we want to assume one
+                for d in dbc:
+                    if d in self.default_categories:
+                        pdb.set_trace()
+                        score += self.default_categories[d]
             elif name == "dimensions" and name in item_components:
                 score += 0.3 * self._dimensions_match(dbc, item_components[name])
             elif name == "length" and name in item_components:
@@ -435,6 +471,12 @@ class RulesMatcher:
             confidence=str(score)
         )
         matches.append(match)
+
+    def _unique_parts(self, parts):
+        # remove duplicate parts from the list using the part number as key to a dict
+        map = {d["Item Number"]: d for d in parts}
+        
+        return sorted(map.values(), key=lambda item: item["Item Description"])
 
     def select_parts(self, parts, categories):
         selected = []
@@ -503,25 +545,40 @@ class RulesMatcher:
             self._parse_lumber_item(item_desc)
 
         if "attrs" in item_components:
-            # I would really expect only one attribute.
+            # I would really expect only one attribute, but sometimes in the part list
+            # attributes will be subsets of others, so I need to aggregate
             for attr in item_components["attrs"]:
-                parts += self.attrmap[attr]
+                for cat,partlist in self.attrmap.items():
+                    if fuzzy_match(attr,cat) > 0.6 or attr in cat:
+                        parts += partlist
 
         # If we don't have a category for the item, special treatment applies
         if len(parts) == 0:
-            if 'dimensions' in item_components and 'length' in item_components:
+            if False: # 'other' in item_components and fuzzy_match(self.hardware_terms, item_components['other'], threshold=0.6):
+                parts = self.hardware_parts
+                matches = self.try_sku_match(item_desc, parts)
+                if len(matches) > 0:
+                    return self.sort_matches(item, matches)
+            elif 'dimensions' in item_components and 'length' in item_components:
                 # if there are dimensions and length, it's probably a board
                 parts = self.board_parts
             elif 'dimensions' in item_components:
                 # if there are dimensions and length, it's probably a board
                 parts = self.dim_parts
             else:
-                # try to match SKU-only parts
-                matches = self.try_sku_match(item_desc, self.sku_parts)
+                # I no longer have a SKU-only list so try the whole database
+                matches = self.try_sku_match(item_desc, database['parts'])
                 if len(matches) > 0:
                     return self.sort_matches(item, matches)
 
             #parts = database['parts']
+        
+        # add any keyword parts to the list
+        keywords = self._has_keyword(item_components)
+        if keywords:
+            for k in keywords:
+                parts += self.keyword_parts[k]
+            parts = self._unique_parts(parts)
 
         matches = []
         confidence_scores = []
@@ -592,6 +649,7 @@ class RulesMatcher:
         # if we are doing variable length, set the quantity to the length
         if len(matches) > 0 and matches[0].lf != "":
             item.quantity = matches[0].lf
+            item.quantity = re.sub(r'[^0-9/\.\-]', '', matches[0].lf)
             matches[0].lf = ""
 
         return matches
