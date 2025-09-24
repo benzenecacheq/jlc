@@ -846,6 +846,15 @@ class LumberViewerGUI(QMainWindow):
         self.export_action = export_action  # Store reference for enabling/disabling
         file_menu.addAction(export_action)
         
+        # Export to POS System action
+        export_pos_action = QAction('Export to &POS System...', self)
+        export_pos_action.setShortcut('Ctrl+R')
+        export_pos_action.setStatusTip('Export to POS System format (SKU, Qty, Linear Feet)')
+        export_pos_action.triggered.connect(self.export_to_pos_system)
+        export_pos_action.setEnabled(False)
+        self.export_pos_action = export_pos_action  # Store reference for enabling/disabling
+        file_menu.addAction(export_pos_action)
+        
         file_menu.addSeparator()
         
         # Exit action
@@ -1043,8 +1052,13 @@ class LumberViewerGUI(QMainWindow):
             return
         
         try:
+            # Clear previous data and overrides when loading new files
+            self.manual_overrides.clear()
+            self.row_item_data.clear()
+            self.sku_comboboxes.clear()
+            
             # Load database
-            self.description_mapping, self.type_mapping = self.load_database(self.database_file)
+            self.description_mapping, self.type_mapping, self.stocking_multiple_mapping = self.load_database(self.database_file)
             
             # Load and process CSV
             self.raw_data = self.process_csv_file(self.csv_file, self.description_mapping, self.type_mapping)
@@ -1054,6 +1068,7 @@ class LumberViewerGUI(QMainWindow):
             self.update_window_title()  # Update window title with CSV filename
             
             self.export_action.setEnabled(True)
+            self.export_pos_action.setEnabled(True)
             self.status_bar.showMessage(f"Loaded {len(self.raw_data)} rows, {len(self.grouped_data)} unique items")
             
             # Save the loaded files to config
@@ -1062,16 +1077,18 @@ class LumberViewerGUI(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Error loading files: {str(e)}")
             
-    def load_database(self, database_file: str) -> Tuple[Dict[str, str], Dict[str, str]]:
+    def load_database(self, database_file: str) -> Tuple[Dict[str, str], Dict[str, str], Dict[str, str]]:
         """Load database file and create mappings"""
         part_to_description = {}
         part_to_type = {}
+        part_to_stocking_multiple = {}
         
         with open(database_file, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
                 part_number = row.get('Item Number', '').strip()
                 description = row.get('Item Description', '').strip()
+                stocking_multiple = row.get('Stocking Multiple', '').strip()
                 
                 # Find type column (look for "Terms" in column name)
                 item_type = ""
@@ -1083,8 +1100,9 @@ class LumberViewerGUI(QMainWindow):
                 if part_number and description:
                     part_to_description[part_number] = description
                     part_to_type[part_number] = item_type
+                    part_to_stocking_multiple[part_number] = stocking_multiple
                     
-        return part_to_description, part_to_type
+        return part_to_description, part_to_type, part_to_stocking_multiple
         
     def process_csv_file(self, csv_file: str, description_mapping: Dict[str, str], 
                         type_mapping: Dict[str, str]) -> List[Dict]:
@@ -1584,6 +1602,71 @@ class LumberViewerGUI(QMainWindow):
                     export_row['Database_Description'] = r.get('Database_Description')
             
         return export_row
+    
+    def export_to_pos_system(self):
+        """Export filtered data to POS System format (SKU, Qty, Linear Feet)"""
+        if not self.filtered_data:
+            QMessageBox.information(self, "No Data", "No data to export")
+            return
+        
+        # Generate filename based on input CSV name
+        if self.csv_file:
+            csv_path = Path(self.csv_file)
+            filename = csv_path.parent / f"{csv_path.stem}_pos.csv"
+        else:
+            filename = "pos_export.csv"
+        
+        # Ask user to confirm the filename
+        filename, _ = QFileDialog.getSaveFileName(
+            self, "Export to POS System", str(filename), "CSV Files (*.csv)"
+        )
+        
+        if filename:
+            try:
+                with open(filename, 'w', newline='', encoding='utf-8') as f:
+                    writer = csv.writer(f)
+                    
+                    # Write header
+                    writer.writerow(['SKU', 'Qty', 'Linear Feet'])
+                    
+                    for i, item in enumerate(self.filtered_data):
+                        # Check if there's a manual override for this row
+                        if i in self.manual_overrides:
+                            override = self.manual_overrides[i]
+                            if override is None:
+                                # "No matches" was selected - skip this item
+                                continue
+                            else:
+                                # Use the manual override
+                                sku = override['part_number']
+                                quantity = item.get('quantity', '')
+                                stocking_multiple = self.stocking_multiple_mapping.get(sku, '')
+                                
+                                if stocking_multiple == 'LF':
+                                    # For LF items: Qty = 1, Linear Feet = quantity
+                                    writer.writerow([sku, '1', quantity])
+                                else:
+                                    # For other items: Qty = quantity, Linear Feet = empty
+                                    writer.writerow([sku, quantity, ''])
+                        elif len(item['matches']) > 0:
+                            # No manual override - use the first match
+                            match = item['matches'][0]
+                            sku = match['part_number']
+                            quantity = item.get('quantity', '')
+                            stocking_multiple = self.stocking_multiple_mapping.get(sku, '')
+                            
+                            if stocking_multiple == 'LF':
+                                # For LF items: Qty = 1, Linear Feet = quantity
+                                writer.writerow([sku, '1', quantity])
+                            else:
+                                # For other items: Qty = quantity, Linear Feet = empty
+                                writer.writerow([sku, quantity, ''])
+                        # Skip items with no matches
+                            
+                QMessageBox.information(self, "Export Complete", f"POS data exported to {filename}")
+                
+            except Exception as e:
+                QMessageBox.critical(self, "Export Error", f"Error exporting POS data: {str(e)}")
 
 def main():
     """Main function to run the application"""
