@@ -222,6 +222,9 @@ class RulesMatcher:
                         if index == len(word)-1:
                             # just smoke the # if it's at the end of an attr
                             desc[i] = word[:-1]
+                        elif index == 0:
+                            # just smoke the leading #
+                            desc[i] = word[1:]
                         else:
                             # break into two
                             desc[i] = word[:index]
@@ -317,7 +320,6 @@ class RulesMatcher:
     def _parse_lumber_item(self, description: str) -> dict:
         if self.attrs is None:
             self._load_attrs()
-
         desc = self._cleanup(description)
         if self.debug:
             print(f"    Cleaned description: '{desc}'")
