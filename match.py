@@ -612,7 +612,7 @@ class RulesMatcher:
             # match cases where we are selling by linear feet instead of each item
             length = ""
             if stocking_multiple.lower() == 'lf' and item.quantity == '1':
-                new_score = 0.0
+                new_score = -0.01   # this should be worse than an exact matching length
                 newic = copy.deepcopy(item_components)
                 if 'length' in item_components:
                     # remove the length from the item and try again
@@ -620,14 +620,14 @@ class RulesMatcher:
                     del newic['length']
                     if 'length' in db_components:
                         del db_components['length']   # this shouldn't happen
-                    new_score = self._calculate_lumber_match_score(newic, db_components, part_number)
+                    new_score += self._calculate_lumber_match_score(newic, db_components, part_number)
                 elif 'dimensions' in item_components:
                     dims = newic.get('dimensions')
                     lastx = dims.rfind('x')
                     if lastx > 0 and lastx < len(dims)-1:
                         new_length = dims[lastx+1:]
                         newic['dimensions'] = dims[:lastx]
-                        new_score = self._calculate_lumber_match_score(newic, db_components, part_number)
+                        new_score += self._calculate_lumber_match_score(newic, db_components, part_number)
 
                 if new_score > match_score:
                     match_score = new_score
