@@ -413,6 +413,10 @@ class Scanner:
                 debug_file = Path(output_dir) / (Path(image_path).stem + "_scan_with_context_debug.txt")
                 with open(debug_file, 'w', encoding='utf-8') as f:
                     f.write("="*60 + "\n")
+                    f.write("PROMPT TEXT\n")
+                    f.write("="*60 + "\n")
+                    f.write(prompt_text)
+                    f.write("="*60 + "\n\n")
                     f.write("CLAUDE RESPONSE WITH DATABASE CONTEXT\n")
                     f.write("="*60 + "\n\n")
                     f.write(response_text)
@@ -443,7 +447,9 @@ class Scanner:
                                 break
                     json_text = response_text[start_pos:end_pos]
                 else:
-                    json_text = response_text
+                    # don't write the output to the file; this will force rescan of the page
+                    print(f"✗ Error scanning document: No items found in page!")
+                    return []
 
             if debug_output:
                 json_debug_file = Path(output_dir) / (Path(image_path).stem + "_context_extracted_json.json")
