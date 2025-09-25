@@ -1627,7 +1627,7 @@ class LumberViewerGUI(QMainWindow):
                     writer = csv.writer(f)
                     
                     # Write header
-                    writer.writerow(['SKU', 'Qty', 'Linear Feet'])
+                    # writer.writerow(['SKU', 'Qty', 'Linear Feet'])
                     
                     for i, item in enumerate(self.filtered_data):
                         # Check if there's a manual override for this row
