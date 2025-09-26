@@ -158,7 +158,7 @@ class RulesMatcher:
         return re.fullmatch(valid_pattern, word) is not None
 
     def _looks_like_length(self, word):
-        if word == "104-1/4" or word == "116-1/4":
+        if word in ["92-1/4","104-1/4","116-1/4"]:
             return True
         if word == "1" or word == "2": # these are probably a grade.
             return False
@@ -397,9 +397,8 @@ class RulesMatcher:
             score += penalty
 
         for name,dbc in db_components.items():
-            if name not in item_components:
-                continue
             if type(dbc) == type([]) and name in item_components:
+                multiplier = 0.05 if name == "attrs" else 0.03
                 for i in item_components[name]:
                     maxmatch = 0.0
                     for d in dbc:
@@ -407,18 +406,17 @@ class RulesMatcher:
                         if maxmatch > 0.8:
                             maxmatch = 1.0
                             break
-                    score += 0.05 * maxmatch * len(i)
+                    score += multiplier * maxmatch * len(i)
             elif name == "attrs":
                 # the item doesn't have a category.  See if we want to assume one
                 for d in dbc:
                     if d in self.default_categories:
-                        pdb.set_trace()
                         score += self.default_categories[d]
             elif name == "dimensions" and name in item_components:
-                score += 0.3 * self._dimensions_match(dbc, item_components[name])
+                score += 0.4 * self._dimensions_match(dbc, item_components[name])
             elif name == "length" and name in item_components:
                 score += 0.3 * self._lengths_equal(dbc, item_components.get(name))
-            elif dbc == item_components.get(name):
+            elif name in item_components and dbc == item_components.get(name):
                 score += 0.1
 
         if "length" not in item_components and "length" not in db_components:
@@ -498,6 +496,10 @@ class RulesMatcher:
         matches = []
         items = item_components['attrs'] if 'attrs' in item_components else []
         items += item_components['other'] if 'other' in item_components else []
+
+        # clean out non-alphanumeric from items in the list because skus are all alphanumeric
+        items = [re.sub(r'[^a-zA-Z0-9]', '', s) for s in items]
+
         for part in parts_list:
             if (self.debug_item == self.current_item and self.debug_part and
                 self.debug_part.lower() == part['Item Number'].lower()):
@@ -633,7 +635,7 @@ class RulesMatcher:
                     match_score = new_score
                     length = new_length
 
-            if match_score > 0.58:  # Threshold for considering it a match
+            if match_score >= 0.7:  # Threshold for considering it a match
                 self.add_match(matches, item_desc, part, match_score, length)
                 if self.debug:
                     print(f"    MATCH: {part_number} -> {part_desc} (score: {match_score:.2f})")

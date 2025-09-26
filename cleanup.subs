@@ -3,7 +3,9 @@
 
 # people in a hurry don't write things so clearly sometims
 \bdt#2\b`df#2
+\bdt #2\b`df#2
 \bjt#2\b`df#2
+\bjt #2\b`df#2
 \bd\.f\.`df
 \bp\.t\.`pt
 
@@ -16,8 +18,6 @@
 \b16'1/4\b`116-1/4
 \b16' 1/4\b`116-1/4
 11 6 1/4\b`116-1/4
-
-# some common sizes that get chewed up
 92⅝`92-1/4
 
 # sometimes claude matches fractions

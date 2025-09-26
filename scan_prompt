@@ -1,9 +1,27 @@
-Please scan this handwritten lumber/materials list and extract each item with its quantity and description.
+Please scan this handwritten or typewritten lumber/materials list and extract each item with its quantity and description.
 
 IMPORTANT PATTERN RECOGNITION:
 - If a line is missing material specifications (like "4X8 16'" instead of "4X8 PT 16'"), look at the PREVIOUS non-empty line to see what material was specified
 - Carry forward the material specification from the most recent line that had one
 - For example: if you see "4X8 DFH2 20'" followed by "4X8 16'", the second item should be interpreted as "4X8 DFH2 16'"
+- If an item has a horizontal line through it, it should be ignored
+- The most common type of lumber is douglas fir, abbreviated DF, so if you see two letters handwritten and they look like they could be DF, they probably are
+
+The following terms are commonly used:
+- DT
+- CDX
+- Advantage
+- T&G
+- ATG 
+- All Thread
+- CDX
+- LVL
+- Micro lam
+- PSL
+- Parallam
+- PT
+- TJI
+
 
 Examples of good matches:
 - Handwritten "2x12 20'" → Description: "2X12  20" (matches database format)
