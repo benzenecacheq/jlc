@@ -142,6 +142,15 @@ class RulesMatcher:
         invalid_pattern = "[^0-9 'x/-]"
         return re.search(invalid_pattern, word) is None
 
+    def _countx(self, dimensions):
+        if type(dimensions) == type(''):
+            return dimensions.count('x')
+        elif type(dimensions) == type({}) and 'dimensions' in dimensions:
+            return dimensions['dimensions'].count('x')
+        else:
+            print("Expected either a string or item_components")
+            return 0
+
     def _dimensions_match(self, word1, word2):
         # replace everythign that's not a number with a space and compare
         newword1 = " ".join(re.sub(r'[^0-9]', ' ', word1).split())
@@ -158,9 +167,11 @@ class RulesMatcher:
         return re.fullmatch(valid_pattern, word) is not None
 
     def _looks_like_length(self, word):
+        if not re.search(r'\d', word):
+            return False                # no digits
         if word in ["92-1/4","104-1/4","116-1/4"]:
             return True
-        if word == "1" or word == "2": # these are probably a grade.
+        if word == "1" or word == "2":  # these are probably a grade.
             return False
 
         return re.match(r'([\d\-/]+)(?:\s*(?:\'|ft|feet))?(?:\s|$)', word) != None
@@ -364,7 +375,7 @@ class RulesMatcher:
         self.detractor_map[key] = detractors
         return detractors
 
-    def _calculate_lumber_match_score(self, item_components: dict, db_components: dict, sku: str='') -> float:
+    def _calculate_lumber_match_score(self, item_components: dict, db_components: dict, sku: str='', sell_by_foot=False) -> float:
         """Calculate how well an item matches a database entry"""
         score = 0.0
 
@@ -425,19 +436,6 @@ class RulesMatcher:
             # this is probably not lumber
             score *= 1.6
 
-        '''
-        if ('length' not in item_components and 'dimensions' in item_components and 'x' in item_components['dimensions']):
-            # call the last dimension the length and see if you can find a better match.
-            newic = copy.deepcopy(item_components)
-            i = newic['dimensions']
-            lastx = i.rfind('x')
-            if lastx > 0 and lastx < len(i)-1:
-                newic['length'] = i[lastx+1:]
-                newic['dimensions'] = i[:lastx]
-                newscore = self._calculate_lumber_match_score(newic, db_components, sku)
-                if newscore > score:
-                    return newscore
-        '''
         # sometimes people will put the length in with the dimensions
         if ('dimensions' in item_components and 'dimensions' in db_components and 
             ('length' in item_components) != ('length' in db_components)):
@@ -450,8 +448,14 @@ class RulesMatcher:
             a['dimensions'] = length + 'x' + dims
             score = max(score, self._calculate_lumber_match_score(a, b, sku))
             a['dimensions'] = dims + 'x' + length
-            score = max(score, self._calculate_lumber_match_score(a, b, sku))
+            score = max(score, self._calculate_lumber_match_score(a, b, sku) + 0.05)  # slightly prefer this order
 
+        if 'dimensions' in item_components and 'length' in item_components and 'dimensions' in db_components:
+            # sometimes we'll see a length when it's just another number the user has put into the description
+            if self._countx(item_components) > self._countx(db_components):
+                a = copy.deepcopy(item_components)
+                del a['length']
+                score = max(score, self._calculate_lumber_match_score(a, db_components, sku))
         return score
 
     # add a found item to the list of matches
@@ -508,7 +512,7 @@ class RulesMatcher:
             scores = fuzzy_match(items, part['Item Number'], threshold=0.7)
             if len(scores):
                 # add any other information that might help improve match
-                score = self._calculate_lumber_match_score(item_components, part['components']) / 10
+                score = self._calculate_lumber_match_score(item_components, part['components'], sku="") / 10
                 self.add_match(matches, item_str, part, max(scores.values()) + score)
 
         return matches
