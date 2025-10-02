@@ -162,7 +162,9 @@ class RulesMatcher:
 
         return newword1 == newword2
 
-    def _looks_like_fraction(self, word):
+    def _looks_like_fraction(self, word, stop_at_x=True):
+        if stop_at_x and 'x' in word:
+            word = word[:word.find('x')]
         valid_pattern = "[0-9]* */ *[0-9]*"
         return re.fullmatch(valid_pattern, word) is not None
 
@@ -293,7 +295,7 @@ class RulesMatcher:
                         i -= 1
                         continue
 
-                if (word[-1].isdigit() and  self._looks_like_dimension(word)
+                if (word[-1].isdigit() and self._looks_like_dimension(word)
                     and self._looks_like_fraction(nextword)):
                     # this was something like '1 1/2' and we want to make it
                     # 1-1/2
@@ -445,17 +447,44 @@ class RulesMatcher:
 
             a = copy.deepcopy(a)
             del a['length']
+            a['dimensions'] = dims + 'x' + length  # slightly prefer this order
+            score = max(score, self._calculate_lumber_match_score(a, b, sku, sell_by_foot=sell_by_foot) + 0.05)
             a['dimensions'] = length + 'x' + dims
-            score = max(score, self._calculate_lumber_match_score(a, b, sku))
-            a['dimensions'] = dims + 'x' + length
-            score = max(score, self._calculate_lumber_match_score(a, b, sku) + 0.05)  # slightly prefer this order
+            score = max(score, self._calculate_lumber_match_score(a, b, sku, sell_by_foot=sell_by_foot))
 
         if 'dimensions' in item_components and 'length' in item_components and 'dimensions' in db_components:
             # sometimes we'll see a length when it's just another number the user has put into the description
             if self._countx(item_components) > self._countx(db_components):
                 a = copy.deepcopy(item_components)
                 del a['length']
-                score = max(score, self._calculate_lumber_match_score(a, db_components, sku))
+                score = max(score, self._calculate_lumber_match_score(a, db_components, sku, sell_by_foot=sell_by_foot))
+
+        if sell_by_foot:
+            # match cases where we are selling by linear feet instead of each item
+            length = ""
+            new_score = -0.10   # this should be worse than an exact matching length
+            acopy = copy.deepcopy(item_components)
+            if 'length' in item_components:
+                # remove the length from the item and try again
+                new_length = acopy['length']
+                del acopy['length']
+                if 'length' in db_components:
+                    del db_components['length']   # this shouldn't happen
+                new_score += self._calculate_lumber_match_score(acopy, db_components, sku=sku)
+            elif 'dimensions' in item_components:
+                dims = acopy.get('dimensions')
+                lastx = dims.rfind('x')
+                if lastx > 0 and lastx < len(dims)-1:
+                    new_length = dims[lastx+1:]
+                    acopy['dimensions'] = dims[:lastx]
+                    new_score += self._calculate_lumber_match_score(acopy, db_components, sku=sku)
+
+            if new_score > score:
+                score = new_score
+
+                # tell top level that we have a length
+                item_components["sell_by_foot"] = db_components["sell_by_foot"] = new_length
+
         return score
 
     # add a found item to the list of matches
@@ -613,31 +642,15 @@ class RulesMatcher:
                 pdb.set_trace()
 
             # Calculate match score
-            match_score = self._calculate_lumber_match_score(item_components, db_components, part_number)
-
-            # match cases where we are selling by linear feet instead of each item
+            sell_by_foot = (stocking_multiple.lower() == "lf" and item.quantity == '1')
+            match_score = self._calculate_lumber_match_score(item_components, db_components, sku=part_number,
+                                                             sell_by_foot=sell_by_foot)
             length = ""
-            if stocking_multiple.lower() == 'lf' and item.quantity == '1':
-                new_score = -0.01   # this should be worse than an exact matching length
-                newic = copy.deepcopy(item_components)
-                if 'length' in item_components:
-                    # remove the length from the item and try again
-                    new_length = newic['length']
-                    del newic['length']
-                    if 'length' in db_components:
-                        del db_components['length']   # this shouldn't happen
-                    new_score += self._calculate_lumber_match_score(newic, db_components, part_number)
-                elif 'dimensions' in item_components:
-                    dims = newic.get('dimensions')
-                    lastx = dims.rfind('x')
-                    if lastx > 0 and lastx < len(dims)-1:
-                        new_length = dims[lastx+1:]
-                        newic['dimensions'] = dims[:lastx]
-                        new_score += self._calculate_lumber_match_score(newic, db_components, part_number)
-
-                if new_score > match_score:
-                    match_score = new_score
-                    length = new_length
+            if sell_by_foot and 'sell_by_foot' in db_components:
+                length = db_components['sell_by_foot']
+                del db_components['sell_by_foot']
+                if 'sell_by_foot' in item_components:
+                    del item_components['sell_by_foot']
 
             if match_score >= 0.7:  # Threshold for considering it a match
                 self.add_match(matches, item_desc, part, match_score, length)
