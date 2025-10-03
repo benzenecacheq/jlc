@@ -95,7 +95,9 @@ def generate_report(databases, scanned_items, output_file: str = "lumber_match_r
         f.write(f"Total items scanned: {len(scanned_items)}\n\n")
         
         matched_count = sum(1 for item in scanned_items if item.matches)
-        f.write(f"Items with matches: {matched_count}/{len(scanned_items)}\n\n")
+        f.write(f"Items with matches: {matched_count}/{len(scanned_items)}\n")
+        multiple_match = sum(1 for item in scanned_items if len(item.matches) > 1)
+        f.write(f"Items with multiple matches: {multiple_match}\n\n")
         
         for i, item in enumerate(scanned_items, 1):
             f.write(f"[{i:2d}] ITEM: {item.description}\n")
@@ -371,12 +373,13 @@ def main():
     
     # Summary
     matched_items = sum(1 for item in scanned_items if item.matches)
+    multiple_match = sum(1 for item in scanned_items if len(item.matches) > 1)
     total_items = len(scanned_items)
     match_rate = (matched_items / total_items * 100) if total_items > 0 else 0
     
     print(f"\nSUMMARY:")
     print(f"  Items scanned: {total_items}")
-    print(f"  Items matched: {matched_items}")
+    print(f"  Items matched: {matched_items} ({multiple_match} with multiple matches)")
     print(f"  Match rate: {match_rate:.1f}%")
     print(f"  Databases searched: {len(databases)}")
     print(f"  Output files saved to: {output_dir}")

@@ -246,6 +246,14 @@ class RulesMatcher:
                             desc.insert(i+1, next)
                         continue    # reprocess word we just truncated
 
+            # look for - and unless it's followed by a fraction, split it
+            if '-' in word and self._looks_like_dimension(word):
+                dash = word.rfind('-')
+                if dash > 0 and dash < len(word)-1 and not self._looks_like_fraction(word[dash+1:]):
+                    desc[i] = word[:dash]
+                    desc.insert(i+1, word[dash+1:])
+                    continue
+
             # sometimes we see an H instead of a #
             if 'h' in word:
                 # this only matters if the stuff before the h is an attr and the stuff
@@ -440,7 +448,9 @@ class RulesMatcher:
             score *= 1.6
 
         # sometimes people will put the length in with the dimensions
-        if ('dimensions' in item_components and 'dimensions' in db_components and 
+        dims = item_components.get('dimensions')
+        db_dims = db_components.get('dimensions')
+        if (dims is not None and db_dims is not None and
             ('length' in item_components) != ('length' in db_components)):
             a,b = (db_components, item_components) if 'length' in db_components else (item_components, db_components)
             length = a['length']
