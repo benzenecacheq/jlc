@@ -221,6 +221,7 @@ class RulesMatcher:
                     desc[i] = word
                     desc.insert(i+1, next)
                     continue    # reprocess word we just truncated
+                word = desc[i]
 
             # look for # sign and if it's a grade maybe split the word
             if '#' in word:
