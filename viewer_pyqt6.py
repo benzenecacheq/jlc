@@ -9,6 +9,7 @@ Features a table view with embedded listboxes for items with multiple SKU matche
 import sys
 import csv
 import os
+import re
 import subprocess
 import configparser
 from pathlib import Path
@@ -1639,29 +1640,25 @@ class LumberViewerGUI(QMainWindow):
                             else:
                                 # Use the manual override
                                 sku = override['part_number']
-                                quantity = item.get('quantity', '')
-                                stocking_multiple = self.stocking_multiple_mapping.get(sku, '')
-                                
-                                if stocking_multiple == 'LF':
-                                    # For LF items: Qty = 1, Linear Feet = quantity
-                                    writer.writerow([sku, '1', quantity])
-                                else:
-                                    # For other items: Qty = quantity, Linear Feet = empty
-                                    writer.writerow([sku, quantity, ''])
                         elif len(item['matches']) > 0:
                             # No manual override - use the first match
                             match = item['matches'][0]
                             sku = match['part_number']
-                            quantity = item.get('quantity', '')
-                            stocking_multiple = self.stocking_multiple_mapping.get(sku, '')
-                            
-                            if stocking_multiple == 'LF':
-                                # For LF items: Qty = 1, Linear Feet = quantity
-                                writer.writerow([sku, '1', quantity])
-                            else:
-                                # For other items: Qty = quantity, Linear Feet = empty
-                                writer.writerow([sku, quantity, ''])
-                        # Skip items with no matches
+                        else:
+                            # Skip items with no matches
+                            continue
+
+                        quantity = item.get('quantity', '')
+                        stocking_multiple = self.stocking_multiple_mapping.get(sku, '')
+                        if ('x' in quantity) != (stocking_multiple.lower() == 'lf'):
+                            raise Exception(f"For item {i}, Quantity is '{quantity}' but "
+                                            f"stocking multiple is '{stocking_multiple}'")
+                        if 'x' in quantity:
+                            quantity,lf = quantity.split('x')
+                            lf = re.sub(r'[^0-9/\.\-]', '', lf)
+                        else:
+                            lf = ""
+                        writer.writerow([sku, quantity, lf])
                             
                 QMessageBox.information(self, "Export Complete", f"POS data exported to {filename}")
                 

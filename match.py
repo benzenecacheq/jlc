@@ -601,7 +601,7 @@ class RulesMatcher:
                 parts = self.board_parts
             elif 'dimensions' in item_components:
                 # if there are dimensions and length, it's probably a board
-                parts = self.dim_parts
+                parts = self._unique_parts(self.dim_parts + self.board_parts)
             else:
                 # I no longer have a SKU-only list so try the whole database
                 matches = self.try_sku_match(item_desc, database['parts'])
@@ -635,14 +635,15 @@ class RulesMatcher:
                 db_components = self._parse_lumber_item(part_desc)
                 part['components'] = db_components
 
+            sell_by_foot = stocking_multiple.lower() == "lf"
+            # Calculate match score
+
             if (self.debug_item == self.current_item and self.debug_part and
                 self.debug_part.lower() == part_number.lower()):
                 print(f"item_components={item_components}")
                 print(f"db_components={db_components}")
                 pdb.set_trace()
 
-            # Calculate match score
-            sell_by_foot = (stocking_multiple.lower() == "lf" and item.quantity == '1')
             match_score = self._calculate_lumber_match_score(item_components, db_components, sku=part_number,
                                                              sell_by_foot=sell_by_foot)
             length = ""
@@ -667,10 +668,9 @@ class RulesMatcher:
             if len(matches) == 0 or (len(new_matches) > 0 and matches[0].score <= new_matches[0].score):
                 matches = new_matches
 
-        # if we are doing variable length, set the quantity to the length
+        # if we are doing variable length, set the quantity to the qty x length
         if len(matches) > 0 and matches[0].lf != "":
-            item.quantity = matches[0].lf
-            item.quantity = re.sub(r'[^0-9/\.\-]', '', matches[0].lf)
+            item.quantity += "x" + re.sub(r'[^0-9/\.\-]', '', matches[0].lf) + "'"
             matches[0].lf = ""
 
         return matches
