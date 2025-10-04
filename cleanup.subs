@@ -8,6 +8,7 @@
 \bjt #2\b`df#2
 \bd\.f\.`df
 \bp\.t\.`pt
+\bdf2\b`df 2
 
 # change ft to '
 (\d+)ft\b`\1'
@@ -36,6 +37,9 @@
 
 # PT/DF confuses things
 pt/df`pt
+
+std&btr`std btr
+furring`df std btr s4s
 
 # Some plurals
 clips`clip

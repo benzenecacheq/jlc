@@ -54,7 +54,10 @@ def fuzzy_match(arg1, arg2, is_dimension=False, threshold = 0.00001):
         for s in arg1:
             score = fuzzy_match(arg2, s, is_dimension=is_dimension, threshold=threshold )
             if type(score) == type({}):  # arg2 could also be a list
-                found |= score
+                merged = found | score
+                for key in found.keys() & score.keys():
+                    merged[key] = max(found[key], score[key])
+                found = merged
             elif score >= threshold:
                 found[s] = score
 

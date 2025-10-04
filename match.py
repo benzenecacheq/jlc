@@ -51,6 +51,8 @@ class RulesMatcher:
         self.hardware_parts = None
         self.keyword_parts = None
 
+        self.sku2partmap = None
+
     def get_setting(self, key):
         if key not in self.settings:
             raise Exception(f"Error in matcher.json: Missing setting for '{key}'")
@@ -83,6 +85,7 @@ class RulesMatcher:
         # in the database
         self.attrs = {}    # map alternative attribute names
         self.attrmap = {}       # list of database entries by attribute
+        self.sku2partmap = {}
 
         for fname,database in self.databases.items():
             for entry in database["parts"]:
@@ -103,19 +106,33 @@ class RulesMatcher:
 
                 entry['attr'] = name
 
+                self.sku2partmap[entry['Item Number']] = entry
+
         # load the board parts
         self.board_parts = []
         self.dim_parts = []
         self.sku_parts = []
         self.hardware_parts = []
-        self.keyword_parts = {k:[] for k in self.keywords}
+        self.keyword_parts = {k:[] for k in self.keywords if k not in self.attrs}
 
         for fname,database in self.databases.items():
             for entry in database["parts"]:
-                db_components = self.parse_lumber_item(entry["Item Description"])
+                db_components = self.parse_lumber_item(entry["Item Description"], is_db=True)
                 entry['components'] = db_components
+                attrs = db_components.get('attrs')
+                eattr = entry['attr']
+                db_components['attrs'] = [eattr]
+                if attrs is not None and attrs != [eattr]:
+                    if eattr in attrs:
+                        attrs.remove(eattr)
+                    if 'other' not in db_components:
+                        db_components['other'] = attrs
+                    else:
+                        db_components['other'] = list(set(db_components['other'] + attrs))
                 if 'attrs' not in db_components:
                     db_components['attrs'] = [entry['attr']]
+                elif entry['attr'] not in db_components['attrs']:
+                    db_components['attrs'].append(entry['attr'])
                 if 'dimensions' in db_components and ('length' in db_components or 
                                                       entry['Stocking Multiple'].lower() == 'lf'):
                     self.board_parts.append(entry)
@@ -124,7 +141,8 @@ class RulesMatcher:
                 
                 keywords = self._has_keyword(db_components, threshold=0.9)
                 for k in keywords:
-                    self.keyword_parts[k].append(entry)
+                    if k not in self.attrs:
+                        self.keyword_parts[k].append(entry)
 
             self.sku_parts += self.select_parts(database["parts"], 'usuallyusethesku')
             self.hardware_parts += self.select_parts(database["parts"], self.hardware_categories)
@@ -133,7 +151,7 @@ class RulesMatcher:
         # keyword can be a list or a single item
         items = ((components["attrs"] if 'attrs' in components else []) +
                  (components["other"] if 'other' in components else []))
-        return fuzzy_match(self.keywords, items, threshold=threshold)
+        return fuzzy_match(sorted(self.keywords), items, threshold=threshold)
        
     def _looks_like_dimension(self, word, requirex=False):
         # dimensions look like 2x4 or 4x8x1/2
@@ -168,22 +186,24 @@ class RulesMatcher:
         valid_pattern = "[0-9]* */ *[0-9]*"
         return re.fullmatch(valid_pattern, word) is not None
 
-    def _looks_like_length(self, word):
+    def _looks_like_length(self, word, ok1and2=False):
         if not re.search(r'\d', word):
             return False                # no digits
         if word in ["92-1/4","104-1/4","116-1/4"]:
             return True
         if word == "1" or word == "2":  # these are probably a grade.
-            return False
+            return ok1and2
 
         return re.match(r'([\d\-/]+)(?:\s*(?:\'|ft|feet))?(?:\s|$)', word) != None
         return re.match(r'(\d+)(?:\s*(?:\'|ft|feet))?(?:\s|$)', word) != None
         return re.search(r'(\d+)(?:\s*(?:\'|ft|feet))?(?:\s|$)', word) != None
 
     def _lengths_equal(self, word1, word2):
-        # strip out anything that's not a number
         if type(word1) != type('') or type(word2) != type(''):
             return False
+        # remove leading zeroes
+        word1,word2 = word1.lstrip('0'), word2.lstrip('0')
+        # strip out anything that's not a number
         ret = re.sub(r'[^0-9/]', '', word1) == re.sub(r'[^0-9/]', '', word2)
         if not ret and '/' in (word1+word2):
             # The scan has trouble with fractions so do a fuzzy match
@@ -246,10 +266,16 @@ class RulesMatcher:
                             desc.insert(i+1, next)
                         continue    # reprocess word we just truncated
 
-            # look for - and unless it's followed by a fraction, split it
-            if '-' in word and self._looks_like_dimension(word):
-                dash = word.rfind('-')
-                if dash > 0 and dash < len(word)-1 and not self._looks_like_fraction(word[dash+1:]):
+            dash = word.find('-')
+            if dash > 0 and dash < len(word)-1:
+                # if either side is a useful word, split it
+                split_it = word[:dash] in self.attrs or word[dash+1:] in self.attrs
+                split_it |= word[:dash] in self.keywords or word[dash+1:] in self.keywords
+                 
+                # if it's a dimension then unless the dash is followed by a fraction, split it
+                split_it |= self._looks_like_dimension(word) and not self._looks_like_fraction(word[dash+1:])
+
+                if split_it:
                     desc[i] = word[:dash]
                     desc.insert(i+1, word[dash+1:])
                     continue
@@ -339,7 +365,7 @@ class RulesMatcher:
 
         return desc
 
-    def parse_lumber_item(self, description: str) -> dict:
+    def parse_lumber_item(self, description: str, is_db=False) -> dict:
         if self.attrs is None:
             self._load_attrs()
         desc = self._cleanup(description)
@@ -360,7 +386,7 @@ class RulesMatcher:
                     components['attrs'].append(d)
                 if self.debug:
                     print(f'    Found attribute: {d}')
-            elif self._looks_like_length(d) and 'length' not in components:
+            elif self._looks_like_length(d, ok1and2=is_db and "attrs" not in components) and 'length' not in components:
                 components['length'] = d
                 if self.debug:
                     print(f'    Found length: {d}')
@@ -369,7 +395,8 @@ class RulesMatcher:
                     components['other'] = []
                 if self.debug:
                     print(f'    Found other: {d}')
-                components['other'].append(d)
+                if d not in components['other']:
+                    components['other'].append(d)
 
         return components
 
@@ -421,14 +448,11 @@ class RulesMatcher:
         for name,dbc in db_components.items():
             if type(dbc) == type([]) and name in item_components:
                 multiplier = 0.05 if name == "attrs" else 0.03
-                for i in item_components[name]:
-                    maxmatch = 0.0
-                    for d in dbc:
-                        maxmatch = max(maxmatch, fuzzy_match(i, d))
-                        if maxmatch > 0.8:
-                            maxmatch = 1.0
-                            break
-                    score += multiplier * maxmatch * len(i)
+                matches = fuzzy_match(dbc, item_components[name], threshold=0.6)
+                for n,s in matches.items():
+                    s = 1.0 if s > 0.8 else s
+                    l = self.keywords[n] if n in self.keywords else len(n)
+                    score += s * multiplier * l
             elif name == "attrs":
                 # the item doesn't have a category.  See if we want to assume one
                 for d in dbc:
@@ -436,16 +460,19 @@ class RulesMatcher:
                         score += self.default_categories[d]
             elif name == "dimensions" and name in item_components:
                 score += 0.4 * self._dimensions_match(dbc, item_components[name])
+                if "length" not in item_components and "length" not in db_components:
+                    score += .25
             elif name == "length" and name in item_components:
                 score += 0.3 * self._lengths_equal(dbc, item_components.get(name))
             elif name in item_components and dbc == item_components.get(name):
                 score += 0.1
 
-        if "length" not in item_components and "length" not in db_components:
-            score *= 1.6
         if "dimensions" not in item_components and "dimensions" not in db_components:
             # this is probably not lumber
-            score *= 1.6
+            if "length" not in item_components and "length" not in db_components:
+                score *= 2.0
+            else:
+                score *= 1.6
 
         # sometimes people will put the length in with the dimensions
         dims = item_components.get('dimensions')
@@ -473,7 +500,7 @@ class RulesMatcher:
         if sell_by_foot:
             # match cases where we are selling by linear feet instead of each item
             length = ""
-            new_score = -0.10   # this should be worse than an exact matching length
+            new_score = -0.05   # this should be worse than an exact matching length
             acopy = copy.deepcopy(item_components)
             if 'length' in item_components:
                 # remove the length from the item and try again
@@ -625,7 +652,8 @@ class RulesMatcher:
         keywords = self._has_keyword(item_components)
         if keywords:
             for k in keywords:
-                parts += self.keyword_parts[k]
+                if k not in self.attrs:
+                    parts += self.keyword_parts[k]
             parts = self._unique_parts(parts)
 
         matches = []
@@ -649,13 +677,15 @@ class RulesMatcher:
             sell_by_foot = stocking_multiple.lower() == "lf"
             # Calculate match score
 
+            match_score = self._calculate_lumber_match_score(item_components, db_components, sku=part_number,
+                                                             sell_by_foot=sell_by_foot)
             if (self.debug_item == self.current_item and self.debug_part and
                 self.debug_part.lower() == part_number.lower()):
                 print(f"item_components={item_components}")
                 print(f"db_components={db_components}")
+                print(f"match_score={match_score}")
                 pdb.set_trace()
-
-            match_score = self._calculate_lumber_match_score(item_components, db_components, sku=part_number,
+                match_score = self._calculate_lumber_match_score(item_components, db_components, sku=part_number,
                                                              sell_by_foot=sell_by_foot)
             length = ""
             if sell_by_foot and 'sell_by_foot' in db_components:
@@ -673,16 +703,20 @@ class RulesMatcher:
         if self.debug:
             print(f"  Found {len(sorted_matches)} matches")
         
-        if False: # not use_original:
+        if False: #  use_original:
             # see if we get a better answer with the original text
             new_matches = self.match_lumber_item(item, database_name, True)
             if len(matches) == 0 or (len(new_matches) > 0 and matches[0].score <= new_matches[0].score):
                 matches = new_matches
 
         # if we are doing variable length, set the quantity to the qty x length
-        if len(matches) > 0 and matches[0].lf != "":
-            item.quantity += "x" + re.sub(r'[^0-9/\.\-]', '', matches[0].lf) + "'"
-            matches[0].lf = ""
+        if len(matches) > 0 and self.sku2partmap[matches[0].part_number].get("Stocking Multiple") == "LF":
+            if matches[0].lf == "": 
+                # no length was set so assume quantity is the length
+                item.quantity = "1x" + item.quantity
+            else:
+                item.quantity += "x" + re.sub(r'[^0-9/\.\-]', '', matches[0].lf) + "'"
+                matches[0].lf = ""
 
         return matches
 

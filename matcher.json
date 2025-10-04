@@ -14,18 +14,21 @@
    "default categories":{
       "df" : 0.1
    },
-   "keywords":[
-      "durastrand",
-      "gold",
-      "t&g",
-      "anchor",
-      "screw",
-      "washer",
-      "bolt"
-   ],
+   "keywords":{
+      "durastrand":10,
+      "gold":4,
+      "t&g":6,
+      "anchor":6,
+      "screw":5,
+      "washer":6,
+      "bolt":4,
+      "pt":6,
+      "df":4
+   },
    "detractors":{
       "t&g" : -0.03,
-      "durastrand" : -0.02
+      "durastrand" : -0.02,
+      "non-stock" : -0.01
    },
 
    "hardware categories":[
