@@ -30,7 +30,7 @@ from match import RulesMatcher
 from aimatch import AIMatcher
 
 ###############################################################################
-def load_database(csv_path: str, database_name: str, output_dir: str = None) -> bool:
+def load_database(csv_path: str, database_name: str, output_dir: str=None, quiet=False) -> bool:
     """Load a parts database from CSV file"""
     try:
         parts = []
@@ -73,9 +73,11 @@ def load_database(csv_path: str, database_name: str, output_dir: str = None) -> 
                 writer = csv.DictWriter(outfile, fieldnames=parts[0].keys(), delimiter=delimiter)
                 writer.writeheader()
                 writer.writerows(parts)
-            print(f"✓ Saved fixed CSV to: {output_path}")
+            if not quiet:
+               print(f"✓ Saved fixed CSV to: {output_path}")
         
-        print(f"✓ Loaded {len(parts)} parts from {database_name}")
+        if not quiet:
+           print(f"✓ Loaded {len(parts)} parts from {database_name}")
         return {
                    'parts': parts,
                    'headers': list(parts[0].keys()) if parts else []

@@ -112,7 +112,7 @@ class RulesMatcher:
 
         for fname,database in self.databases.items():
             for entry in database["parts"]:
-                db_components = self._parse_lumber_item(entry["Item Description"])
+                db_components = self.parse_lumber_item(entry["Item Description"])
                 entry['components'] = db_components
                 if 'attrs' not in db_components:
                     db_components['attrs'] = [entry['attr']]
@@ -339,7 +339,7 @@ class RulesMatcher:
 
         return desc
 
-    def _parse_lumber_item(self, description: str) -> dict:
+    def parse_lumber_item(self, description: str) -> dict:
         if self.attrs is None:
             self._load_attrs()
         desc = self._cleanup(description)
@@ -502,7 +502,7 @@ class RulesMatcher:
     def add_match(self, matches: List[PartMatch], item: str, part: Dict, score: float, length: str=""):
         item_number = part.get('Item Number', '').strip()
         item_desc = part.get('Item Description', '').strip()
-        db_components = self._parse_lumber_item(item_desc)
+        db_components = self.parse_lumber_item(item_desc)
         attr = part.get('attr')
         match = PartMatch(
             description=item,
@@ -536,7 +536,7 @@ class RulesMatcher:
         return selected
 
     def try_sku_match(self, item_str: str, parts_list: List[Dict]) -> List[PartMatch]:
-        item_components = self._parse_lumber_item(item_str)
+        item_components = self.parse_lumber_item(item_str)
         matches = []
         items = item_components['attrs'] if 'attrs' in item_components else []
         items += item_components['other'] if 'other' in item_components else []
@@ -583,14 +583,14 @@ class RulesMatcher:
         headers = database['headers']
 
         # Parse the scanned item to extract lumber components
-        item_components = self._parse_lumber_item(item_desc)
+        item_components = self.parse_lumber_item(item_desc)
         if self.debug:
             print(f"  Parsed item components: {item_desc} -> {item_components}")
 
         if self.debug_item == self.current_item and self.debug_part is None:
             print(f"  Parsed item components: {item_desc} -> {item_components}")
             pdb.set_trace()     # debug the processing of this item.
-            self._parse_lumber_item(item_desc)
+            self.parse_lumber_item(item_desc)
 
         if "attrs" in item_components:
             # I would really expect only one attribute, but sometimes in the part list
@@ -643,7 +643,7 @@ class RulesMatcher:
             if 'components' in part:
                 db_components = part['components']
             else:
-                db_components = self._parse_lumber_item(part_desc)
+                db_components = self.parse_lumber_item(part_desc)
                 part['components'] = db_components
 
             sell_by_foot = stocking_multiple.lower() == "lf"
