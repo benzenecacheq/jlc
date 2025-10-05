@@ -1,5 +1,5 @@
 {
-   "comments":[
+   "** comments":[
       "This document contains the various configuration options for the rules-based part matcher.       ",
       "                                                                                                 ",
       " default catgories       - this is used to provide a bonus if we don't have any 'attr' to        ",
@@ -8,9 +8,16 @@
       " keywords                - this is used to pick up additional items that are not in a category.  ",
       "                           When a keyword is seen in the item_components, all partslist items    ",
       "                           containing that keyword will be added to the potential match list.    ",
+      "                           In addition, when matching, the number will be multiplied by the      ",
+      "                           factor in the calculation rather than using the length of the name.   ",
       " detractors              - If one of these is present in one of the items being matched but not  ",
       "                           in the other, subtract the value times the length of the detractor.   ",
-   ""],
+      " friends                 - Other categories (i.e. attrs) that should be included when you see    ",
+      "                           the category in question                                              ",
+      " hardware categories     - These are the categories that are used for hardware items.            ",
+      " hardware terms          - If you see these items in the description, it's a hardware item.      ",
+   null],
+
    "default categories":{
       "df" : 0.1
    },
@@ -23,13 +30,21 @@
       "washer":6,
       "bolt":4,
       "pt":6,
-      "df":4
+      "df":3,
+      "std":0
    },
    "detractors":{
       "t&g" : -0.03,
       "durastrand" : -0.02,
       "non-stock" : -0.01
    },
+   "friends":{
+      "pl":"ml",
+      "ml":"pl"
+   },
+   "special lengths": [
+       "12-7/8", "14-7/16", "22-7/16","80-3/4","92-1/4","104-1/4","116-1/4"
+       ],
 
    "hardware categories":[
       "Edge",

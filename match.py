@@ -52,6 +52,7 @@ class RulesMatcher:
         self.keyword_parts = None
 
         self.sku2partmap = None
+        self.special_lengths = None
 
     def get_setting(self, key):
         if key not in self.settings:
@@ -76,6 +77,7 @@ class RulesMatcher:
         self.default_categories = self.get_setting("default categories")
         self.keywords = self.get_setting("keywords")
         self.detractors = self.get_setting("detractors")
+        self.special_lengths = set(self.get_setting("special lengths"))
 
         # Get the hardware characteristics
         self.hardware_categories = self.get_setting('hardware categories')
@@ -189,14 +191,17 @@ class RulesMatcher:
     def _looks_like_length(self, word, ok1and2=False):
         if not re.search(r'\d', word):
             return False                # no digits
-        if word in ["92-1/4","104-1/4","116-1/4"]:
+        if word in self.special_lengths:
             return True
         if word == "1" or word == "2":  # these are probably a grade.
             return ok1and2
-
+        
+        # see if it's too big to be a reasonable length
+        match = re.match(r'\d+', word)
+        if match:
+            if int(match.group()) > 40:
+                return False
         return re.match(r'([\d\-/]+)(?:\s*(?:\'|ft|feet))?(?:\s|$)', word) != None
-        return re.match(r'(\d+)(?:\s*(?:\'|ft|feet))?(?:\s|$)', word) != None
-        return re.search(r'(\d+)(?:\s*(?:\'|ft|feet))?(?:\s|$)', word) != None
 
     def _lengths_equal(self, word1, word2):
         if type(word1) != type('') or type(word2) != type(''):
@@ -619,10 +624,16 @@ class RulesMatcher:
             pdb.set_trace()     # debug the processing of this item.
             self.parse_lumber_item(item_desc)
 
-        if "attrs" in item_components:
+        attrs = item_components.get("attrs")
+        if attrs is not None:
             # I would really expect only one attribute, but sometimes in the part list
             # attributes will be subsets of others, so I need to aggregate
-            for attr in item_components["attrs"]:
+            for attr,friend in self.get_setting("friends").items():
+                # add any friend categories
+                if attr in attrs and friend not in attrs:
+                    attrs.append(friend)
+
+            for attr in attrs:
                 for cat,partlist in self.attrmap.items():
                     if fuzzy_match(attr,cat) > 0.6 or attr in cat:
                         parts += partlist
@@ -713,9 +724,9 @@ class RulesMatcher:
         if len(matches) > 0 and self.sku2partmap[matches[0].part_number].get("Stocking Multiple") == "LF":
             if matches[0].lf == "": 
                 # no length was set so assume quantity is the length
-                item.quantity = "1x" + item.quantity
+                item.quantity = "1/" + item.quantity
             else:
-                item.quantity += "x" + re.sub(r'[^0-9/\.\-]', '', matches[0].lf) + "'"
+                item.quantity += "/" + re.sub(r'[^0-9/\.\-]', '', matches[0].lf) + "'"
                 matches[0].lf = ""
 
         return matches
