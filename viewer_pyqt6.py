@@ -26,24 +26,27 @@ from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QThread, QObject
 from PyQt6.QtGui import QFont, QPalette, QColor, QAction, QKeyEvent
 
 class SKUSelectionDialog(QDialog):
-    """Dialog for selecting SKU from multiple matches"""
+    """Dialog for selecting SKU from multiple matches and editing quantity"""
     
-    def __init__(self, matches: List[Dict], parent=None):
+    def __init__(self, matches: List[Dict], current_quantity: str = "", current_sku: str = "", parent=None):
         super().__init__(parent)
         self.matches = matches
+        self.current_quantity = current_quantity
+        self.current_sku = current_sku
         self.selected_match = None
+        self.quantity_override = None
         self.init_ui()
         
     def init_ui(self):
         """Initialize the dialog UI"""
-        self.setWindowTitle("Select SKU")
+        self.setWindowTitle("Select SKU and Edit Quantity")
         self.setModal(True)
-        self.resize(500, 300)
+        self.resize(500, 400)
         
         layout = QVBoxLayout(self)
         
         # Instructions
-        instructions = QLabel("Multiple matches found. Please select the correct SKU:")
+        instructions = QLabel("Select the correct SKU and optionally edit the quantity:")
         layout.addWidget(instructions)
         
         # List widget for SKU selection
@@ -55,20 +58,36 @@ class SKUSelectionDialog(QDialog):
         self.list_widget.addItem(no_match_item)
         
         # Add actual matches
+        selected_row = 0  # Default to "No matches"
         for i, match in enumerate(self.matches):
             confidence_symbol = self.get_confidence_symbol(match['confidence'])
             item_text = f"{confidence_symbol} {match['part_number']} - {match['description'][:50]}{'...' if len(match['description']) > 50 else ''}"
             item = QListWidgetItem(item_text)
             item.setData(Qt.ItemDataRole.UserRole, match)
             self.list_widget.addItem(item)
+            
+            # Check if this is the currently selected SKU
+            if match['part_number'] == self.current_sku:
+                selected_row = i + 1  # +1 because "No matches" is at index 0
         
-        # Select first item by default
-        self.list_widget.setCurrentRow(0)
+        # Select the appropriate item
+        self.list_widget.setCurrentRow(selected_row)
         
         # Connect double-click to accept selection
         self.list_widget.itemDoubleClicked.connect(self.accept_selection)
             
         layout.addWidget(self.list_widget)
+        
+        # Quantity section
+        quantity_group = QGroupBox("Quantity")
+        quantity_layout = QFormLayout(quantity_group)
+        
+        self.quantity_input = QLineEdit()
+        self.quantity_input.setText(self.current_quantity)
+        self.quantity_input.setPlaceholderText("Enter quantity (leave empty to keep original)")
+        quantity_layout.addRow("Quantity:", self.quantity_input)
+        
+        layout.addWidget(quantity_group)
         
         # Buttons
         button_layout = QHBoxLayout()
@@ -99,10 +118,18 @@ class SKUSelectionDialog(QDialog):
             return "⚠"
             
     def accept_selection(self):
-        """Accept the selected SKU"""
+        """Accept the selected SKU and quantity"""
         current_item = self.list_widget.currentItem()
         if current_item:
             self.selected_match = current_item.data(Qt.ItemDataRole.UserRole)
+            
+            # Handle quantity override
+            quantity_text = self.quantity_input.text().strip()
+            if quantity_text and quantity_text != self.current_quantity:
+                self.quantity_override = quantity_text
+            else:
+                self.quantity_override = None
+                
             self.accept()
         else:
             self.reject()
@@ -676,6 +703,7 @@ class LumberViewerGUI(QMainWindow):
         self.filter_timer.timeout.connect(self.apply_filters)
         self.row_item_data = {}  # Store item data for each row
         self.manual_overrides = {}  # Store manual SKU selections
+        self.quantity_overrides = {}  # Store manual quantity overrides
         
         # Config file path
         self.config_file = Path.home() / ".jlc.ini"
@@ -1055,6 +1083,7 @@ class LumberViewerGUI(QMainWindow):
         try:
             # Clear previous data and overrides when loading new files
             self.manual_overrides.clear()
+            self.quantity_overrides.clear()
             self.row_item_data.clear()
             self.sku_comboboxes.clear()
             
@@ -1290,7 +1319,24 @@ class LumberViewerGUI(QMainWindow):
                 try:
                     # Basic item info
                     self.table.setItem(row_idx, 0, QTableWidgetItem(str(item['item_number'])))
-                    self.table.setItem(row_idx, 1, QTableWidgetItem(str(item['quantity'])))
+                    
+                    # Handle quantity display with override support
+                    quantity_text = str(item['quantity'])
+                    if row_idx in self.quantity_overrides:
+                        quantity_text = f"🔧 {self.quantity_overrides[row_idx]}"
+                    
+                    quantity_item = QTableWidgetItem(quantity_text)
+                    if row_idx in self.quantity_overrides:
+                        # Highlight overridden quantities
+                        font = quantity_item.font()
+                        font.setBold(True)
+                        quantity_item.setFont(font)
+                        quantity_item.setBackground(QColor(255, 255, 200))  # Light yellow background
+                        quantity_item.setToolTip(f"Original: {item['quantity']}\nOverride: {self.quantity_overrides[row_idx]}")
+                    else:
+                        quantity_item.setToolTip("Double-click to edit quantity")
+                    
+                    self.table.setItem(row_idx, 1, quantity_item)
                     self.table.setItem(row_idx, 2, QTableWidgetItem(item['processed_text']))
                     self.table.setItem(row_idx, 3, QTableWidgetItem(item['original_text']))
                 except Exception as e:
@@ -1337,16 +1383,33 @@ class LumberViewerGUI(QMainWindow):
     
     def open_sku_dialog(self, row: int, item: dict):
         """Open SKU selection dialog for an item"""
-        dialog = SKUSelectionDialog(item['matches'], self)
+        # Get current quantity (original or override)
+        current_quantity = self.quantity_overrides.get(row, item['quantity'])
+        
+        # Get current SKU (from manual override or first match)
+        current_sku = ""
+        if row in self.manual_overrides and self.manual_overrides[row] is not None:
+            current_sku = self.manual_overrides[row]['part_number']
+        elif item['matches']:
+            current_sku = item['matches'][0]['part_number']
+        
+        dialog = SKUSelectionDialog(item['matches'], current_quantity, current_sku, self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             if dialog.selected_match is None:
                 # "No matches" selected - store as override
                 self.manual_overrides[row] = None
-                self.update_display_for_row(row, item)
             else:
                 # Match selected - store as override
                 self.manual_overrides[row] = dialog.selected_match
-                self.update_display_for_row(row, item)
+            
+            # Handle quantity override
+            if dialog.quantity_override is not None:
+                self.quantity_overrides[row] = dialog.quantity_override
+            elif row in self.quantity_overrides:
+                # User cleared the quantity - remove override
+                del self.quantity_overrides[row]
+            
+            self.update_display_for_row(row, item)
     
     def highlight_row(self, row: int):
         """Highlight a row to indicate manual override"""
@@ -1365,6 +1428,24 @@ class LumberViewerGUI(QMainWindow):
         """Update display for a single row"""
         if row not in self.row_item_data:
             return
+        
+        # Update quantity column first
+        quantity_text = str(item['quantity'])
+        if row in self.quantity_overrides:
+            quantity_text = f"🔧 {self.quantity_overrides[row]}"
+        
+        quantity_item = QTableWidgetItem(quantity_text)
+        if row in self.quantity_overrides:
+            # Highlight overridden quantities
+            font = quantity_item.font()
+            font.setBold(True)
+            quantity_item.setFont(font)
+            quantity_item.setBackground(QColor(255, 255, 200))  # Light yellow background
+            quantity_item.setToolTip(f"Original: {item['quantity']}\nOverride: {self.quantity_overrides[row]}")
+        else:
+            quantity_item.setToolTip("Double-click to edit quantity")
+        
+        self.table.setItem(row, 1, quantity_item)
             
         # Check if there's a manual override
         if row in self.manual_overrides:
@@ -1508,6 +1589,11 @@ class LumberViewerGUI(QMainWindow):
                                     export_row['Type'] = ""
                                 if 'Confidence' in export_row:
                                     export_row['Confidence'] = ""
+                                
+                                # Apply quantity override if it exists for this row
+                                if i in self.quantity_overrides:
+                                    export_row['Quantity'] = self.quantity_overrides[i]
+                                
                                 # Note: Description field keeps original CSV value
                                 
                                 # Write the row
@@ -1521,6 +1607,10 @@ class LumberViewerGUI(QMainWindow):
                                 item_with_override['item_description'] = override['description']
                                 item_with_override['item_type'] = override['type']
                                 item_with_override['confidence'] = override['confidence']
+                                
+                                # Apply quantity override if it exists for this row
+                                if i in self.quantity_overrides:
+                                    item_with_override['quantity'] = self.quantity_overrides[i]
                                 
                                 # Pass the override data to create_export_row so it can set the correct database description
                                 export_row = self.create_export_row(item_with_override, export_columns, override)
@@ -1538,6 +1628,10 @@ class LumberViewerGUI(QMainWindow):
                                 item_with_match['item_type'] = match['type']
                                 item_with_match['confidence'] = match['confidence']
                                 
+                                # Apply quantity override if it exists for this row
+                                if i in self.quantity_overrides:
+                                    item_with_match['quantity'] = self.quantity_overrides[i]
+                                
                                 # Pass the match data to create_export_row so it can set the correct database description
                                 export_row = self.create_export_row(item_with_match, export_columns, match)
                                 
@@ -1548,6 +1642,11 @@ class LumberViewerGUI(QMainWindow):
                             # No matches at all
                             export_row = self.create_export_row(item, export_columns)
                             export_row['Part_Number'] = ""  # Empty, not "No matches"
+                            
+                            # Apply quantity override if it exists for this row
+                            if i in self.quantity_overrides:
+                                export_row['Quantity'] = self.quantity_overrides[i]
+                            
                             # Note: Description field keeps original CSV value
                             
                             # Write the row
@@ -1577,7 +1676,16 @@ class LumberViewerGUI(QMainWindow):
         if 'Item_Number' in export_columns:
             export_row['Item_Number'] = item.get('item_number', '')
         if 'Quantity' in export_columns:
-            export_row['Quantity'] = item.get('quantity', '')
+            # Use overridden quantity if available, otherwise use original
+            quantity = item.get('quantity', '')
+            # Check if there's a quantity override for this row
+            # We need to find the row index to check for overrides
+            for row_idx, row_item in self.row_item_data.items():
+                if row_item == item:
+                    if row_idx in self.quantity_overrides:
+                        quantity = self.quantity_overrides[row_idx]
+                    break
+            export_row['Quantity'] = quantity
         if 'Description' in export_columns:
             # Description should be the original CSV "Description" field (processed_text)
             export_row['Description'] = item.get('processed_text', '')
@@ -1648,13 +1756,17 @@ class LumberViewerGUI(QMainWindow):
                             # Skip items with no matches
                             continue
 
+                        # Use overridden quantity if available
                         quantity = item.get('quantity', '')
+                        if i in self.quantity_overrides:
+                            quantity = self.quantity_overrides[i]
+                        
                         stocking_multiple = self.stocking_multiple_mapping.get(sku, '')
-                        if ('x' in quantity) != (stocking_multiple.lower() == 'lf'):
+                        if ('/' in quantity) != (stocking_multiple.lower() == 'lf'):
                             raise Exception(f"For item {i}, Quantity is '{quantity}' but "
                                             f"stocking multiple is '{stocking_multiple}'")
-                        if 'x' in quantity:
-                            quantity,lf = quantity.split('x')
+                        if '/' in quantity:
+                            quantity,lf = quantity.split('/')
                             lf = re.sub(r'[^0-9/\.\-]', '', lf)
                         else:
                             lf = ""
