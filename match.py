@@ -48,6 +48,7 @@ class RulesMatcher:
         self.sku_parts = None           # parts that are in the SKU-only lookup
         self.board_parts = None         # parts that have dimensions and length
         self.dim_parts = None           # parts with dimensions but no length
+        self.lumber_categories = None
         self.hardware_parts = None
         self.keyword_parts = None
 
@@ -80,6 +81,7 @@ class RulesMatcher:
         self.special_lengths = set(self.get_setting("special lengths"))
 
         # Get the hardware characteristics
+        self.lumber_categories = self.get_setting('lumber categories')
         self.hardware_categories = self.get_setting('hardware categories')
         self.hardware_terms = self.get_setting('hardware terms')
 
@@ -146,8 +148,8 @@ class RulesMatcher:
                     if k not in self.attrs:
                         self.keyword_parts[k].append(entry)
 
-            self.sku_parts += self.select_parts(database["parts"], 'usuallyusethesku')
-            self.hardware_parts += self.select_parts(database["parts"], self.hardware_categories)
+            self.sku_parts += self._select_parts(database["parts"], 'usuallyusethesku')
+            self.hardware_parts += self._select_parts(database["parts"], self.hardware_categories)
 
     def _has_keyword(self, components, threshold = 0.7):
         # keyword can be a list or a single item
@@ -480,9 +482,7 @@ class RulesMatcher:
                 score *= 1.6
 
         # sometimes people will put the length in with the dimensions
-        dims = item_components.get('dimensions')
-        db_dims = db_components.get('dimensions')
-        if (dims is not None and db_dims is not None and
+        if (item_components.get('dimensions') is not None and db_components.get('dimensions') is not None and
             ('length' in item_components) != ('length' in db_components)):
             a,b = (db_components, item_components) if 'length' in db_components else (item_components, db_components)
             length = a['length']
@@ -491,9 +491,15 @@ class RulesMatcher:
             a = copy.deepcopy(a)
             del a['length']
             a['dimensions'] = dims + 'x' + length  # slightly prefer this order
-            score = max(score, self._calculate_lumber_match_score(a, b, sku, sell_by_foot=sell_by_foot) + 0.05)
+            if 'length' in db_components:
+                score = max(score, self._calculate_lumber_match_score(b, a, sku, sell_by_foot=sell_by_foot) + 0.05)
+            else:
+                score = max(score, self._calculate_lumber_match_score(a, b, sku, sell_by_foot=sell_by_foot) + 0.05)
             a['dimensions'] = length + 'x' + dims
-            score = max(score, self._calculate_lumber_match_score(a, b, sku, sell_by_foot=sell_by_foot))
+            if 'length' in db_components:
+                score = max(score, self._calculate_lumber_match_score(b, a, sku, sell_by_foot=sell_by_foot))
+            else:
+                score = max(score, self._calculate_lumber_match_score(a, b, sku, sell_by_foot=sell_by_foot))
 
         if 'dimensions' in item_components and 'length' in item_components and 'dimensions' in db_components:
             # sometimes we'll see a length when it's just another number the user has put into the description
@@ -531,7 +537,7 @@ class RulesMatcher:
         return score
 
     # add a found item to the list of matches
-    def add_match(self, matches: List[PartMatch], item: str, part: Dict, score: float, length: str=""):
+    def _add_match(self, matches: List[PartMatch], item: str, part: Dict, score: float, length: str=""):
         item_number = part.get('Item Number', '').strip()
         item_desc = part.get('Item Description', '').strip()
         db_components = self.parse_lumber_item(item_desc)
@@ -554,18 +560,21 @@ class RulesMatcher:
         
         return sorted(map.values(), key=lambda item: item["Item Description"])
 
-    def select_parts(self, parts, categories):
+    def _select_parts(self, parts, categories):
         selected = []
         if type(categories) == type([]):
             for c in categories:
-                selected += self.select_parts(parts, c)
-            return selected
+                selected += self._select_parts(parts, c)
+            return self._unique_parts(selected)
 
         # there can be misspellings so use fuzzy matching
         scores = fuzzy_match(sorted(self.attrmap), categories, threshold=0.5)
         for cat, score in scores.items():
              selected += self.attrmap[cat]
         return selected
+
+    def _deselect_parts(self, parts, categories):
+        return [p for p in parts if p['attr'] not in categories]
 
     def try_sku_match(self, item_str: str, parts_list: List[Dict]) -> List[PartMatch]:
         item_components = self.parse_lumber_item(item_str)
@@ -585,7 +594,7 @@ class RulesMatcher:
             if len(scores):
                 # add any other information that might help improve match
                 score = self._calculate_lumber_match_score(item_components, part['components'], sku="") / 10
-                self.add_match(matches, item_str, part, max(scores.values()) + score)
+                self._add_match(matches, item_str, part, max(scores.values()) + score)
 
         return matches
 
@@ -640,12 +649,7 @@ class RulesMatcher:
 
         # If we don't have a category for the item, special treatment applies
         if len(parts) == 0:
-            if False: # 'other' in item_components and fuzzy_match(self.hardware_terms, item_components['other'], threshold=0.6):
-                parts = self.hardware_parts
-                matches = self.try_sku_match(item_desc, parts)
-                if len(matches) > 0:
-                    return self.sort_matches(item, matches)
-            elif 'dimensions' in item_components and 'length' in item_components:
+            if 'dimensions' in item_components and 'length' in item_components:
                 # if there are dimensions and length, it's probably a board
                 parts = self.board_parts
             elif 'dimensions' in item_components:
@@ -666,6 +670,11 @@ class RulesMatcher:
                 if k not in self.attrs:
                     parts += self.keyword_parts[k]
             parts = self._unique_parts(parts)
+
+        # If this is hardware, don't look at any lumber.
+        words = attrs if attrs is not None else [] + item_components["other"] if "other" in item_components else []
+        if words and fuzzy_match(self.hardware_terms, words, threshold=0.6):
+            parts = self._deselect_parts(parts, self.lumber_categories)
 
         matches = []
         confidence_scores = []
@@ -706,7 +715,7 @@ class RulesMatcher:
                     del item_components['sell_by_foot']
 
             if match_score >= 0.7:  # Threshold for considering it a match
-                self.add_match(matches, item_desc, part, match_score, length)
+                self._add_match(matches, item_desc, part, match_score, length)
                 if self.debug:
                     print(f"    MATCH: {part_number} -> {part_desc} (score: {match_score:.2f})")
 

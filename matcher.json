@@ -14,6 +14,9 @@
       "                           in the other, subtract the value times the length of the detractor.   ",
       " friends                 - Other categories (i.e. attrs) that should be included when you see    ",
       "                           the category in question                                              ",
+      " lumber categories       - Everything is pretty much assumed to be lumber so these are really    ",
+      "                           ony used to prevent something in hardware (as identified by hardware  ",
+      "                           terms) from matching something in one of these categories.            ",
       " hardware categories     - These are the categories that are used for hardware items.            ",
       " hardware terms          - If you see these items in the description, it's a hardware item.      ",
    null],
@@ -46,23 +49,35 @@
        "12-7/8", "14-7/16", "22-7/16","80-3/4","92-1/4","104-1/4","116-1/4"
        ],
 
+   "lumber categories":[
+      "acx", "adv", "boral", "cdx", "cedar", "df", 
+      "extira", "firetreated",
+      "hardboard", "hardiframe", "hardi", "hardibacker",
+      "miratec", "ml",
+      "osb", "osbgold", "osbdurastrand", "osbt&g",
+      "particleboard", "pine", "pl", "ptcdx", "pt", 
+      "siding", "spruce", "tji", "sturdifloor", "timberstrand",
+      "end-of-list"
+   ],
+
    "hardware categories":[
-      "Edge",
-      "Feeney",
-      "Fortress",
-      "FoundationBolts",
-      "Flashing",
-      "Fortress",
-      "HexNuts",
-      "Nails",
-      "Screws",
+      "edge",
+      "feeney",
+      "fortress",
+      "foundationbolts",
+      "flashing",
+      "fortress",
+      "hexnuts",
+      "nails",
+      "screws",
       "end-of-list" 
    ],
    "hardware terms":[
-      "Box", "Boxes",
-      "Screw", "Screws",
-      "Hex", "Nut", "Nuts", "Bolt", "Bolts", "Washers",
-      "Anchor",
+      "box", "boxes",
+      "screw", "screws",
+      "hex", "nut", "nuts", "bolt", "bolts", "washers",
+      "anchor",
+      "eccq","galv",
       "end-of-list" 
    ]
 }
