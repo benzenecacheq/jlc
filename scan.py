@@ -379,9 +379,12 @@ class Scanner:
             # Create enhanced prompt with database examples
             prompt_text = load_prompt("scan_prompt", database_context=database_context)
 
+            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-5-20250929"
+
             # Create the message with image using the current model
             message = self.client.messages.create(
-                model="claude-sonnet-4-20250514",
+                model=model,
                 temperature=0,
                 max_tokens=8000,
                 messages=[
