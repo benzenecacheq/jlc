@@ -633,15 +633,19 @@ class RulesMatcher:
             pdb.set_trace()     # debug the processing of this item.
             self.parse_lumber_item(item_desc)
 
+        friends = {}
         attrs = item_components.get("attrs")
         if attrs is not None:
+            # see if there are any friend categories we should add to the list of parts
+            found = fuzzy_match(sorted(self.get_setting("friends")), attrs, threshold=0.8)
+            for f in sorted(found):
+                friends |= self.get_setting("friends")[f]
+                for friend in self.get_setting("friends")[f]:
+                    if friend not in attrs:
+                        attrs.append(friend)
+
             # I would really expect only one attribute, but sometimes in the part list
             # attributes will be subsets of others, so I need to aggregate
-            for attr,friend in self.get_setting("friends").items():
-                # add any friend categories
-                if attr in attrs and friend not in attrs:
-                    attrs.append(friend)
-
             for attr in attrs:
                 for cat,partlist in self.attrmap.items():
                     if fuzzy_match(attr,cat) > 0.6 or attr in cat:
@@ -707,6 +711,10 @@ class RulesMatcher:
                 pdb.set_trace()
                 match_score = self._calculate_lumber_match_score(item_components, db_components, sku=part_number,
                                                              sell_by_foot=sell_by_foot)
+            # if the match was to a friend category, deduct points.
+            if part['attr'] in friends:
+                match_score += friends[part['attr']]
+
             length = ""
             if sell_by_foot and 'sell_by_foot' in db_components:
                 length = db_components['sell_by_foot']
