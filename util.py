@@ -244,7 +244,7 @@ def load_prompt(fname, **kwargs):
 
     if not os.path.exists(fname):
         script_dir = str(Path(__file__).parent)
-        fname = script_dir + "/" + name
+        fname = script_dir + "/" + fname
 
     # Read the file content
     print(f"Loading prompt {fname}")
