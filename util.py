@@ -1,5 +1,6 @@
 import os
 import re
+import csv
 
 from dataclasses import dataclass
 from typing import List
@@ -182,7 +183,53 @@ def do_subs(subtype, word):
     return word
 
 ###############################################################################
-def load_prompt(name, **kwargs):
+def csv2dict(filepath, key_column=0, skip_header=False):
+    """
+    Read a CSV file into a dictionary.
+    
+    Args:
+        filepath: Path to the CSV file
+        key_column: Index of the column to use as keys (default: 0)
+        skip_header: Whether to skip the first row (default: False)
+    
+    Returns:
+        - If 2 columns: Dictionary with string values
+        - If >2 columns: Dictionary with list values (excluding key column)
+    """
+    result = {}
+    
+    if not os.path.exists(filepath):
+        script_dir = str(Path(__file__).parent)
+        filepath = script_dir + "/" + filepath
+
+    if not os.path.exists(filepath):
+        raise Exception(f"CSV file {filepath} not found")
+
+    with open(filepath, 'r', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        
+        if skip_header:
+            next(reader, None)
+        
+        for row in reader:
+            if len(row) < 2:
+                continue
+            
+            key = row[key_column]
+            
+            # Get all columns except the key column
+            values = [row[i] for i in range(len(row)) if i != key_column]
+            
+            # If only one value column, store as string; otherwise as list
+            if len(values) == 1:
+                result[key] = values[0]
+            else:
+                result[key] = values
+    
+    return result
+
+###############################################################################
+def load_prompt(fname, **kwargs):
     """
     Read a file and replace all text enclosed in backquotes (`) with
     corresponding values from kwargs.
@@ -195,20 +242,21 @@ def load_prompt(name, **kwargs):
         str: The file content with all backquoted fields replaced
     """
 
+    if not os.path.exists(fname):
+        script_dir = str(Path(__file__).parent)
+        fname = script_dir + "/" + name
+
     # Read the file content
-    script_dir = str(Path(__file__).parent)
-    fname = script_dir + "/" + name
     print(f"Loading prompt {fname}")
     try:
         with open(fname, 'r') as file:
             content = file.read()
+
     except Exception as e:
         print(f"Error reading {fname}: {e}", file=sys.stderr)
         exit(1)
 
     # Find all backquoted fields and replace them
-    import re
-
     def replace_match(match):
         field_name = match.group(1)
         if field_name in kwargs:

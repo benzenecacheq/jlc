@@ -250,68 +250,7 @@ class Scanner:
         
         return image_paths
     
-    #########################################
-    # NOT USED
-    def _build_parts_context(self) -> str:
-        """Build a context string from the parts databases to help with OCR"""
-        if not self.databases:
-            return ""
-
-        context_parts = []
-        context_parts.append("PARTS REFERENCE (to help with OCR and typo correction):")
-        context_parts.append("=" * 60)
-
-        # Collect sample items from each database
-        total_samples = 0
-        max_samples_per_db = 30  # Reduced to avoid overwhelming context
-        max_total_samples = 100  # Reduced overall limit
-
-        for db_name, database in self.databases.items():
-            parts = database['parts']
-            headers = database['headers']
-
-            if not parts or not headers:
-                continue
-
-            context_parts.append(f"\n{db_name.upper()} DATABASE SAMPLE:")
-            context_parts.append("-" * 40)
-
-            # Get key columns
-            item_col = headers[0] if headers else ''
-            desc_col = None
-
-            # Find description column
-            for header in headers:
-                if 'description' in header.lower() or 'desc' in header.lower():
-                    desc_col = header
-                    break
-
-            if not desc_col and len(headers) > 1:
-                desc_col = headers[1]
-
-            # Add sample entries
-            samples_from_this_db = 0
-            for part in parts:
-                if total_samples >= max_total_samples or samples_from_this_db >= max_samples_per_db:
-                    break
-
-                item_num = part.get(item_col, '').strip()
-                item_desc = part.get(desc_col, '').strip() if desc_col else ''
-
-                if item_num and item_desc:
-                    context_parts.append(f"  {item_num}: {item_desc}")
-                    samples_from_this_db += 1
-                    total_samples += 1
-
-            if samples_from_this_db > 0:
-                context_parts.append(f"  ... ({len(parts)} total items in {db_name})")
-
-        context_parts.append(f"\nNote: Use this reference to correct OCR errors and match unclear handwriting.")
-        context_parts.append("=" * 60)
-
-        return "\n".join(context_parts)
-
-    def scan_document_with_database_context(self, document_path: str, debug_output: bool = True, output_dir: str = ".", verbose: bool = False) -> List[ScannedItem]:
+    def scan_document(self, document_path: str, debug_output: bool = True, output_dir: str = ".", verbose: bool = False) -> List[ScannedItem]:
         """Use Claude API to scan the lumber list with database context for better matching"""
         try:
             # Check if we can skip scanning
@@ -342,21 +281,21 @@ class Scanner:
                     if debug_output:
                         print(f"Processing page {i+1}/{len(image_paths)}")
                     
-                    page_items = self._scan_single_image_with_database_context(image_path, debug_output, output_dir, verbose)
+                    page_items = self._scan_single_image(image_path, debug_output, output_dir, verbose)
                     all_items.extend(page_items)
                 
                 return all_items
                     
             # Handle image files
             else:
-                items = self._scan_single_image_with_database_context(document_path, debug_output, output_dir, verbose)
+                items = self._scan_single_image(document_path, debug_output, output_dir, verbose)
                 return items
                 
         except Exception as e:
             print(f"Error scanning document: {e}")
             return []
     
-    def _scan_single_image_with_database_context(self, image_path: str, debug_output: bool = True, output_dir: str = ".", verbose: bool = False) -> List[ScannedItem]:
+    def _scan_single_image(self, image_path: str, debug_output: bool = True, output_dir: str = ".", verbose: bool = False) -> List[ScannedItem]:
         """Scan a single image file with database context and return ScannedItems"""
         try:
             # Encode the image
@@ -373,14 +312,12 @@ class Scanner:
             }
             media_type = media_type_map.get(file_ext, 'image/jpeg')
 
-            # Build comprehensive database context
-            database_context = self._build_comprehensive_database_context()
-
             # Create enhanced prompt with database examples
-            prompt_text = load_prompt("scan_prompt", database_context=database_context)
+            prompt_text = load_prompt("scan_prompt")
 
-            model="claude-sonnet-4-20250514",
-            model="claude-sonnet-4-5-20250929"
+            model = "claude-opus-4-20250514"
+            model = "claude-sonnet-4-20250514"
+            model = "claude-sonnet-4-5-20250929"
 
             # Create the message with image using the current model
             message = self.client.messages.create(
@@ -413,20 +350,17 @@ class Scanner:
 
             # Debug output
             if debug_output:
-                debug_file = Path(output_dir) / (Path(image_path).stem + "_scan_with_context_debug.txt")
+                debug_file = Path(output_dir) / (Path(image_path).stem + "_scan_debug.txt")
                 with open(debug_file, 'w', encoding='utf-8') as f:
                     f.write("="*60 + "\n")
                     f.write("PROMPT TEXT\n")
                     f.write("="*60 + "\n")
                     f.write(prompt_text)
                     f.write("="*60 + "\n\n")
-                    f.write("CLAUDE RESPONSE WITH DATABASE CONTEXT\n")
+                    f.write("CLAUDE RESPONSE\n")
                     f.write("="*60 + "\n\n")
                     f.write(response_text)
                     f.write("\n\n" + "="*60 + "\n")
-                    f.write("DATABASE CONTEXT PROVIDED:\n")
-                    f.write("="*60 + "\n")
-                    f.write(database_context)
                 print(f"✓ Debug info saved to: {debug_file}")
 
             # Extract and parse JSON
@@ -503,89 +437,3 @@ class Scanner:
         except Exception as e:
             print(f"✗ Error scanning document: {e}")
             return []
-
-    def _build_comprehensive_database_context(self) -> str:
-        """Build database context showing variety of items and formats"""
-        if not self.databases:
-            return ""
-
-        context_parts = []
-        context_parts.append("DATABASE EXAMPLES (match this format in your descriptions):")
-        context_parts.append("=" * 70)
-
-        # Collect diverse samples from each database
-        total_samples = 0
-        max_total_samples = 80  # Limit for context size
-
-        categories = {
-            'lumber_dimensional': [],
-            'lumber_specialty': [],
-            'hardware': [],
-            'other': []
-        }
-
-        for db_name, database in self.databases.items():
-            parts = database['parts']
-            headers = database['headers']
-
-            if not parts or not headers:
-                continue
-
-            for part in parts:
-                if total_samples >= max_total_samples:
-                    break
-
-                item_num = part.get('Item Number', '').strip()
-                item_desc = part.get('Item Description', '').strip()
-                customer_terms = part.get('Customer Terms', '').strip()
-
-                if not item_num or not item_desc:
-                    continue
-
-                # Categorize the item
-                desc_lower = item_desc.lower()
-                terms_lower = customer_terms.lower()
-
-                if any(term in desc_lower for term in ['x', 'post', 'beam']):
-                    if any(term in terms_lower for term in ['glu lam', 'advantage', 'boral']):
-                        categories['lumber_specialty'].append(f"  {item_num}: {item_desc}")
-                    else:
-                        categories['lumber_dimensional'].append(f"  {item_num}: {item_desc}")
-                elif any(term in desc_lower for term in ['screw', 'nail', 'bolt', 'hardware']):
-                    categories['hardware'].append(f"  {item_num}: {item_desc}")
-                else:
-                    categories['other'].append(f"  {item_num}: {item_desc}")
-
-                total_samples += 1
-
-        # Add samples from each category
-        if categories['lumber_dimensional']:
-            context_parts.append("\nDIMENSIONAL LUMBER FORMAT:")
-            for item in categories['lumber_dimensional'][:15]:
-                context_parts.append(item)
-
-        if categories['lumber_specialty']:
-            context_parts.append("\nSPECIALTY LUMBER FORMAT:")
-            for item in categories['lumber_specialty'][:15]:
-                context_parts.append(item)
-
-        if categories['hardware']:
-            context_parts.append("\nHARDWARE FORMAT:")
-            for item in categories['hardware'][:10]:
-                context_parts.append(item)
-
-        if categories['other']:
-            context_parts.append("\nOTHER ITEMS FORMAT:")
-            for item in categories['other'][:10]:
-                context_parts.append(item)
-
-        context_parts.append("\nKEY PATTERNS TO MATCH:")
-        context_parts.append("- Lumber dimensions: '2X4', '2X6', '4X4' (not '2x4', '2x6')")
-        context_parts.append("- Spacing: '2X4  16' (spaces around dimensions)")
-        context_parts.append("- Materials: 'POC', 'CEDAR', 'PINE' (all caps)")
-        context_parts.append("- Treatments: 'PT', 'KD', 'S4S' (abbreviated)")
-        context_parts.append("- Product types: 'ADVANTAGE', 'GLU LAM', 'POST'")
-        context_parts.append("=" * 70)
-
-        return "\n".join(context_parts)
-

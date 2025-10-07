@@ -1,27 +1,39 @@
-Please scan this handwritten or typewritten lumber/materials list and extract each item with its quantity and description.
+Please scan this handwritten or typewritten lumber and hardware materials list and extract each item with its quantity and description
 
 IMPORTANT PATTERN RECOGNITION:
-- If a line is missing material specifications (like "4X8 16'" instead of "4X8 PT 16'"), look at the PREVIOUS non-empty line to see what material was specified
-- Carry forward the material specification from the most recent line that had one
-- For example: if you see "4X8 DFH2 20'" followed by "4X8 16'", the second item should be interpreted as "4X8 DFH2 16'"
-- If an item has a horizontal line through it, it should be ignored
+- If a line is missing material specifications (like "4X8 16'" instead of "4X8 PT 16'"), look at the PREVIOUS non-empty line to see what material was specified and carry forward the material specification from the most recent line that had one
+  For example: if you see "4X8 DF#2 20'" followed by "4X8 16'", the second item should be interpreted as "4X8 DF#2 16'"
+
 - The most common type of lumber is douglas fir, abbreviated DF, so if you see two letters handwritten and they look like they could be DF, they probably are
 
+- if you see a vertical line on the document, possibly with an arrowhead pointing downward, it means that you should carry forward the value above that line onto the items traversed by that line
+
+- These are common board lengths that are specified in inches rather than feet.  Look for these: 12-7/8, 14-7/16, 22-7/16, 80-3/4, 92-1/4, 104-1/4, 116-1/4
+
+- There are specific sizes for lams (Versalam, parallam, microlam, lvl, psl, glulam and other laminated lumber) so look for these as well, especially when looking at items that appear to be lams:
+   1-3/4x11-7/7, 1-3/4x14, 1-3/4x16, 1-3/4x7-1/4, 1-3/4x9-1/2,
+   3-1/2x11-7/8, 3-1/2x9-1/2, 3-1/2x14, 3-1/2x16,
+   5-1/4x11-7/8, 5-1/4x9-1/2, 5-1/4x14, 5-1/4x16, 5-1/4x18,
+   7x11-7/8, 7x14, 7x16, 7x18
+
 The following terms are commonly used:
-- DT
 - CDX
+- DF
 - Advantage
 - T&G
-- ATG 
+- ATG
 - All Thread
 - CDX
 - LVL
 - Micro lam
+- OSB
 - PSL
 - Parallam
 - PT
+- PTDF
+- Sturdi Floor
 - TJI
-
+- Versalam
 
 Examples of good matches:
 - Handwritten "2x12 20'" → Description: "2X12  20" (matches database format)
@@ -35,5 +47,3 @@ Format your response as a JSON array where each item has:
     "original_text": "the original handwritten text as you read it",
     "confidence": "high|medium|low - how confident you are in the match"
 }
-
-Focus on making descriptions that will match items in the provided database.

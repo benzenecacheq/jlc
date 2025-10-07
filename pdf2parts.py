@@ -143,7 +143,7 @@ def export_csv(scanned_items, output_file: str = "lumber_matches.csv") -> None:
     print(f"✓ CSV export saved to: {output_file}")
 
 ###############################################################################
-def run_viewer(csv_path: str, database_path: str) -> None:
+def run_viewer(csv_path: str, database_path: str, original_text: bool) -> None:
     """
     Run the viewer program to display results in a formatted table.
     
@@ -165,9 +165,11 @@ def run_viewer(csv_path: str, database_path: str) -> None:
         print(f"  Database: {database_path}")
     
         # Run the viewer program
-        result = subprocess.run([
-            sys.executable, str(viewer_path), csv_path, database_path
-        ], capture_output=False, text=True)
+        args = [sys.executable, str(viewer_path), csv_path, database_path]
+        if original_text:
+           print("  Flags: -O")
+           args.append("-O")
+        result = subprocess.run(args, capture_output=False, text=True)
         
         if result.returncode != 0:
             print(f"Error: Viewer program exited with code {result.returncode}")
@@ -264,7 +266,7 @@ def run_matcher(document, api_key, database_names, training_data, use_ai_matchin
     
     # Scan document
     notify_func(f"Scanning document: {document}")
-    scanned_items = scanner.scan_document_with_database_context(document, output_dir=str(output_dir), verbose=debug)
+    scanned_items = scanner.scan_document(document, output_dir=str(output_dir), verbose=debug)
     if not scanned_items:
         error_func("No items found in document")
         return None, None
@@ -303,33 +305,39 @@ subdirectory named after the input file (e.g., 'document_results/', 'lumber_list
     )
     
     parser.add_argument('document', 
-                       help='Path to the lumber list document (image file: .jpg, .png, .gif, .webp or PDF file: .pdf)')
+                        help='Path to the lumber list document (image file: .jpg, .png, .gif, .webp or PDF file: .pdf)')
     
     parser.add_argument('databases', nargs='+',
-                       help='One or more CSV files containing parts databases')
+                        help='One or more CSV files containing parts databases')
     
     parser.add_argument('-k', '--api-key',
-                       help='Anthropic API key (can also use ANTHROPIC_API_KEY env var)')
+                        help='Anthropic API key (can also use ANTHROPIC_API_KEY env var)')
     
+    parser.add_argument('--keyword-file',
+                        help='Name of a .csv file that provides additional keywords')
+                        
     parser.add_argument('-o', '--output-dir', default="",
-                       help='Base directory to save output files. A subdirectory named after the input file will be created (default: current directory)')
+                        help='Base directory to save output files. A subdirectory named after the input '
+                             'file will be created (default: current directory)')
     
+    parser.add_argument('-O', '--original-text', action='store_true',
+                        help='Show the original text in the viewer')
     parser.add_argument('--report-name', default='lumber_match_report.txt',
-                       help='Name for the text report file (default: lumber_match_report.txt)')
+                        help='Name for the text report file (default: lumber_match_report.txt)')
     
     parser.add_argument('--full-database', action='store_true',
-                       help='Send full database to Claude for matching (use with large SKU lists)')
+                        help='Send full database to Claude for matching (use with large SKU lists)')
     
     parser.add_argument('--verbose-matching', action='store_true',
-                       help='Show detailed matching debug output on console (default: save to files)')
+                        help='Show detailed matching debug output on console (default: save to files)')
     
     parser.add_argument('--training-data', nargs='*', default=[],
-                       help='One or more CSV files containing training data (original_text, correct_sku columns)')
+                        help='One or more CSV files containing training data (original_text, correct_sku columns)')
     
     parser.add_argument('-ai', '--use-ai-matching', action='store_true', help='Use AI for matching')
     
     parser.add_argument('-v', '--view', action='store_true',
-                       help='Run the viewer program to display results in a formatted table')
+                        help='Run the viewer program to display results in a formatted table')
     
     return parser.parse_args()
 
@@ -337,6 +345,9 @@ subdirectory named after the input file (e.g., 'document_results/', 'lumber_list
 def main():
     """Main program execution"""
     args = parse_arguments()
+
+    if args.keyword_file:
+        os.environ["MATCHER_KEYWORDS"] = args.keyword_file
     
     print("LUMBER LIST SCANNER AND PARTS MATCHER")
     print("="*50)
@@ -390,7 +401,7 @@ def main():
     
     # Run viewer if requested
     if args.view:
-        run_viewer(output_dir / "matches.csv", args.databases[0])
+        run_viewer(output_dir / "matches.csv", args.databases[0], args.original_text)
 
 ###############################################################################
 if __name__ == "__main__":

@@ -15,8 +15,8 @@
 
 # certain sizes with fractions cause issues.
 \b10' 1/4\b`104-1/4
-\b10'1/4\b`104-1/4
-\b10'4.1/4\b`104-1/4
+\b10.1/4\b`104-1/4
+\b10.4.1/4\b`104-1/4
 \b16'1/4\b`116-1/4
 \b16' 1/4\b`116-1/4
 11 6 1/4\b`116-1/4
@@ -70,3 +70,6 @@ all thread`allthrd
 
 # misc abbreviations
 \bt & g\b`t&g
+
+# things that should be categories but aren't currently
+versalam`parallam

@@ -76,9 +76,19 @@ class RulesMatcher:
 
         # Load misc items from settings json
         self.default_categories = self.get_setting("default categories")
-        self.keywords = self.get_setting("keywords")
         self.detractors = self.get_setting("detractors")
         self.special_lengths = set(self.get_setting("special lengths"))
+
+        # get keywords and load optional additional keywords
+        self.keywords = self.get_setting("keywords")
+        kwfile = os.getenv("MATCHER_KEYWORDS")
+        if kwfile:
+            kw = csv2dict(kwfile)
+            try:
+                kw = { name.lower():float(val) for name,val in kw.items() }
+            except:
+                raise Exception(f"Invalid format for keyword file {kwfile}")
+            self.keywords |= kw
 
         # Get the hardware characteristics
         self.lumber_categories = self.get_setting('lumber categories')
@@ -442,7 +452,7 @@ class RulesMatcher:
                     score += skumatch / len(item_components['other'])
             return score
 
-        # check for keywords that are required to be in both if found in either
+        # check for detractors that are required to be in both if found in either
         ifound = self._get_detractors(item_components)
         dfound = self._get_detractors(db_components, threshold=0.9)     # should be no typos
 

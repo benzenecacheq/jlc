@@ -140,13 +140,14 @@ class DocumentProcessor(QObject):
     error = pyqtSignal(str)
     notify = pyqtSignal(str)  # Signal for status updates
     
-    def __init__(self, pdf_file, api_key, database_files, output_dir, processing_dialog):
+    def __init__(self, pdf_file, api_key, database_files, output_dir, processing_dialog, keyword_file=None):
         super().__init__()
         self.pdf_file = pdf_file
         self.api_key = api_key
         self.database_files = database_files
         self.output_dir = output_dir
         self.processing_dialog = processing_dialog
+        self.keyword_file = keyword_file
         self.error_occurred = False
     
     def notify_function(self, message):
@@ -166,6 +167,10 @@ class DocumentProcessor(QObject):
             
             # Ensure output_dir is a Path object
             output_dir_path = Path(self.output_dir)
+            
+            # Set keyword file environment variable if provided
+            if self.keyword_file and os.path.exists(self.keyword_file):
+                os.environ["MATCHER_KEYWORDS"] = self.keyword_file
             
             # Run the matcher with notify and error functions
             result = run_matcher(
@@ -194,12 +199,13 @@ class DocumentProcessor(QObject):
 class ProcessingDialog(QDialog):
     """Dialog that shows processing status without OK button"""
     
-    def __init__(self, pdf_file, api_key, database_files, output_dir, parent=None):
+    def __init__(self, pdf_file, api_key, database_files, output_dir, parent=None, keyword_file=None):
         super().__init__(parent)
         self.pdf_file = pdf_file
         self.api_key = api_key
         self.database_files = database_files
         self.output_dir = output_dir
+        self.keyword_file = keyword_file
         self.init_ui()
         self.start_processing()
         
@@ -244,7 +250,7 @@ class ProcessingDialog(QDialog):
         # Create worker thread
         self.thread = QThread()
         self.worker = DocumentProcessor(
-            self.pdf_file, self.api_key, self.database_files, self.output_dir, self
+            self.pdf_file, self.api_key, self.database_files, self.output_dir, self, self.keyword_file
         )
         
         # Move worker to thread
@@ -613,7 +619,7 @@ class ProcessDocumentDialog(QDialog):
         
         # Open the processing dialog
         processing_dialog = ProcessingDialog(
-            pdf_file, api_key, self.database_files, str(output_dir), self.parent()
+            pdf_file, api_key, self.database_files, str(output_dir), self.parent(), self.parent_gui.keyword_file
         )
         processing_dialog.exec()
 
@@ -713,6 +719,7 @@ class LumberViewerGUI(QMainWindow):
         self.last_pdf_dir = ""
         self.last_db_dir = ""
         self.last_database_files = []
+        self.keyword_file = ""
         
         self.init_ui()
         self.load_settings()  # Load settings after UI is initialized
@@ -765,6 +772,7 @@ class LumberViewerGUI(QMainWindow):
             # Create sections
             config['ProcessDocument'] = {}
             config['LastResults'] = {}
+            config['Options'] = {}
             
             # Save ProcessDocument settings (will be populated by ProcessDocumentDialog)
             if hasattr(self, 'last_api_key') and self.last_api_key:
@@ -775,6 +783,10 @@ class LumberViewerGUI(QMainWindow):
                 config['ProcessDocument']['db_dir'] = self.last_db_dir
             if hasattr(self, 'last_database_files') and self.last_database_files:
                 config['ProcessDocument']['database_files'] = '|'.join(self.last_database_files)
+            
+            # Save Options settings
+            if hasattr(self, 'keyword_file') and self.keyword_file:
+                config['Options']['keyword_file'] = self.keyword_file
             
             # Save LastResults settings
             if self.csv_file:
@@ -808,7 +820,10 @@ class LumberViewerGUI(QMainWindow):
                     self.last_database_files = db_files_str.split('|')
                 else:
                     self.last_database_files = []
-                
+            
+            # Load Options settings
+            if 'Options' in config:
+                self.keyword_file = config.get('Options', 'keyword_file', fallback='')
             
             # Load LastResults settings
             if 'LastResults' in config:
@@ -908,6 +923,15 @@ class LumberViewerGUI(QMainWindow):
         self.show_no_matches_action.setChecked(True)
         self.show_no_matches_action.triggered.connect(self.apply_filters)
         view_menu.addAction(self.show_no_matches_action)
+        
+        # Options menu
+        options_menu = menubar.addMenu('&Options')
+        
+        # Keyword file action
+        keyword_file_action = QAction('&Keyword File...', self)
+        keyword_file_action.setStatusTip('Select keyword file for matching')
+        keyword_file_action.triggered.connect(self.select_keyword_file)
+        options_menu.addAction(keyword_file_action)
         
         # Help menu
         help_menu = menubar.addMenu('&Help')
@@ -1267,6 +1291,18 @@ class LumberViewerGUI(QMainWindow):
         self.show_matches_action.setChecked(True)
         self.show_no_matches_action.setChecked(True)
         self.apply_filters()
+        
+    def select_keyword_file(self):
+        """Select keyword file using file dialog"""
+        filename, _ = QFileDialog.getOpenFileName(
+            self, "Select Keyword File", "", "CSV Files (*.csv);;All Files (*)"
+        )
+        
+        if filename:
+            self.keyword_file = filename
+            self.save_settings()
+            QMessageBox.information(self, "Keyword File Selected", 
+                                  f"Keyword file set to:\n{filename}")
         
     def show_about(self):
         """Show about dialog"""
