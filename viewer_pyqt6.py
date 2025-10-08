@@ -25,6 +25,105 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QThread, QObject
 from PyQt6.QtGui import QFont, QPalette, QColor, QAction, QKeyEvent
 
+class KeywordFileDialog(QDialog):
+    """Dialog for selecting keyword file with text input and browse button"""
+    
+    def __init__(self, current_file="", parent=None):
+        super().__init__(parent)
+        self.current_file = current_file
+        self.parent_gui = parent
+        self.last_keyword_dir = ""
+        self.init_ui()
+        self.load_settings()
+        
+    def init_ui(self):
+        """Initialize the dialog UI"""
+        self.setWindowTitle("Select Keyword File")
+        self.setModal(True)
+        self.resize(500, 120)
+        
+        layout = QVBoxLayout(self)
+        
+        # Instructions
+        instructions = QLabel("Enter keyword file path or use Browse to select a file:")
+        layout.addWidget(instructions)
+        
+        # File input section
+        file_layout = QHBoxLayout()
+        
+        self.file_input = QLineEdit()
+        self.file_input.setText(self.current_file)
+        self.file_input.setPlaceholderText("Enter file path or leave empty to clear")
+        file_layout.addWidget(self.file_input)
+        
+        browse_btn = QPushButton("Browse...")
+        browse_btn.clicked.connect(self.browse_file)
+        file_layout.addWidget(browse_btn)
+        
+        layout.addLayout(file_layout)
+        
+        # Buttons
+        button_layout = QHBoxLayout()
+        
+        ok_button = QPushButton("OK")
+        ok_button.clicked.connect(self.accept)
+        ok_button.setDefault(True)
+        button_layout.addWidget(ok_button)
+        
+        cancel_button = QPushButton("Cancel")
+        cancel_button.clicked.connect(self.reject)
+        button_layout.addWidget(cancel_button)
+        
+        layout.addLayout(button_layout)
+        
+    def browse_file(self):
+        """Browse for keyword file"""
+        # Start from the last used directory if available
+        start_dir = ""
+        if self.last_keyword_dir:
+            start_dir = self.last_keyword_dir
+        elif self.parent_gui and hasattr(self.parent_gui, 'last_keyword_dir') and self.parent_gui.last_keyword_dir:
+            start_dir = self.parent_gui.last_keyword_dir
+        
+        filename, _ = QFileDialog.getOpenFileName(
+            self, "Select Keyword File", start_dir, "CSV Files (*.csv);;All Files (*)"
+        )
+        if filename:
+            self.file_input.setText(filename)
+            # Save the directory (not the full path) for next time
+            self.last_keyword_dir = str(Path(filename).parent)
+            self.save_settings()
+    
+    def get_keyword_file(self):
+        """Get the selected keyword file path"""
+        return self.file_input.text().strip()
+    
+    def load_settings(self):
+        """Load settings from parent GUI"""
+        try:
+            if not self.parent_gui:
+                return
+                
+            # Load keyword directory from parent GUI
+            if hasattr(self.parent_gui, 'last_keyword_dir') and self.parent_gui.last_keyword_dir:
+                self.last_keyword_dir = self.parent_gui.last_keyword_dir
+        except Exception as e:
+            print(f"Error loading KeywordFileDialog settings: {e}")
+    
+    def save_settings(self):
+        """Save settings to parent GUI"""
+        try:
+            if not self.parent_gui:
+                return
+                
+            # Update parent GUI with current directory
+            self.parent_gui.last_keyword_dir = self.last_keyword_dir
+            # Save to config file
+            self.parent_gui.save_settings()
+            
+        except Exception as e:
+            print(f"Error saving KeywordFileDialog settings: {e}")
+
 class SKUSelectionDialog(QDialog):
     """Dialog for selecting SKU from multiple matches and editing quantity"""
     
@@ -720,6 +819,7 @@ class LumberViewerGUI(QMainWindow):
         self.last_db_dir = ""
         self.last_database_files = []
         self.keyword_file = ""
+        self.last_keyword_dir = ""
         
         self.init_ui()
         self.load_settings()  # Load settings after UI is initialized
@@ -787,6 +887,8 @@ class LumberViewerGUI(QMainWindow):
             # Save Options settings
             if hasattr(self, 'keyword_file') and self.keyword_file:
                 config['Options']['keyword_file'] = self.keyword_file
+            if hasattr(self, 'last_keyword_dir') and self.last_keyword_dir:
+                config['Options']['keyword_dir'] = self.last_keyword_dir
             
             # Save LastResults settings
             if self.csv_file:
@@ -824,6 +926,7 @@ class LumberViewerGUI(QMainWindow):
             # Load Options settings
             if 'Options' in config:
                 self.keyword_file = config.get('Options', 'keyword_file', fallback='')
+                self.last_keyword_dir = config.get('Options', 'keyword_dir', fallback='')
             
             # Load LastResults settings
             if 'LastResults' in config:
@@ -1293,16 +1396,17 @@ class LumberViewerGUI(QMainWindow):
         self.apply_filters()
         
     def select_keyword_file(self):
-        """Select keyword file using file dialog"""
-        filename, _ = QFileDialog.getOpenFileName(
-            self, "Select Keyword File", "", "CSV Files (*.csv);;All Files (*)"
-        )
-        
-        if filename:
-            self.keyword_file = filename
+        """Open keyword file selection dialog with text box and browse button"""
+        dialog = KeywordFileDialog(self.keyword_file, self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            self.keyword_file = dialog.get_keyword_file()
             self.save_settings()
-            QMessageBox.information(self, "Keyword File Selected", 
-                                  f"Keyword file set to:\n{filename}")
+            if self.keyword_file:
+                QMessageBox.information(self, "Keyword File Updated", 
+                                      f"Keyword file set to:\n{self.keyword_file}")
+            else:
+                QMessageBox.information(self, "Keyword File Cleared", 
+                                      "Keyword file has been cleared.")
         
     def show_about(self):
         """Show about dialog"""
