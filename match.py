@@ -294,7 +294,7 @@ class RulesMatcher:
                 split_it |= word[:dash] in self.keywords or word[dash+1:] in self.keywords
                  
                 # if it's a dimension then unless the dash is followed by a fraction, split it
-                split_it |= self._looks_like_dimension(word) and not self._looks_like_fraction(word[dash+1:])
+                split_it &= not (self._looks_like_dimension(word) and self._looks_like_fraction(word[dash+1:]))
 
                 if split_it:
                     desc[i] = word[:dash]
