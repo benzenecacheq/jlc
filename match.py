@@ -54,6 +54,7 @@ class RulesMatcher:
 
         self.sku2partmap = None
         self.special_lengths = None
+        self.scoring = None
 
     def get_setting(self, key):
         if key not in self.settings:
@@ -78,6 +79,7 @@ class RulesMatcher:
         self.default_categories = self.get_setting("default categories")
         self.detractors = self.get_setting("detractors")
         self.special_lengths = set(self.get_setting("special lengths"))
+        self.scoring = self.get_setting("scoring")
 
         # get keywords and load optional additional keywords
         self.keywords = self.get_setting("keywords")
@@ -161,7 +163,9 @@ class RulesMatcher:
             self.sku_parts += self._select_parts(database["parts"], 'usuallyusethesku')
             self.hardware_parts += self._select_parts(database["parts"], self.hardware_categories)
 
-    def _has_keyword(self, components, threshold = 0.7):
+    def _has_keyword(self, components, threshold=None):
+        if threshold is None:
+            threshold = self.scoring["keyword-threshold"]
         # keyword can be a list or a single item
         items = ((components["attrs"] if 'attrs' in components else []) +
                  (components["other"] if 'other' in components else []))
@@ -440,7 +444,7 @@ class RulesMatcher:
             divisor = (len(item_components['other'])*2 + len(db_components['other'])) / 3
             for i in item_components['other']:
                 skumatch = fuzzy_match(i, sku)
-                skumatch = skumatch if skumatch > 0.6 else 0.0
+                skumatch = skumatch if skumatch > self.scoring["skumatch-threshold"]  else 0.0
                 maxmatch = 0.0
                 for d in db_components['other']:
                     maxmatch = max(maxmatch, fuzzy_match(i, d))
@@ -464,10 +468,10 @@ class RulesMatcher:
 
         for name,dbc in db_components.items():
             if type(dbc) == type([]) and name in item_components:
-                multiplier = 0.05 if name == "attrs" else 0.03
+                multiplier = self.scoring[name+"-multiplier"]
                 matches = fuzzy_match(dbc, item_components[name], threshold=0.6)
                 for n,s in matches.items():
-                    s = 1.0 if s > 0.8 else s
+                    s = 1.0 if s > self.scoring["close-enough"] else s
                     l = self.keywords[n] if n in self.keywords else len(n)
                     score += s * multiplier * l
             elif name == "attrs":
@@ -476,20 +480,20 @@ class RulesMatcher:
                     if d in self.default_categories:
                         score += self.default_categories[d]
             elif name == "dimensions" and name in item_components:
-                score += 0.4 * self._dimensions_match(dbc, item_components[name])
+                score += self.scoring["dimensions-multiplier"] * self._dimensions_match(dbc, item_components[name])
                 if "length" not in item_components and "length" not in db_components:
-                    score += .25
+                    score += self.scoring["no-length-adder"]
             elif name == "length" and name in item_components:
-                score += 0.3 * self._lengths_equal(dbc, item_components.get(name))
+                score += self.scoring["length-multiplier"] * self._lengths_equal(dbc, item_components.get(name))
             elif name in item_components and dbc == item_components.get(name):
-                score += 0.1
+                score += self.scoring["misc-adder"]     # I don't think this ever happens
 
         if "dimensions" not in item_components and "dimensions" not in db_components:
             # this is probably not lumber
             if "length" not in item_components and "length" not in db_components:
-                score *= 2.0
+                score *= self.scoring["no-dim-no-len-multiplier"]
             else:
-                score *= 1.6
+                score *= self.scoring["no-dim-multiplier"]
 
         # sometimes people will put the length in with the dimensions
         if (item_components.get('dimensions') is not None and db_components.get('dimensions') is not None and
@@ -501,10 +505,11 @@ class RulesMatcher:
             a = copy.deepcopy(a)
             del a['length']
             a['dimensions'] = dims + 'x' + length  # slightly prefer this order
+            ldla = self.scoring["length-dim-last-add"]
             if 'length' in db_components:
-                score = max(score, self._calculate_lumber_match_score(b, a, sku, sell_by_foot=sell_by_foot) + 0.05)
+                score = max(score, self._calculate_lumber_match_score(b, a, sku, sell_by_foot=sell_by_foot) + ldla)
             else:
-                score = max(score, self._calculate_lumber_match_score(a, b, sku, sell_by_foot=sell_by_foot) + 0.05)
+                score = max(score, self._calculate_lumber_match_score(a, b, sku, sell_by_foot=sell_by_foot) + ldla)
             a['dimensions'] = length + 'x' + dims
             if 'length' in db_components:
                 score = max(score, self._calculate_lumber_match_score(b, a, sku, sell_by_foot=sell_by_foot))
@@ -521,7 +526,7 @@ class RulesMatcher:
         if sell_by_foot:
             # match cases where we are selling by linear feet instead of each item
             length = ""
-            new_score = -0.05   # this should be worse than an exact matching length
+            new_score = self.scoring["sell-by-foot"]   # this should be worse than an exact matching length
             acopy = copy.deepcopy(item_components)
             if 'length' in item_components:
                 # remove the length from the item and try again
@@ -600,7 +605,7 @@ class RulesMatcher:
                 self.debug_part.lower() == part['Item Number'].lower()):
                 print(f"items={items}")
                 pdb.set_trace()
-            scores = fuzzy_match(items, part['Item Number'], threshold=0.7)
+            scores = fuzzy_match(items, part['Item Number'], threshold=self.scoring["match-threshold"])
             if len(scores):
                 # add any other information that might help improve match
                 score = self._calculate_lumber_match_score(item_components, part['components'], sku="") / 10
@@ -732,7 +737,7 @@ class RulesMatcher:
                 if 'sell_by_foot' in item_components:
                     del item_components['sell_by_foot']
 
-            if match_score >= 0.7:  # Threshold for considering it a match
+            if match_score >= self.scoring["match-threshold"]:  # Threshold for considering it a match
                 self._add_match(matches, item_desc, part, match_score, length)
                 if self.debug:
                     print(f"    MATCH: {part_number} -> {part_desc} (score: {match_score:.2f})")
@@ -863,42 +868,7 @@ class RulesMatcher:
                 print("-" * 50)
             print(f"  [{i:2d}] {item.description}")
 
-            all_matches = []
-            for db_name in self.databases:
-                if self.debug:
-                    print(f"\n  Checking database: {db_name}")
-
-                # Use rules-based
-                matches = self.match_item(item, db_name)
-                all_matches.extend(matches)
-
-                if self.debug:
-                    print(f"    Found {len(matches)} matches in {db_name}")
-                
-                # Always write to debug log file for detailed analysis
-                with open(debug_log_file, 'a', encoding='utf-8') as log_file:
-                    log_file.write(f"\n=== ITEM {i}: {item.description} ===\n")
-                    log_file.write(f"Database: {db_name}\n")
-                    log_file.write(f"Original: {item.original_text}\n")
-                    log_file.write(f"Quantity: {item.quantity}\n")
-                    log_file.write(f"Matches found: {len(matches)}\n")
-                    for match in matches:
-                        log_file.write(f"  - {match.confidence}: {match.part_number} | {match.database_description}\n")
-                    log_file.write("-" * 50 + "\n")
-
-            # Remove duplicates and sort by confidence
-            unique_matches = []
-            seen_parts = set()
-            for match in all_matches:
-                key = (match.part_number, match.database_name)
-                if key not in seen_parts:
-                    unique_matches.append(match)
-                    seen_parts.add(key)
-
-            confidence_order = {"high": 0, "medium": 1, "low": 2}
-            unique_matches.sort(key=lambda x: confidence_order.get(x.confidence, 3))
-
-            item.matches = unique_matches[:3]  # Keep top 3 matches
+            item.matches = self.match_lumber_item(item, database_name=None, use_original=False)
 
             if self.debug:
                 if item.matches:
@@ -908,17 +878,3 @@ class RulesMatcher:
                     print("  ✗ No matches found")
         
         print(f"\n✓ Detailed matching log saved to: {debug_log_file}")
-
-    def match_item(self, item: ScannedItem, database_name: str) -> List[PartMatch]:
-        if self.debug:
-            print(f"\nDEBUG: Keyword matching for '{item}' in {database_name}")
-
-        matches = self.match_lumber_item(item, database_name)
-        return matches
-
-        if len(matches) > 0:
-            return matches
-
-        # Use enhanced general matching for hardware, etc.
-        return self.match_general_item(item, database_name)
-

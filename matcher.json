@@ -2,10 +2,13 @@
    "** comments":[
       "This document contains the various configuration options for the rules-based part matcher.       ",
       "                                                                                                 ",
-      " default catgories       - this is used to provide a bonus if we don't have any 'attr' to        ",
+      " scoring                 - These are components of the scoring function.  No specific details    ",
+      "                           are provided here.  You will need to look at the code to see how they ",
+      "                           are used.                                                             ",
+      " default catgories       - This is used to provide a bonus if we don't have any 'attr' to        ",
       "                           specify the category of an item.  This bonus will be added to         ",
       "                           items in the default category to encourage using that when matching   ",
-      " keywords                - this is used to pick up additional items that are not in a category.  ",
+      " keywords                - This is used to pick up additional items that are not in a category.  ",
       "                           When a keyword is seen in the item_components, all partslist items    ",
       "                           containing that keyword will be added to the potential match list.    ",
       "                           In addition, when matching, the number will be multiplied by the      ",
@@ -21,6 +24,22 @@
       " hardware terms          - If you see these items in the description, it's a hardware item.      ",
    null],
 
+   "scoring":{
+      "match-threshold"         : 0.7,
+      "keyword-threshold"       : 0.7,
+      "skumatch-threshold"      : 0.6,
+      "close-enough"            : 0.8,
+      "dimensions-multiplier"   : 0.4,
+      "no-length-adder"         : 0.25,
+      "length-multiplier"       : 0.3,
+      "misc-adder"              : 0.1,
+      "no-dim-multiplier"       : 1.6,
+      "no-dim-no-len-multiplier": 2.0,
+      "attrs-multiplier"        : 0.05,
+      "other-multiplier"        : 0.03,
+      "length-dim-last-add"     : 0.05,
+      "sell-by-foot"            : -0.05
+   },
    "default categories":{
       "df" : 0.1
    },
