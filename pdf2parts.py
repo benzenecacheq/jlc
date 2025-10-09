@@ -169,6 +169,7 @@ def run_viewer(csv_path: str, database_path: str, original_text: bool) -> None:
         if original_text:
            print("  Flags: -O")
            args.append("-O")
+        args.append("-w45")
         result = subprocess.run(args, capture_output=False, text=True)
         
         if result.returncode != 0:
