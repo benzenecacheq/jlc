@@ -23,6 +23,7 @@ class RulesMatcher:
         self.settings = None            # these get loaded from matcher.json
 
         self.databases = databases
+        self.merged_database = None
         self.attrs = None
         self.attrmap = None
         self.debug_item = None
@@ -105,6 +106,7 @@ class RulesMatcher:
         self.attrmap = {}       # list of database entries by attribute
         self.sku2part_map = {}
 
+        self.merged_database = {}
         for fname,database in self.databases.items():
             for entry in database["parts"]:
                 # Assume the first column is the attributes
@@ -123,10 +125,9 @@ class RulesMatcher:
                        self.attrs[attr] = name
 
                 entry['attr'] = name
+                self.merged_database[entry['Item Number']] = entry
 
-                self.sku2part_map[entry['Item Number']] = entry
-
-        self.sorted_skus = sorted(self.sku2part_map)
+        self.sorted_skus = sorted(self.merged_database)
         self.skus_by_letter = {}
         i = 0
         while i < len(self.sorted_skus):
@@ -144,37 +145,35 @@ class RulesMatcher:
         self.hardware_parts = []
         self.keyword_parts = {k:[] for k in self.keywords if k not in self.attrs}
 
-        for fname,database in self.databases.items():
-            for entry in database["parts"]:
-                db_components = self.parse_lumber_item(entry["Item Description"], is_db=True)
-                entry['components'] = db_components
-                attrs = db_components.get('attrs')
-                eattr = entry['attr']
-                db_components['attrs'] = [eattr]
-                if attrs is not None and attrs != [eattr]:
-                    if eattr in attrs:
-                        attrs.remove(eattr)
-                    if 'other' not in db_components:
-                        db_components['other'] = attrs
-                    else:
-                        db_components['other'] = list(set(db_components['other'] + attrs))
-                if 'attrs' not in db_components:
-                    db_components['attrs'] = [entry['attr']]
-                elif entry['attr'] not in db_components['attrs']:
-                    db_components['attrs'].append(entry['attr'])
-                if 'dimensions' in db_components and ('length' in db_components or 
-                                                      entry['Stocking Multiple'].lower() == 'lf'):
-                    self.board_parts.append(entry)
-                elif 'dimensions' in db_components:
-                    self.dim_parts.append(entry)
-                
-                keywords = self._has_keyword(db_components, threshold=0.9)
-                for k in keywords:
-                    if k not in self.attrs:
-                        self.keyword_parts[k].append(entry)
+        for entry in self.merged_database.values():
+            db_components = self.parse_lumber_item(entry["Item Description"], is_db=True)
+            entry['components'] = db_components
+            attrs = db_components.get('attrs')
+            eattr = entry['attr']
+            db_components['attrs'] = [eattr]
+            if attrs is not None and attrs != [eattr]:
+                if eattr in attrs:
+                    attrs.remove(eattr)
+                if 'other' not in db_components:
+                    db_components['other'] = attrs
+                else:
+                    db_components['other'] = list(set(db_components['other'] + attrs))
+            if 'attrs' not in db_components:
+                db_components['attrs'] = [entry['attr']]
+            elif entry['attr'] not in db_components['attrs']:
+                db_components['attrs'].append(entry['attr'])
+            if 'dimensions' in db_components and ('length' in db_components or 
+                                                  entry['Stocking Multiple'].lower() == 'lf'):
+                self.board_parts.append(entry)
+            elif 'dimensions' in db_components:
+                self.dim_parts.append(entry)
+            
+            keywords = self._has_keyword(db_components, threshold=0.9)
+            for k in keywords:
+                if k not in self.attrs:
+                    self.keyword_parts[k].append(entry)
 
-            self.sku_parts += self._select_parts(database["parts"], 'usuallyusethesku')
-            self.hardware_parts += self._select_parts(database["parts"], self.hardware_categories)
+        self.hardware_parts += self._select_parts(self.merged_database.values(), self.hardware_categories)
 
     def _has_keyword(self, components, threshold=None):
         if threshold is None:
@@ -671,7 +670,7 @@ class RulesMatcher:
 
         return matches
 
-    def match_lumber_item(self, item: ScannedItem, database_name: str=None, use_original=False) -> List[PartMatch]:
+    def match_lumber_item(self, item: ScannedItem, use_original=False) -> List[PartMatch]:
         """Specialized matching for lumber database format"""
         item_desc = item.description
         if use_original:
@@ -684,17 +683,10 @@ class RulesMatcher:
 
             item_desc = otext
 
-        if database_name is None:
-            matches = []
-            for db in sorted(self.databases):
-                matches += self.match_lumber_item(item, db)
-            return matches
         if self.debug:
             print(f"\nDEBUG: Lumber-specific matching for '{item_desc}' in {database_name}")
 
-        database = self.databases[database_name]
         parts = []
-        headers = database['headers']
 
         # Parse the scanned item to extract lumber components
         item_components = self.parse_lumber_item(item_desc)
@@ -731,14 +723,14 @@ class RulesMatcher:
                 parts = self.board_parts
             elif 'dimensions' in item_components:
                 # if there are dimensions and length, it's probably a board
-                parts = self._unique_parts(self.dim_parts + self.board_parts)
+                parts = self.dim_parts + self.board_parts
             else:
                 # I no longer have a SKU-only list so try the whole database
-                matches = self.try_sku_match(item_desc, database['parts'])
+                matches = self.try_sku_match(item_desc, self.merged_database.values())
                 if len(matches) > 0:
                     return self.sort_matches(item, matches)
 
-            #parts = database['parts']
+            #parts = self.merged_database.values()
         
         # add any keyword parts to the list
         keywords = self._has_keyword(item_components)
@@ -746,7 +738,6 @@ class RulesMatcher:
             for k in keywords:
                 if k not in self.attrs:
                     parts += self.keyword_parts[k]
-            parts = self._unique_parts(parts)
 
         # If this is hardware, don't look at any lumber.
         words = attrs if attrs is not None else [] + item_components["other"] if "other" in item_components else []
@@ -755,6 +746,7 @@ class RulesMatcher:
 
         matches = []
         confidence_scores = []
+        parts = self._unique_parts(parts)
         for idx,part in enumerate(parts):
             part_number = part.get('Item Number', '').strip()
             part_desc = part.get('Item Description', '').strip()
@@ -806,12 +798,12 @@ class RulesMatcher:
         
         if use_original:
             # see if we get a better answer with the original text
-            new_matches = self.match_lumber_item(item, database_name, True)
+            new_matches = self.match_lumber_item(item, True)
             if len(matches) == 0 or (len(new_matches) > 0 and matches[0].score <= new_matches[0].score):
                 matches = new_matches
 
         # if we are doing variable length, set the quantity to the qty x length
-        if len(matches) > 0 and self.sku2part_map[matches[0].part_number].get("Stocking Multiple") == "LF":
+        if len(matches) > 0 and self.merged_database[matches[0].part_number].get("Stocking Multiple") == "LF":
             if matches[0].lf == "": 
                 # no length was set so assume quantity is the length
                 item.quantity = "1/" + item.quantity
@@ -834,67 +826,6 @@ class RulesMatcher:
                break
 
         return sorted_matches[:n]  # Return top matches
-
-
-    def match_general_item(self, item: ScannedItem, database_name: str) -> List[PartMatch]:
-        """General matching for non-lumber items (hardware, screws, etc.)"""
-        if self.debug:
-            print(f"  Using general matching for non-lumber item")
-
-        database = self.databases[database_name]
-        parts = database['parts']
-        headers = database['headers']
-
-        if not parts:
-            return []
-
-        matches = []
-        item_desc_lower = item.description.lower()
-
-        # Extract key terms from the scanned item
-        item_terms = set(re.findall(r'\w+', item_desc_lower))
-
-        for part in parts:
-            item_number = part.get('Item Number', '').strip()
-            item_desc = part.get('Item Description', '').strip()
-            customer_terms = part.get('Customer Terms', '').strip()
-            stocking_multiple = part.get('Stocking Multiple', '').strip()
-
-            if not item_number or not item_desc:
-                continue
-
-            # Combine description and customer terms for matching
-            full_desc = f"{item_desc} {customer_terms}".lower()
-            db_terms = set(re.findall(r'\w+', full_desc))
-
-            # Calculate overlap
-            overlap = len(item_terms.intersection(db_terms))
-            total_unique = len(item_terms.union(db_terms))
-
-            if total_unique > 0:
-                overlap_ratio = overlap / total_unique
-
-                # More lenient threshold for general items
-                if overlap_ratio > 0.2:  # 20% overlap
-                    confidence = "high" if overlap_ratio > 0.5 else "medium" if overlap_ratio > 0.35 else "low"
-
-                    match = PartMatch(
-                        description=item_desc_lower,
-                        part_number=item_number,
-                        database_name=database_name,
-                        database_description=f"{item_desc} | Terms: {customer_terms} | Overlap: {overlap_ratio:.2f}",
-                        score=overlap_ratio,
-                        confidence=confidence,
-                    )
-                    matches.append(match)
-
-                    if self.debug:
-                        print(f"    General match: {item_number} -> {item_desc} (overlap: {overlap_ratio:.2f})")
-
-        # Sort by overlap ratio (stored in description for now)
-        matches.sort(key=lambda x: float(x.database_description.split('Overlap: ')[1].split()[0]), reverse=True)
-
-        return matches[:3]
 
     def find_all_matches(self, scanned_items, output_dir: str = ".") -> None:
         """Find matches using original keyword-based matching (for comparison)"""
@@ -926,7 +857,7 @@ class RulesMatcher:
                 print("-" * 50)
             print(f"  [{i:2d}] {item.description}")
 
-            item.matches = self.match_lumber_item(item, database_name=None, use_original=False)
+            item.matches = self.match_lumber_item(item, use_original=False)
 
             if self.debug:
                 if item.matches:
