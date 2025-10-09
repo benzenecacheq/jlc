@@ -1015,11 +1015,17 @@ class LumberViewerGUI(QMainWindow):
         view_menu = menubar.addMenu('&View')
         
         # Filter actions
-        self.show_matches_action = QAction('Show Items with &Matches', self)
-        self.show_matches_action.setCheckable(True)
-        self.show_matches_action.setChecked(True)
-        self.show_matches_action.triggered.connect(self.apply_filters)
-        view_menu.addAction(self.show_matches_action)
+        self.show_unique_matches_action = QAction('Show Items with &Unique Matches', self)
+        self.show_unique_matches_action.setCheckable(True)
+        self.show_unique_matches_action.setChecked(True)
+        self.show_unique_matches_action.triggered.connect(self.apply_filters)
+        view_menu.addAction(self.show_unique_matches_action)
+        
+        self.show_multiple_matches_action = QAction('Show Items with &Multiple Matches', self)
+        self.show_multiple_matches_action.setCheckable(True)
+        self.show_multiple_matches_action.setChecked(True)
+        self.show_multiple_matches_action.triggered.connect(self.apply_filters)
+        view_menu.addAction(self.show_multiple_matches_action)
         
         self.show_no_matches_action = QAction('Show Items with &No Matches', self)
         self.show_no_matches_action.setCheckable(True)
@@ -1338,7 +1344,8 @@ class LumberViewerGUI(QMainWindow):
                 
             search_text = self.search_input.text().lower()
             min_confidence = self.confidence_spin.value() / 100.0
-            show_matches = self.show_matches_action.isChecked()
+            show_unique_matches = self.show_unique_matches_action.isChecked()
+            show_multiple_matches = self.show_multiple_matches_action.isChecked()
             show_no_matches = self.show_no_matches_action.isChecked()
             
             self.filtered_data = []
@@ -1353,10 +1360,20 @@ class LumberViewerGUI(QMainWindow):
                 
                 # Check match status filter
                 has_matches = len(item['matches']) > 0
-                if has_matches and not show_matches:
-                    continue
-                if not has_matches and not show_no_matches:
-                    continue
+                if has_matches:
+                    # Item has matches - check if it's unique or multiple
+                    if len(item['matches']) == 1:
+                        # Unique match
+                        if not show_unique_matches:
+                            continue
+                    else:
+                        # Multiple matches
+                        if not show_multiple_matches:
+                            continue
+                else:
+                    # No matches
+                    if not show_no_matches:
+                        continue
                 
                 # Check confidence filter with error handling
                 if has_matches:
@@ -1391,7 +1408,8 @@ class LumberViewerGUI(QMainWindow):
         """Clear all filters"""
         self.search_input.clear()
         self.confidence_spin.setValue(0)
-        self.show_matches_action.setChecked(True)
+        self.show_unique_matches_action.setChecked(True)
+        self.show_multiple_matches_action.setChecked(True)
         self.show_no_matches_action.setChecked(True)
         self.apply_filters()
         
