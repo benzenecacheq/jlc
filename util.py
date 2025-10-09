@@ -47,9 +47,9 @@ def fuzzy_match(arg1, arg2, is_dimension=False, threshold = 0.00001):
     """
     # if there is a list make it arg1; if arg1 is also a list then we want
     # that one to be the keys on the results, so you still want to swap them
-    if type(arg2) == type([]):
+    if type(arg2) in (type([]), type({})):
         arg1, arg2 = arg2, arg1
-    if type(arg1) == type([]):
+    if type(arg1) in (type([]), type({})):
         # if the first arg is a list, return a sorted list of matching words
         found = {}
         for s in arg1:
@@ -65,13 +65,13 @@ def fuzzy_match(arg1, arg2, is_dimension=False, threshold = 0.00001):
         return found
 
     # we only get here if there are two strings passed in
-    str1 = arg1
-    str2 = arg2
+    str1 = arg1.lower()
+    str2 = arg2.lower()
 
     # Handle exact matches and very short strings
     if str1 == str2:
         return 1.0
-    
+
     # Convert to lowercase and remove non-alphanumeric for comparison
     if is_dimension:
         # keep fractions
@@ -81,7 +81,7 @@ def fuzzy_match(arg1, arg2, is_dimension=False, threshold = 0.00001):
 
     if len(s1) == 0 | len(s2) == 0:
         return 0
-    
+
     # Calculate Levenshtein distance
     def damerau_levenshtein_distance(a, b):
         """Damerau-Levenshtein distance with transposition support"""

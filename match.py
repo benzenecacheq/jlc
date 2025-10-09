@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3).strip('\'"')
 ###############################################################################
 # Match items in database programmatically.
 ###############################################################################
@@ -52,7 +52,9 @@ class RulesMatcher:
         self.hardware_parts = None
         self.keyword_parts = None
 
-        self.sku2partmap = None
+        self.sku2part_map = None
+        self.sorted_skus = None
+        self.skus_by_letter = None
         self.special_lengths = None
         self.scoring = None
 
@@ -101,7 +103,7 @@ class RulesMatcher:
         # in the database
         self.attrs = {}    # map alternative attribute names
         self.attrmap = {}       # list of database entries by attribute
-        self.sku2partmap = {}
+        self.sku2part_map = {}
 
         for fname,database in self.databases.items():
             for entry in database["parts"]:
@@ -122,7 +124,18 @@ class RulesMatcher:
 
                 entry['attr'] = name
 
-                self.sku2partmap[entry['Item Number']] = entry
+                self.sku2part_map[entry['Item Number']] = entry
+
+        self.sorted_skus = sorted(self.sku2part_map)
+        self.skus_by_letter = {}
+        i = 0
+        while i < len(self.sorted_skus):
+            fl = self.sorted_skus[i][0]
+            skus = []
+            while i < len(self.sorted_skus) and self.sorted_skus[i][0] == fl:
+                skus.append(self.sorted_skus[i])
+                i += 1
+            self.skus_by_letter[fl] = skus
 
         # load the board parts
         self.board_parts = []
@@ -175,6 +188,13 @@ class RulesMatcher:
         # dimensions look like 2x4 or 4x8x1/2
         if requirex and 'x' not in word: 
             return False
+        # if there is a - followed by something that isn't a fraction, bail
+        dashes = [m.start() for m in re.finditer(re.escape('-'), word)]
+        for dash in dashes:
+            x = word[dash:].find('x')
+            check = (word[dash+1:dash+x] if x > 0 else word[dash+1:]).strip('\'"')
+            if not self._looks_like_fraction(check):
+                return False
         invalid_pattern = "[^0-9 'x/-]"
         return re.search(invalid_pattern, word) is None
 
@@ -201,7 +221,7 @@ class RulesMatcher:
     def _looks_like_fraction(self, word, stop_at_x=True):
         if stop_at_x and 'x' in word:
             word = word[:word.find('x')]
-        valid_pattern = "[0-9]* */ *[0-9]*"
+        valid_pattern = "[0-9]+ */ *[0-9]+"
         return re.fullmatch(valid_pattern, word) is not None
 
     def _looks_like_length(self, word, ok1and2=False):
@@ -231,7 +251,37 @@ class RulesMatcher:
             return fuzzy_match(word1, word2, is_dimension=True)
         return ret
 
-    def _cleanup(self, description):
+    def _unique_parts(self, parts):
+        # remove duplicate parts from the list using the part number as key to a dict
+        map = {d["Item Number"]: d for d in parts}
+        
+        return sorted(map.values(), key=lambda item: item["Item Description"])
+
+    def _select_parts(self, parts, categories):
+        selected = []
+        if type(categories) == type([]):
+            for c in categories:
+                selected += self._select_parts(parts, c)
+            return self._unique_parts(selected)
+
+        # there can be misspellings so use fuzzy matching
+        scores = fuzzy_match(sorted(self.attrmap), categories, threshold=0.5)
+        for cat, score in scores.items():
+             selected += self.attrmap[cat]
+        return selected
+
+    def _deselect_parts(self, parts, categories):
+        return [p for p in parts if p['attr'] not in categories]
+
+    def _fuzzy_sku_match(self, word):
+        # this is suboptimal but it's faster
+        word = word.upper()     # skus are all upper case
+        skus = self.skus_by_letter.get(word[0])
+        if skus is not None:
+            return fuzzy_match(skus, word, threshold=0.7)
+        return []
+
+    def _cleanup(self, description, is_db):
         # perform obvious fixing of things that look like OCR errors and other
         # things that will confuse the matcher
         # this takes a string and returns a list of words
@@ -288,13 +338,22 @@ class RulesMatcher:
                         continue    # reprocess word we just truncated
 
             dash = word.find('-')
-            if dash > 0 and dash < len(word)-1:
-                # if either side is a useful word, split it
-                split_it = word[:dash] in self.attrs or word[dash+1:] in self.attrs
-                split_it |= word[:dash] in self.keywords or word[dash+1:] in self.keywords
-                 
-                # if it's a dimension then unless the dash is followed by a fraction, split it
-                split_it &= not (self._looks_like_dimension(word) and self._looks_like_fraction(word[dash+1:]))
+            if dash == 0 or dash == len(word)-1:
+                # remove it
+                desc[i] = word[1:] if dash == 0 else word[:-1]
+            elif dash > 0:
+                withoutdash = word[:dash]+word[dash+1:]
+                split_it = True
+                if is_db:
+                    split_it = False
+                elif withoutdash in self.keywords or withoutdash in self.attrs or self._fuzzy_sku_match(withoutdash):
+                    # the dash is confusing things so smoke it
+                    desc[i] = withoutdash
+                    split_it = False
+                elif word[dash-1].isdigit() and word[dash+1].isdigit():
+                    # could be dimension or part of dimension
+                    if self._looks_like_dimension(word) or self._looks_like_fraction(word[dash+1:]):
+                        split_it = False
 
                 if split_it:
                     desc[i] = word[:dash]
@@ -389,7 +448,7 @@ class RulesMatcher:
     def parse_lumber_item(self, description: str, is_db=False) -> dict:
         if self.attrs is None:
             self._load_attrs()
-        desc = self._cleanup(description)
+        desc = self._cleanup(description, is_db)
         if self.debug:
             print(f"    Cleaned description: '{desc}'")
 
@@ -407,7 +466,8 @@ class RulesMatcher:
                     components['attrs'].append(d)
                 if self.debug:
                     print(f'    Found attribute: {d}')
-            elif self._looks_like_length(d, ok1and2=is_db and "attrs" not in components) and 'length' not in components:
+            elif (self._looks_like_length(d, ok1and2=is_db and "attrs" not in components and "other" not in components) 
+                  and 'length' not in components):
                 components['length'] = d
                 if self.debug:
                     print(f'    Found length: {d}')
@@ -420,6 +480,24 @@ class RulesMatcher:
                     components['other'].append(d)
 
         return components
+
+    # add a found item to the list of matches
+    def _add_match(self, matches: List[PartMatch], item: str, part: Dict, score: float, length: str=""):
+        item_number = part.get('Item Number', '').strip()
+        item_desc = part.get('Item Description', '').strip()
+        db_components = self.parse_lumber_item(item_desc)
+        attr = part.get('attr')
+        match = PartMatch(
+            description=item,
+            part_number=item_number,
+            database_name=part['database'],
+            database_description=f"{item_desc} | Attr: {attr} | "
+                                 f"components: {db_components} | Score: {score:.2f}",
+            score=score,
+            lf=length,
+            confidence=str(score)
+        )
+        matches.append(match)
 
     def _get_detractors(self, components, threshold=0.6):
         check = []
@@ -443,9 +521,10 @@ class RulesMatcher:
             # All we have is 'other'
             divisor = (len(item_components['other'])*2 + len(db_components['other'])) / 3
             for i in item_components['other']:
-                skumatch = fuzzy_match(i, sku)
-                skumatch = skumatch if skumatch > self.scoring["skumatch-threshold"]  else 0.0
-                maxmatch = 0.0
+                skumatch = maxmatch = 0.0
+                if sku:
+                    skumatch = fuzzy_match(i, sku)
+                    skumatch = skumatch if skumatch > self.scoring["skumatch-threshold"]  else 0.0
                 for d in db_components['other']:
                     maxmatch = max(maxmatch, fuzzy_match(i, d))
                     if maxmatch > 0.8:
@@ -480,7 +559,8 @@ class RulesMatcher:
                     if d in self.default_categories:
                         score += self.default_categories[d]
             elif name == "dimensions" and name in item_components:
-                score += self.scoring["dimensions-multiplier"] * self._dimensions_match(dbc, item_components[name])
+                match = self._dimensions_match(dbc, item_components[name])
+                score += self.scoring["dimensions-multiplier"] * match
                 if "length" not in item_components and "length" not in db_components:
                     score += self.scoring["no-length-adder"]
             elif name == "length" and name in item_components:
@@ -488,7 +568,9 @@ class RulesMatcher:
             elif name in item_components and dbc == item_components.get(name):
                 score += self.scoring["misc-adder"]     # I don't think this ever happens
 
-        if "dimensions" not in item_components and "dimensions" not in db_components:
+        idims = item_components.get("dimensions")
+        ddims = db_components.get("dimensions")
+        if idims is None and ddims is None:
             # this is probably not lumber
             if "length" not in item_components and "length" not in db_components:
                 score *= self.scoring["no-dim-no-len-multiplier"]
@@ -496,8 +578,7 @@ class RulesMatcher:
                 score *= self.scoring["no-dim-multiplier"]
 
         # sometimes people will put the length in with the dimensions
-        if (item_components.get('dimensions') is not None and db_components.get('dimensions') is not None and
-            ('length' in item_components) != ('length' in db_components)):
+        if idims is not None and ddims is not None and ('length' in item_components) != ('length' in db_components):
             a,b = (db_components, item_components) if 'length' in db_components else (item_components, db_components)
             length = a['length']
             dims = a['dimensions']
@@ -516,13 +597,28 @@ class RulesMatcher:
             else:
                 score = max(score, self._calculate_lumber_match_score(a, b, sku, sell_by_foot=sell_by_foot))
 
-        if 'dimensions' in item_components and 'length' in item_components and 'dimensions' in db_components:
+        if idims is not None and ddims is not None and 'length' in item_components:
             # sometimes we'll see a length when it's just another number the user has put into the description
             if self._countx(item_components) > self._countx(db_components):
                 a = copy.deepcopy(item_components)
                 del a['length']
                 score = max(score, self._calculate_lumber_match_score(a, db_components, sku, sell_by_foot=sell_by_foot))
 
+        if False:
+            if idims is not None and ddims is not None and ('-' in idims != '-' in ddims) and not sell_by_foot:
+                # sometimes we see a fractional dimension as a fractional part of the last dimension so try separating
+                a, b, dims = (db_components, item_components, ddims) if '-' in ddims else (item_components, db_components, idims) 
+                # only good if the fraction is the last thing in the dimensions
+                dash = dims.rfind('-')
+                if dash > dims.rfind('x') and self._looks_like_fraction(dims[dash+1:]):
+                    a = copy.deepcopy(a)
+                    a["length"] = dims[dash+1:]
+                    a["dimensions"] = dims[:dash]
+                    if '-' in ddims:
+                        score = max(score, self._calculate_lumber_match_score(b, a, sku))
+                    else:
+                        score = max(score, self._calculate_lumber_match_score(a, b, sku))
+            
         if sell_by_foot:
             # match cases where we are selling by linear feet instead of each item
             length = ""
@@ -551,46 +647,6 @@ class RulesMatcher:
 
         return score
 
-    # add a found item to the list of matches
-    def _add_match(self, matches: List[PartMatch], item: str, part: Dict, score: float, length: str=""):
-        item_number = part.get('Item Number', '').strip()
-        item_desc = part.get('Item Description', '').strip()
-        db_components = self.parse_lumber_item(item_desc)
-        attr = part.get('attr')
-        match = PartMatch(
-            description=item,
-            part_number=item_number,
-            database_name=part['database'],
-            database_description=f"{item_desc} | Attr: {attr} | "
-                                 f"components: {db_components} | Score: {score:.2f}",
-            score=score,
-            lf=length,
-            confidence=str(score)
-        )
-        matches.append(match)
-
-    def _unique_parts(self, parts):
-        # remove duplicate parts from the list using the part number as key to a dict
-        map = {d["Item Number"]: d for d in parts}
-        
-        return sorted(map.values(), key=lambda item: item["Item Description"])
-
-    def _select_parts(self, parts, categories):
-        selected = []
-        if type(categories) == type([]):
-            for c in categories:
-                selected += self._select_parts(parts, c)
-            return self._unique_parts(selected)
-
-        # there can be misspellings so use fuzzy matching
-        scores = fuzzy_match(sorted(self.attrmap), categories, threshold=0.5)
-        for cat, score in scores.items():
-             selected += self.attrmap[cat]
-        return selected
-
-    def _deselect_parts(self, parts, categories):
-        return [p for p in parts if p['attr'] not in categories]
-
     def try_sku_match(self, item_str: str, parts_list: List[Dict]) -> List[PartMatch]:
         item_components = self.parse_lumber_item(item_str)
         matches = []
@@ -603,9 +659,11 @@ class RulesMatcher:
         for part in parts_list:
             if (self.debug_item == self.current_item and self.debug_part and
                 self.debug_part.lower() == part['Item Number'].lower()):
-                print(f"items={items}")
+                print(f"\n   Parsed item components: {item_str} -> {item_components}")
+                print(f"   db_components={part["components"]}")
+                print(f"   items={items}")
                 pdb.set_trace()
-            scores = fuzzy_match(items, part['Item Number'], threshold=self.scoring["match-threshold"])
+            scores = fuzzy_match(items, part['Item Number'], threshold=self.scoring["skumatch-threshold"])
             if len(scores):
                 # add any other information that might help improve match
                 score = self._calculate_lumber_match_score(item_components, part['components'], sku="") / 10
@@ -746,14 +804,14 @@ class RulesMatcher:
         if self.debug:
             print(f"  Found {len(sorted_matches)} matches")
         
-        if False: #  use_original:
+        if use_original:
             # see if we get a better answer with the original text
             new_matches = self.match_lumber_item(item, database_name, True)
             if len(matches) == 0 or (len(new_matches) > 0 and matches[0].score <= new_matches[0].score):
                 matches = new_matches
 
         # if we are doing variable length, set the quantity to the qty x length
-        if len(matches) > 0 and self.sku2partmap[matches[0].part_number].get("Stocking Multiple") == "LF":
+        if len(matches) > 0 and self.sku2part_map[matches[0].part_number].get("Stocking Multiple") == "LF":
             if matches[0].lf == "": 
                 # no length was set so assume quantity is the length
                 item.quantity = "1/" + item.quantity

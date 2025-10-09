@@ -27,7 +27,7 @@
    "scoring":{
       "match-threshold"         : 0.7,
       "keyword-threshold"       : 0.7,
-      "skumatch-threshold"      : 0.6,
+      "skumatch-threshold"      : 0.7,
       "close-enough"            : 0.8,
       "dimensions-multiplier"   : 0.4,
       "no-length-adder"         : 0.25,
@@ -37,7 +37,7 @@
       "no-dim-no-len-multiplier": 2.0,
       "attrs-multiplier"        : 0.05,
       "other-multiplier"        : 0.03,
-      "length-dim-last-add"     : 0.05,
+      "length-dim-last-add"     : 0.03,
       "sell-by-foot"            : -0.05
    },
    "default categories":{
@@ -53,6 +53,7 @@
       "bolt":4,
       "pt":6,
       "df":3,
+      "pl":3,
       "std":0
    },
    "detractors":{
