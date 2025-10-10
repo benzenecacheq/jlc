@@ -941,7 +941,9 @@ class LumberViewerGUI(QMainWindow):
                         
         except Exception as e:
             print(f"Error loading settings: {e}")
-    
+
+        self.no_match_sku = os.getenv("NO_MATCH_SKU") if os.getenv("NO_MATCH_SKU") is not None else "20"
+
     def closeEvent(self, event):
         """Handle application close event"""
         self.save_settings()
@@ -1902,7 +1904,10 @@ class LumberViewerGUI(QMainWindow):
                             override = self.manual_overrides[i]
                             if override is None:
                                 # "No matches" was selected - skip this item
-                                continue
+                                if self.no_match_sku:
+                                    sku = self.no_match_sku
+                                else:
+                                    continue
                             else:
                                 # Use the manual override
                                 sku = override['part_number']
@@ -1910,6 +1915,8 @@ class LumberViewerGUI(QMainWindow):
                             # No manual override - use the first match
                             match = item['matches'][0]
                             sku = match['part_number']
+                        elif self.no_match_sku:
+                            sku = self.no_match_sku
                         else:
                             # Skip items with no matches
                             continue
