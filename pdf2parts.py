@@ -186,7 +186,7 @@ def errexit(error_string):
     exit(1)
 
 def run_matcher(document, api_key, database_names, training_data, use_ai_matching, output_dir, 
-                error_func=errexit, notify_func=print, debug=False):
+                output_file_name, error_func=errexit, notify_func=print, debug=False):
     # Load databases from command line arguments
     notify_func(f"\nLoading {len(database_names)} parts database(s)...")
     
@@ -279,8 +279,8 @@ def run_matcher(document, api_key, database_names, training_data, use_ai_matchin
         ai_matcher.find_all_matches_ai(scanned_items, 
                              debug=debug, output_dir=str(output_dir))
 
-    notify_func(f"Matching complete. Exporting results to {str(output_dir) + '/matches.csv'}")
-    export_csv(scanned_items, str(output_dir) + "/matches.csv")
+    notify_func(f"Matching complete. Exporting results to {str(output_dir / output_file_name)}")
+    export_csv(scanned_items, str(output_dir / output_file_name))
 
     return databases, scanned_items
 
@@ -320,14 +320,12 @@ subdirectory named after the input file (e.g., 'document_results/', 'lumber_list
     parser.add_argument('-o', '--output-dir', default="",
                         help='Base directory to save output files. A subdirectory named after the input '
                              'file will be created (default: current directory)')
+    parser.add_argument("-c", "--csv-file-name", default="matches.csv", help="Output matches to this file")
     
     parser.add_argument('-O', '--original-text', action='store_true',
                         help='Show the original text in the viewer')
     parser.add_argument('--report-name', default='lumber_match_report.txt',
                         help='Name for the text report file (default: lumber_match_report.txt)')
-    
-    parser.add_argument('--full-database', action='store_true',
-                        help='Send full database to Claude for matching (use with large SKU lists)')
     
     parser.add_argument('--verbose-matching', action='store_true',
                         help='Show detailed matching debug output on console (default: save to files)')
@@ -375,7 +373,8 @@ def main():
     print(f"Output directory: {output_dir}")
     
     databases, scanned_items = run_matcher(args.document, api_key, args.databases, args.training_data, 
-                                           args.use_ai_matching, output_dir, debug=args.verbose_matching)
+                                           args.use_ai_matching, output_dir, args.csv_file_name,
+                                           debug=args.verbose_matching)
 
     # Generate outputs with specified names and directory
     print("\nGenerating report...")
@@ -402,7 +401,7 @@ def main():
     
     # Run viewer if requested
     if args.view:
-        run_viewer(output_dir / "matches.csv", args.databases[0], args.original_text)
+        run_viewer(output_dir / args.csv_file_name, args.databases[0], args.original_text)
 
 ###############################################################################
 if __name__ == "__main__":
