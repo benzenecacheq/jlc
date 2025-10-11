@@ -31,13 +31,12 @@ class RulesMatcher:
         self.debug_part = None
 
         self.default_categories = None  # Encourage this category if none is otherwise present
+        self.default_other = None       # Encourage default for other things (like 5ply)
 
         # Idenfity things that are more likely hardware than lumber
         self.hardware_categories = None
         self.hardware_terms = None
     
-        self.default_categories = None  # if no category, assume these
-
         # most of the words in the description are ignored unless the match
         # below are some exceptions.
         self.keywords = None            # these are parts that contain certain keywords
@@ -80,6 +79,7 @@ class RulesMatcher:
 
         # Load misc items from settings json
         self.default_categories = self.get_setting("default categories")
+        self.default_other = self.get_setting("default other")
         self.detractors = self.get_setting("detractors")
         self.special_lengths = set(self.get_setting("special lengths"))
         self.scoring = self.get_setting("scoring")
@@ -217,7 +217,53 @@ class RulesMatcher:
             print("Expected either a string or item_components")
             return 0
 
+    def _dimensions_match_new(self, word1, word2):
+        # replace everythign that's not a number with a space and compare
+        newword1 = " ".join(re.sub(r'[^0-9]', ' ', word1).split())
+        newword2 = " ".join(re.sub(r'[^0-9]', ' ', word2).split())
+
+        if newword1 == newword2:
+            return 1.0
+        if len(word1) <= 4 or len(word2) <= 4 or "xx" in newword1+newword2:
+            return 0
+        score = fuzzy_match(word1, word2, is_dimension=True)
+        if score < 0.5:
+            return 0
+
+        # add extra penalty for cases where leading digit is different
+        breaks1 = [-1] + [m.start() for m in re.finditer('x', word1)] + [len(word1)]
+        breaks2 = [-1] + [m.start() for m in re.finditer('x', word2)] + [len(word2)]
+        if len(breaks1) != len(breaks2):
+            return score
+        nums1 = [word1[breaks1[i]+1:breaks1[i+1]] for i in range(len(breaks1)-1)]
+        nums2 = [word2[breaks2[i]+1:breaks2[i+1]] for i in range(len(breaks2)-1)]
+
+        for n1,n2 in zip(nums1, nums2):
+            # strip off any fractional part
+            if '-' in n1:
+                if not '-' in n2:
+                    return 0         # hard to see how this could be good
+                n1,n2 = n1[:n1.find('-')], n2[:n2.find('-')]
+
+            n1, n2 = re.sub(r'[^0-9]', '', n1), re.sub(r'[^0-9]', '', n2)
+            if n1 == "" or n2 == "":
+                return 0
+
+            i1, i2 = int(n1), int(n2)
+            diff = abs(i1-i2)
+            if diff == 0:
+                # give a bonus if the number is large when there's a fraction because
+                # people often screw up the fractional part
+                score = min(1.0, score + i1 * 0.01)
+            else:
+                # penalize by amount of difference
+                score -= 0.5 * abs(diff)
+            
+        return max(score,0)
+
     def _dimensions_match(self, word1, word2):
+        # return self._dimensions_match_new(word1, word2)
+
         # replace everythign that's not a number with a space and compare
         newword1 = " ".join(re.sub(r'[^0-9]', ' ', word1).split())
         newword2 = " ".join(re.sub(r'[^0-9]', ' ', word2).split())
@@ -578,8 +624,14 @@ class RulesMatcher:
                     s = 1.0 if s > self.scoring["close-enough"] else s
                     l = self.keywords[n] if n in self.keywords else len(n)
                     score += s * multiplier * l
+                default_other = self.default_other if name == "other" else []
+                if name == "other":
+                    # check for default other
+                    do = fuzzy_match(self.default_other, dbc, threshold = 0.9)
+                    if do and list(do)[0] not in matches:
+                        score += self.default_other[list(do)[0]]
             elif name == "attrs":
-                # the item doesn't have a category.  See if we want to assume one
+                # check for default category
                 for d in dbc:
                     if d in self.default_categories:
                         score += self.default_categories[d]

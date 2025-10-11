@@ -43,6 +43,9 @@
    "default categories":{
       "df" : 0.1
    },
+   "default other":{
+      "5ply" : 0.005
+   },
    "keywords":{
       "durastrand":10,
       "gold":4,
