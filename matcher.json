@@ -37,7 +37,7 @@
       "no-dim-no-len-multiplier": 2.0,
       "attrs-multiplier"        : 0.05,
       "other-multiplier"        : 0.03,
-      "length-dim-last-add"     : 0.03,
+      "length-dim-last-add"     : 0.01,
       "sell-by-foot"            : -0.05
    },
    "default categories":{
@@ -54,11 +54,14 @@
       "pt":6,
       "df":3,
       "pl":3,
-      "std":0
+      "plywood":3,
+      "std":0,
+      "end-of-list":0
    },
    "detractors":{
       "t&g" : -0.03,
       "pt" : -0.03,
+      "ptcdx" : -0.03,
       "durastrand" : -0.02,
       "non-stock" : -0.01
    },

@@ -75,6 +75,13 @@ all thread`allthrd
 
 # misc abbreviations
 \bt & g\b`t&g
+\btng\b`t&g
+# blk could be block or black, but usually block and it should fuzzy match either
+\bblk\b`block
+\bbx\b`box
 
 # things that should be categories but aren't currently
 versalam`parallam
+
+# spanish!?
+\bcaja\b`box

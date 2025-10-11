@@ -182,8 +182,19 @@ class RulesMatcher:
         items = ((components["attrs"] if 'attrs' in components else []) +
                  (components["other"] if 'other' in components else []))
         return fuzzy_match(sorted(self.keywords), items, threshold=threshold)
-       
+
+    def _get_dims(self, word):
+        if 'x' not in word:
+            return []
+
+        # how many dimensions in this specification
+        breaks = [-1] + [m.start() for m in re.finditer('x', word)] + [len(word)]
+        return [word[breaks[i]+1:breaks[i+1]] for i in range(len(breaks)-1)]
+
     def _looks_like_dimension(self, word, requirex=False):
+        if word == "x": 
+            return False
+
         # dimensions look like 2x4 or 4x8x1/2
         if requirex and 'x' not in word: 
             return False
@@ -194,7 +205,7 @@ class RulesMatcher:
             check = (word[dash+1:dash+x] if x > 0 else word[dash+1:]).strip('\'"')
             if not self._looks_like_fraction(check):
                 return False
-        invalid_pattern = "[^0-9 'x/-]"
+        invalid_pattern = "[^0-9 \\.'x/-]"
         return re.search(invalid_pattern, word) is None
 
     def _countx(self, dimensions):
@@ -367,7 +378,22 @@ class RulesMatcher:
                 if index == len(word)-2 and word[index+1].isdigit() and word[:index] in self.attrs:
                     desc[i] = word[:index] + "#" + word[index+1:]
                     continue    # reprocess with number sign instead
-                
+
+            if not is_db:
+                # I saw an x followed by a catgory.  Not common but reasonably cheap
+                x = word.find('x')
+                found = False
+                while x > 0 and not found:
+                    if x < len(word)-1 and word[x-1].isdigit() and word[x+1:] in self.attrs:
+                        # split it
+                        desc[i] = word[:x]
+                        desc.insert(i+1, word[x+1:])
+                        found = True
+                    x = word.find('x', x+1)
+
+                if found:
+                    continue
+
             # look for cases where we will join words
             if i < len(desc)-1:
                 nextword = desc[i+1]
@@ -535,7 +561,7 @@ class RulesMatcher:
             return score
 
         # check for detractors that are required to be in both if found in either
-        ifound = self._get_detractors(item_components)
+        ifound = self._get_detractors(item_components, threshold=0.7)
         dfound = self._get_detractors(db_components, threshold=0.9)     # should be no typos
 
         found = set(ifound) ^ set(dfound)
@@ -585,16 +611,19 @@ class RulesMatcher:
             a = copy.deepcopy(a)
             del a['length']
             a['dimensions'] = dims + 'x' + length  # slightly prefer this order
-            ldla = self.scoring["length-dim-last-add"]
-            if 'length' in db_components:
-                score = max(score, self._calculate_lumber_match_score(b, a, sku, sell_by_foot=sell_by_foot) + ldla)
-            else:
-                score = max(score, self._calculate_lumber_match_score(a, b, sku, sell_by_foot=sell_by_foot) + ldla)
-            a['dimensions'] = length + 'x' + dims
             if 'length' in db_components:
                 score = max(score, self._calculate_lumber_match_score(b, a, sku, sell_by_foot=sell_by_foot))
             else:
                 score = max(score, self._calculate_lumber_match_score(a, b, sku, sell_by_foot=sell_by_foot))
+
+            # try putting length first *only* if it's a fraction 
+            if self._looks_like_fraction(length):
+                ldla = self.scoring["length-dim-last-add"]
+                a['dimensions'] = length + 'x' + dims
+                if 'length' in db_components:
+                    score = max(score, self._calculate_lumber_match_score(b, a, sku, sell_by_foot=sell_by_foot)-ldla)
+                else:
+                    score = max(score, self._calculate_lumber_match_score(a, b, sku, sell_by_foot=sell_by_foot)-ldla)
 
         if idims is not None and ddims is not None and 'length' in item_components:
             # sometimes we'll see a length when it's just another number the user has put into the description
@@ -603,21 +632,23 @@ class RulesMatcher:
                 del a['length']
                 score = max(score, self._calculate_lumber_match_score(a, db_components, sku, sell_by_foot=sell_by_foot))
 
-        if False:
-            if idims is not None and ddims is not None and ('-' in idims != '-' in ddims) and not sell_by_foot:
-                # sometimes we see a fractional dimension as a fractional part of the last dimension so try separating
-                a, b, dims = (db_components, item_components, ddims) if '-' in ddims else (item_components, db_components, idims) 
+        if idims is not None and ddims is not None:
+            # sometimes we see a fractional dimension as a fractional part of the last dimension so try separating
+            _d = self._get_dims(ddims)
+            _i = self._get_dims(idims)
+            # this really only matters of only one of them has a fraction in the last dimension
+            if len(_d) + len(_i) > 2 and ('-' in _d[-1]) != ('-' in _i[-1]):
+                a, b, dims = (db_components, item_components, ddims) if '-' in _d[-1]  else (item_components, db_components, idims) 
                 # only good if the fraction is the last thing in the dimensions
+                a = copy.deepcopy(a)
                 dash = dims.rfind('-')
-                if dash > dims.rfind('x') and self._looks_like_fraction(dims[dash+1:]):
-                    a = copy.deepcopy(a)
-                    a["length"] = dims[dash+1:]
-                    a["dimensions"] = dims[:dash]
-                    if '-' in ddims:
-                        score = max(score, self._calculate_lumber_match_score(b, a, sku))
-                    else:
-                        score = max(score, self._calculate_lumber_match_score(a, b, sku))
-            
+                a["length"] = dims[dash+1:]
+                a["dimensions"] = dims[:dash]
+                if '-' in _d[-1]:
+                    score = max(score, self._calculate_lumber_match_score(b, a, sku))
+                else:
+                    score = max(score, self._calculate_lumber_match_score(a, b, sku))
+        
         if sell_by_foot:
             # match cases where we are selling by linear feet instead of each item
             length = ""
