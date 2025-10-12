@@ -217,16 +217,19 @@ class RulesMatcher:
             print("Expected either a string or item_components")
             return 0
 
-    def _dimensions_match_new(self, word1, word2):
+    def _dimensions_match(self, word1, word2):
         # replace everythign that's not a number with a space and compare
         newword1 = " ".join(re.sub(r'[^0-9]', ' ', word1).split())
         newword2 = " ".join(re.sub(r'[^0-9]', ' ', word2).split())
 
         if newword1 == newword2:
             return 1.0
-        if len(word1) <= 4 or len(word2) <= 4 or "xx" in newword1+newword2:
+        if len(word1) <= 4 or len(word2) <= 4 or "xx" in newword1+newword2 or '/' not in word1+word2:
             return 0
+
         score = fuzzy_match(word1, word2, is_dimension=True)
+        return score
+
         if score < 0.5:
             return 0
 
@@ -260,19 +263,6 @@ class RulesMatcher:
                 score -= 0.5 * abs(diff)
             
         return max(score,0)
-
-    def _dimensions_match(self, word1, word2):
-        # return self._dimensions_match_new(word1, word2)
-
-        # replace everythign that's not a number with a space and compare
-        newword1 = " ".join(re.sub(r'[^0-9]', ' ', word1).split())
-        newword2 = " ".join(re.sub(r'[^0-9]', ' ', word2).split())
-
-        if newword1 != newword2 and '/' in (word1+word2) and len(word1) > 4:
-            # sometimes there are issues with fractions
-            return fuzzy_match(word1, word2, is_dimension=True)
-
-        return newword1 == newword2
 
     def _looks_like_fraction(self, word, stop_at_x=True):
         if stop_at_x and 'x' in word:
