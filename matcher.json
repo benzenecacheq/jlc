@@ -8,6 +8,10 @@
       " default catgories       - This is used to provide a bonus if we don't have any 'attr' to        ",
       "                           specify the category of an item.  This bonus will be added to         ",
       "                           items in the default category to encourage using that when matching   ",
+      " default other           - A bonus is given to items in the database that contain these words in ",
+      "                           order to break ties.  For example there are multiple CDX plywoods     ",
+      "                           that are otherwise the same.                                          ",
+      " lf only                 - Items that are only sold by the foot.                                 ",
       " keywords                - This is used to pick up additional items that are not in a category.  ",
       "                           When a keyword is seen in the item_components, all partslist items    ",
       "                           containing that keyword will be added to the potential match list.    ",
@@ -46,6 +50,11 @@
    "default other":{
       "5ply" : 0.005
    },
+   "lf only":[
+      "pl",
+      "ml",
+      "tji"
+   ],
    "keywords":{
       "durastrand":10,
       "gold":4,
@@ -57,6 +66,7 @@
       "pt":6,
       "df":3,
       "pl":3,
+      "ml":3,
       "plywood":3,
       "std":0,
       "end-of-list":0

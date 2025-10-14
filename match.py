@@ -695,6 +695,8 @@ class RulesMatcher:
             # match cases where we are selling by linear feet instead of each item
             length = ""
             new_score = self.scoring["sell-by-foot"]   # this should be worse than an exact matching length
+            if "attrs" in db_components and db_components["attrs"][0] in self.get_setting("lf only"):
+                new_score = 0
             acopy = copy.deepcopy(item_components)
             if 'length' in item_components:
                 # remove the length from the item and try again

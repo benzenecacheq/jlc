@@ -279,6 +279,7 @@ class DocumentProcessor(QObject):
                 training_data=None,
                 use_ai_matching=False,
                 output_dir=output_dir_path,
+                output_file_name="matches.csv",
                 debug=False,
                 notify_func=self.notify_function,
                 error_func=self.error_function
