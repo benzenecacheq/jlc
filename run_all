@@ -1,0 +1,125 @@
+#!/bin/csh
+   set matches = matches
+   set lastswitch =
+   set onlycount = 
+   set onlydiffer = 
+   foreach f ($*)
+      if (x$f =~ x-*) then
+         if ("$f" == "-c") then
+            set onlycount = yes
+         else if ("$f" == "-d") then
+            set onlydiffer = yes
+            set lastswitch = ($f)
+         else if ("$f" == "-m") then
+            set lastswitch = ($f)
+         else if ("$f" == "-og") then
+            ls testdata/?.pdf > /tmp/files.$$
+            ls testdata/??.pdf >> /tmp/files.$$
+         else
+            echo Unrecognized switch: $f
+            exit 1
+         endif
+      else if ("$lastswitch" == "-d") then
+         set onlydiffer = $f
+         set lastswitch =
+      else if ("$lastswitch" == "-m") then
+         set matches = $f
+         set lastswitch =
+      else
+         echo $f >> /tmp/files.$$
+      endif
+   end
+
+   if (! -e /tmp/files.$$ || -z /tmp/files.$$) then
+      ls testdata/*.pdf | fgrep -v Example > /tmp/files.$$
+   endif
+   cp /tmp/files.$${,.sav}
+
+   if ("$onlycount" != "") then 
+      goto count
+   endif
+   if ("$onlydiffer" != "") then 
+      goto differ
+   endif
+
+   while (! -z /tmp/files.$$)
+      set f = "`head -1 /tmp/files.$$`"
+      tail -n +2 /tmp/files.$$ > /tmp/files2.$$
+      mv /tmp/files2.$$ /tmp/files.$$
+
+      echo ===========================================================
+      rm -f "${f:r}_results/$matches.csv"
+      echo python pdf2parts.py "$f" skulist.csv -c ${matches}.csv
+      python pdf2parts.py "$f" skulist.csv -c ${matches}.csv >& "/tmp/.$f:t:r.out" &
+      sleep 0.2
+   end
+
+   echo ===========================================================
+   echo ===========================================================
+
+   cp /tmp/files.$${.sav,}
+   while (! -z /tmp/files.$$)
+      set f = "`head -1 /tmp/files.$$`"
+      if (! -e "${f:r}_results/$matches.csv") then
+         sleep 0.1
+         continue
+      endif
+      tail -n +2 /tmp/files.$$ > /tmp/files2.$$
+      mv /tmp/files2.$$ /tmp/files.$$
+
+      echo python viewer.py "${f:r}"_results/{$matches,skulist_fixed}.csv
+      python viewer.py "${f:r}"_results/{$matches,skulist_fixed}.csv |& tee "${f:r}_results/$matches"
+      echo ===========================================================
+   end
+
+count:
+   echo ===========================================
+   @ total_scanned = 0
+   @ total_matched = 0
+   @ total_multiple = 0
+
+   cp /tmp/files.$${.sav,}
+   while (! -z /tmp/files.$$)
+      set f = "`head -1 /tmp/files.$$`"
+      tail -n +2 /tmp/files.$$ > /tmp/files2.$$
+      mv /tmp/files2.$$ /tmp/files.$$
+
+      set counts = ( `sed -n 's/.* with matches: \([0-9]*\)\/\([0-9]*\)/\1 \2/p' "$f:r"_results/lumber_match_report.txt` )
+      set mcount = ( `sed -n 's/.* with multiple matches: \([0-9]*\).*/\1/p' "$f:r"_results/lumber_match_report.txt` )
+      set percent = `echo "1 k ${counts[1]}00 ${counts[2]} / p" | dc`
+      echo "${f}: $counts[1] of $counts[2] matched (${percent}%), $mcount with multiple"
+      @ total_matched = $total_matched + ${counts[1]}
+      @ total_scanned = $total_scanned + ${counts[2]}
+      @ total_multiple = $total_multiple + $mcount 
+   end
+   
+   set percent = `echo "1 k ${total_matched}00 ${total_scanned} / p" | dc`
+   set mpercent = `echo "1 k ${total_multiple}00 ${total_scanned} / p" | dc`
+   echo ===========================================
+   echo "Total: ${total_matched} of ${total_scanned} matched (${percent}%), with $total_multiple (${mpercent}%) multiple matches"
+   echo ===========================================
+   rm -f /tmp/files.$${,.sav}
+   exit 0
+
+differ:
+   if ("$matches" == "$onlydiffer") then 
+      echo "You can only diff against match.csv so you need to use the -m flag to specify something else"
+      exit 1
+   endif
+
+   @ total_diffs = 0
+   while (! -z /tmp/files.$$)
+      set f = "`head -1 /tmp/files.$$`"
+      tail -n +2 /tmp/files.$$ > /tmp/files2.$$
+      mv /tmp/files2.$$ /tmp/files.$$
+
+      echo python differ.py "$f:r"_results/{$matches.csv,$onlydiffer.csv}
+      python differ.py "$f:r"_results/{$matches.csv,$onlydiffer.csv}
+      set ndiff = `python differ.py "$f:r"_results/{$matches.csv,$onlydiffer.csv} | fgrep ' Item ' | wc -l`
+      @ total_diffs = $total_diffs + $ndiff
+   end
+   rm -f /tmp/files.$${,.sav}
+   echo ===========================================
+   echo Total of $total_diffs differences found
+   echo ===========================================
+
