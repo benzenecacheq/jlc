@@ -48,9 +48,10 @@
       mv /tmp/files2.$$ /tmp/files.$$
 
       echo ===========================================================
-      rm -f "${f:r}_results/$matches.csv"
+      rm -f "${f:r}_results/$matches.csv" "${f:r}_results/$matches"
       echo python pdf2parts.py "$f" skulist.csv -c ${matches}.csv
-      python pdf2parts.py "$f" skulist.csv -c ${matches}.csv >& "/tmp/.$f:t:r.out" &
+      (python pdf2parts.py "$f" skulist.csv -c ${matches}.csv >& "/tmp/.$f:t:r.out" ; \
+       python viewer.py "${f:r}"_results/{$matches,skulist_fixed}.csv >& "${f:r}_results/$matches") >& /dev/null &
       sleep 0.2
    end
 
@@ -60,7 +61,7 @@
    cp /tmp/files.$${.sav,}
    while (! -z /tmp/files.$$)
       set f = "`head -1 /tmp/files.$$`"
-      if (! -e "${f:r}_results/$matches.csv") then
+      if (! -e "${f:r}_results/$matches") then
          sleep 0.1
          continue
       endif
@@ -68,7 +69,7 @@
       mv /tmp/files2.$$ /tmp/files.$$
 
       echo python viewer.py "${f:r}"_results/{$matches,skulist_fixed}.csv
-      python viewer.py "${f:r}"_results/{$matches,skulist_fixed}.csv |& tee "${f:r}_results/$matches"
+      cat "${f:r}_results/$matches"
       echo ===========================================================
    end
 
