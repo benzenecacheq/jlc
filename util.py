@@ -273,13 +273,15 @@ def load_prompt(fname, **kwargs):
 
 ###############################################################################
 import anthropic
-def call_ai_with_retry(client, messages, max_tokens=8000, max_retries=3, model=None):
+def call_ai_with_retry(client, model=None, max_tokens=8000, messages=None, max_retries=3, **kwargs):
      """Call AI API with retry logic (works with both Anthropic and OpenAI)"""
      import time
      
      # Set default model
      if model is None:
          model = "claude-sonnet-4-20250514"
+     if messages is None:
+         raise Exception("Cannot call 'call_ai_with_retry' without messages.")
      
      for attempt in range(max_retries):
          try:
@@ -287,19 +289,21 @@ def call_ai_with_retry(client, messages, max_tokens=8000, max_retries=3, model=N
                  response = client.messages.create(
                      model=model,
                      max_tokens=max_tokens,
-                     messages=messages
+                     messages=messages,
+                     **kwargs
                  )
                  return response
              else: # assume openai for now
                  response = client.chat.completions.create(
                      model=model,
                      max_completion_tokens=max_tokens,
-                     messages=messages
+                     messages=messages,
+                     **kwargs
                  )
                  return response
          except Exception as e:
              error_str = str(e)
-             if "rate_limit_error" in error_str or "429" in error_str:
+             if "rate_limit_error" in error_str or "overloaded" in error_str or "429" in error_str:
                  if attempt < max_retries - 1:
                      # Exponential backoff: 60, 120, 240 seconds
                      wait_time = 60 * (2 ** attempt)

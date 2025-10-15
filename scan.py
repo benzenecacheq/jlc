@@ -320,9 +320,9 @@ class Scanner:
             model = "claude-sonnet-4-5-20250929"
 
             # Create the message with image using the current model
-            message = self.client.messages.create(
+            message = call_ai_with_retry(
+                client=self.client,
                 model=model,
-                temperature=0,
                 max_tokens=8000,
                 messages=[
                     {
@@ -343,6 +343,7 @@ class Scanner:
                         ]
                     }
                 ],
+                temperature=0
             )
 
             # Parse the response
