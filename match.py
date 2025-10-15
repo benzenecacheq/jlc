@@ -228,16 +228,13 @@ class RulesMatcher:
             return 0
 
         score = fuzzy_match(word1, word2, is_dimension=True)
-        return score
-
-        if score < 0.5:
-            return 0
 
         # add extra penalty for cases where leading digit is different
         breaks1 = [-1] + [m.start() for m in re.finditer('x', word1)] + [len(word1)]
         breaks2 = [-1] + [m.start() for m in re.finditer('x', word2)] + [len(word2)]
         if len(breaks1) != len(breaks2):
             return score
+
         nums1 = [word1[breaks1[i]+1:breaks1[i+1]] for i in range(len(breaks1)-1)]
         nums2 = [word2[breaks2[i]+1:breaks2[i+1]] for i in range(len(breaks2)-1)]
 
@@ -257,10 +254,10 @@ class RulesMatcher:
             if diff == 0:
                 # give a bonus if the number is large when there's a fraction because
                 # people often screw up the fractional part
-                score = min(1.0, score + i1 * 0.01)
+                pass # score = min(1.0, score + i1 * 0.01)
             else:
                 # penalize by amount of difference
-                score -= 0.5 * abs(diff)
+                score -= 0.01 * abs(diff)
             
         return max(score,0)
 
