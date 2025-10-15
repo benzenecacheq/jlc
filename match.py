@@ -678,8 +678,8 @@ class RulesMatcher:
             # sometimes we see a fractional dimension as a fractional part of the last dimension so try separating
             _d = self._get_dims(ddims)
             _i = self._get_dims(idims)
-            # this really only matters of only one of them has a fraction in the last dimension
-            if len(_d) + len(_i) > 2 and ('-' in _d[-1]) != ('-' in _i[-1]):
+            # this really only matters if only one of them has a fraction in the last dimension
+            if len(_d) and len(_i) and ('-' in _d[-1]) != ('-' in _i[-1]):
                 a, b, dims = (db_components, item_components, ddims) if '-' in _d[-1]  else (item_components, db_components, idims) 
                 # only good if the fraction is the last thing in the dimensions
                 a = copy.deepcopy(a)
