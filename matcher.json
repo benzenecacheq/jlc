@@ -63,6 +63,7 @@
       "screw":5,
       "washer":6,
       "bolt":4,
+      "cdx":4,
       "pt":6,
       "df":3,
       "pl":3,
@@ -76,7 +77,8 @@
       "pt" : -0.03,
       "ptcdx" : -0.03,
       "durastrand" : -0.02,
-      "non-stock" : -0.01
+      "non-stock" : -0.01,
+      "ctd" : -0.005
    },
    "friends":{
       "pl":{"ml":-0.02},

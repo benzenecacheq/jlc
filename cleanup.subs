@@ -76,12 +76,22 @@ all thread`allthrd
 # misc abbreviations
 \bt & g\b`t&g
 \btng\b`t&g
+\btn g\b`t&g
 # blk could be block or black, but usually block and it should fuzzy match either
 \bblk\b`block
+\bblks\b`blocks
 \bbx\b`box
+\bsq\b`square
 
 # things that should be categories but aren't currently
 versalam`parallam
 
 # spanish!?
+\bcajas\b`box
 \bcaja\b`box
+\bgalvanizados\b`galvanized
+\bgalvaniz\b`galvanized
+\bclavos\b`nails
+\btornillos\b`screws
+\bhojas\b`sheets
+\bhoja\b`sheet

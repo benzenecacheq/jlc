@@ -45,14 +45,12 @@ class RulesMatcher:
                                         # of the items being matched
         self.detractor_map = {}         # so we don't have to keep recalculating
 
-        self.sku_parts = None           # parts that are in the SKU-only lookup
         self.board_parts = None         # parts that have dimensions and length
         self.dim_parts = None           # parts with dimensions but no length
         self.lumber_categories = None
         self.hardware_parts = None
         self.keyword_parts = None
 
-        self.sku2part_map = None
         self.sorted_skus = None
         self.skus_by_letter = None
         self.special_lengths = None
@@ -104,7 +102,6 @@ class RulesMatcher:
         # in the database
         self.attrs = {}    # map alternative attribute names
         self.attrmap = {}       # list of database entries by attribute
-        self.sku2part_map = {}
 
         self.merged_database = {}
         for fname,database in self.databases.items():
@@ -141,7 +138,6 @@ class RulesMatcher:
         # load the board parts
         self.board_parts = []
         self.dim_parts = []
-        self.sku_parts = []
         self.hardware_parts = []
         self.keyword_parts = {k:[] for k in self.keywords if k not in self.attrs}
 
@@ -309,7 +305,13 @@ class RulesMatcher:
         return selected
 
     def _deselect_parts(self, parts, categories):
-        return [p for p in parts if p['attr'] not in categories]
+        if type(categories) == type([]):
+            return [p for p in parts if p['attr'] not in categories]
+        elif type(categories) == type(""):
+            return [p for p in parts if p['attr'] != categories]
+        else:
+            raise Exception("_delect_parts() called with incorrect categories argument")
+            
 
     def _fuzzy_sku_match(self, word):
         # this is suboptimal but it's faster
@@ -565,9 +567,20 @@ class RulesMatcher:
         self.detractor_map[key] = detractors
         return detractors
 
-    def _calculate_lumber_match_score(self, item_components: dict, db_components: dict, sku: str='', sell_by_foot=False) -> float:
+    def _calculate_lumber_match_score(self, item_components: dict, db_components: dict, sku: str='', sell_by_foot=False, 
+                                             indent=None) -> float:
         """Calculate how well an item matches a database entry"""
         score = 0.0
+        newindent = None
+        if indent is not None:
+            print(indent*' ', f"===============================")
+            print(indent*' ', "_calculate_lumber_match_score(")
+            print(indent*' ', f"      item_components={item_components}")
+            print(indent*' ', f"      db_components={db_components}")
+            print(indent*' ', f"      sku={sku}")
+            print(indent*' ', f"      sell_by_foot={sell_by_foot} )")
+            print(indent*' ', f"===============================")
+            newindent = indent + 3
 
         # some special cases:
         if len(item_components) == 1 and 'other' in item_components and 'other' in db_components:
@@ -586,6 +599,12 @@ class RulesMatcher:
                     score += maxmatch / divisor
                 else:
                     score += skumatch / len(item_components['other'])
+                if indent is not None:
+                    line = sys._getframe().f_lineno - 1
+                    print(indent*' ' + f"--> line {line}: score={score}, skumatch={skumatch}, maxmatch={maxmatch}")
+
+            if indent is not None:
+                print(indent*' ', f"=============== Final score: {score} ================")
             return score
 
         # check for detractors that are required to be in both if found in either
@@ -597,35 +616,63 @@ class RulesMatcher:
             penalty = sum([self.detractors[name] * len(name) * (ifound[name] if name in ifound else dfound[name])
                                 for name in found])
             score += penalty
+            if indent is not None:
+                line = sys._getframe().f_lineno - 1
+                print(indent*' ' + f"--> line {line}: score={score}, penalty={penalty}")
 
         for name,dbc in db_components.items():
-            if type(dbc) == type([]) and name in item_components:
-                multiplier = self.scoring[name+"-multiplier"]
-                matches = fuzzy_match(dbc, item_components[name], threshold=0.6)
-                for n,s in matches.items():
-                    s = 1.0 if s > self.scoring["close-enough"] else s
-                    l = self.keywords[n] if n in self.keywords else len(n)
-                    score += s * multiplier * l
-                default_other = self.default_other if name == "other" else []
+            if type(dbc) == type([]):
+                matches = []
+                if name in item_components:
+                    multiplier = self.scoring[name+"-multiplier"]
+                    matches = fuzzy_match(dbc, item_components[name], threshold=0.6)
+                    for n,s in matches.items():
+                        s = 1.0 if s > self.scoring["close-enough"] else s
+                        l = self.keywords[n] if n in self.keywords else len(n)
+                        score += s * multiplier * l
+                        if indent is not None:
+                            line = sys._getframe().f_lineno - 1
+                            print(indent*' ' + f"--> line {line}: score={score}, n={n}, s={s}, l={l}, multiplier={multiplier}")
+                elif name == "attrs":
+                    # check for default category
+                    for d in dbc:
+                        if d in self.default_categories:
+                            score += self.default_categories[d]
+                            if indent is not None:
+                                line = sys._getframe().f_lineno - 1
+                                print(indent*' ' + f"--> line {line}: score={score}, d={d}")
                 if name == "other":
                     # check for default other
+                    default_other = self.default_other if name == "other" else []
                     do = fuzzy_match(self.default_other, dbc, threshold = 0.9)
                     if do and list(do)[0] not in matches:
                         score += self.default_other[list(do)[0]]
-            elif name == "attrs":
-                # check for default category
-                for d in dbc:
-                    if d in self.default_categories:
-                        score += self.default_categories[d]
+                        if indent is not None:
+                            line = sys._getframe().f_lineno - 1
+                            print(indent*' ' + f"--> line {line}: score={score}, do={do}")
             elif name == "dimensions" and name in item_components:
                 match = self._dimensions_match(dbc, item_components[name])
                 score += self.scoring["dimensions-multiplier"] * match
+                if indent is not None:
+                    line = sys._getframe().f_lineno - 1
+                    print(indent*' ' + f"--> line {line}: score={score}, dims match={match}")
                 if "length" not in item_components and "length" not in db_components:
                     score += self.scoring["no-length-adder"]
+                    if indent is not None:
+                        line = sys._getframe().f_lineno - 1
+                        print(indent*' ' + f"--> line {line}: score={score}, no-length-adder={self.scoring['no-length-adder']}")
             elif name == "length" and name in item_components:
-                score += self.scoring["length-multiplier"] * self._lengths_equal(dbc, item_components.get(name))
+                equal = self._lengths_equal(dbc, item_components.get(name))
+                score += self.scoring["length-multiplier"] * equal
+                if indent is not None:
+                    line = sys._getframe().f_lineno - 1
+                    print(indent*' ' + f"--> line {line}: score={score}, lengths equal={equal}, "
+                                       f"length_multiplier={self.scoring['length-multiplier']}")
             elif name in item_components and dbc == item_components.get(name):
                 score += self.scoring["misc-adder"]     # I don't think this ever happens
+                if indent is not None:
+                    line = sys._getframe().f_lineno - 1
+                    print(indent*' ' + f"--> line {line}: score={score}, DIDN'T EXPECT THIS")
 
         idims = item_components.get("dimensions")
         ddims = db_components.get("dimensions")
@@ -635,6 +682,9 @@ class RulesMatcher:
                 score *= self.scoring["no-dim-no-len-multiplier"]
             else:
                 score *= self.scoring["no-dim-multiplier"]
+            if indent is not None:
+                line = sys._getframe().f_lineno - 1
+                print(indent*' ' + f"--> line {line}: score={score}, no dims")
 
         # sometimes people will put the length in with the dimensions
         if idims is not None and ddims is not None and ('length' in item_components) != ('length' in db_components):
@@ -646,25 +696,35 @@ class RulesMatcher:
             del a['length']
             a['dimensions'] = dims + 'x' + length  # slightly prefer this order
             if 'length' in db_components:
-                score = max(score, self._calculate_lumber_match_score(b, a, sku, sell_by_foot=sell_by_foot))
+                score = max(score, self._calculate_lumber_match_score(b, a, sku, sell_by_foot=sell_by_foot, indent=newindent))
             else:
-                score = max(score, self._calculate_lumber_match_score(a, b, sku, sell_by_foot=sell_by_foot))
+                score = max(score, self._calculate_lumber_match_score(a, b, sku, sell_by_foot=sell_by_foot, indent=newindent))
+            if indent is not None:
+                line = sys._getframe().f_lineno - 1
+                print(indent*' ' + f"--> line {line}: score={score}, {'length' in db_components}")
 
             # try putting length first *only* if it's a fraction 
             if self._looks_like_fraction(length):
                 ldla = self.scoring["length-dim-last-add"]
                 a['dimensions'] = length + 'x' + dims
                 if 'length' in db_components:
-                    score = max(score, self._calculate_lumber_match_score(b, a, sku, sell_by_foot=sell_by_foot)-ldla)
+                    score = max(score, self._calculate_lumber_match_score(b, a, sku, sell_by_foot=sell_by_foot, indent=newindent)-ldla)
                 else:
-                    score = max(score, self._calculate_lumber_match_score(a, b, sku, sell_by_foot=sell_by_foot)-ldla)
+                    score = max(score, self._calculate_lumber_match_score(a, b, sku, sell_by_foot=sell_by_foot, indent=newindent)-ldla)
+                if indent is not None:
+                    line = sys._getframe().f_lineno - 1
+                    print(indent*' ' + f"--> line {line}: score={score}, {'length' in db_components}")
 
         if idims is not None and ddims is not None and 'length' in item_components:
             # sometimes we'll see a length when it's just another number the user has put into the description
             if self._countx(item_components) > self._countx(db_components):
                 a = copy.deepcopy(item_components)
                 del a['length']
-                score = max(score, self._calculate_lumber_match_score(a, db_components, sku, sell_by_foot=sell_by_foot))
+                score = max(score, self._calculate_lumber_match_score(a, db_components, sku, 
+                                                sell_by_foot=sell_by_foot, indent=newindent))
+                if indent is not None:
+                    line = sys._getframe().f_lineno - 1
+                    print(indent*' ' + f"--> line {line}: score={score}")
 
         if idims is not None and ddims is not None:
             # sometimes we see a fractional dimension as a fractional part of the last dimension so try separating
@@ -682,6 +742,9 @@ class RulesMatcher:
                     score = max(score, self._calculate_lumber_match_score(b, a, sku))
                 else:
                     score = max(score, self._calculate_lumber_match_score(a, b, sku))
+                if indent is not None:
+                    line = sys._getframe().f_lineno - 1
+                    print(indent*' ' + f"--> line {line}: score={score}, {'-' in d[-1]}")
         
         if sell_by_foot:
             # match cases where we are selling by linear feet instead of each item
@@ -696,21 +759,26 @@ class RulesMatcher:
                 del acopy['length']
                 if 'length' in db_components:
                     del db_components['length']   # this shouldn't happen
-                new_score += self._calculate_lumber_match_score(acopy, db_components, sku=sku)
+                new_score += self._calculate_lumber_match_score(acopy, db_components, sku=sku, indent=newindent)
             elif 'dimensions' in item_components:
                 dims = acopy.get('dimensions')
                 lastx = dims.rfind('x')
                 if lastx > 0 and lastx < len(dims)-1:
                     new_length = dims[lastx+1:]
                     acopy['dimensions'] = dims[:lastx]
-                    new_score += self._calculate_lumber_match_score(acopy, db_components, sku=sku)
+                    new_score += self._calculate_lumber_match_score(acopy, db_components, sku=sku, indent=newindent)
 
             if new_score > score:
+                if indent is not None:
+                    line = sys._getframe().f_lineno - 1
+                    print(indent*' ' + f"--> line {line}: old_score={score} score={new_score}")
                 score = new_score
 
                 # tell top level that we have a length
                 item_components["sell_by_foot"] = db_components["sell_by_foot"] = new_length
 
+        if indent is not None:
+            print(indent*' ', f"=============== Final score: {score} ================")
         return score
 
     def try_sku_match(self, item_str: str, parts_list: List[Dict]) -> List[PartMatch]:
@@ -809,7 +877,8 @@ class RulesMatcher:
         # If this is hardware, don't look at any lumber.
         words = attrs if attrs is not None else [] + item_components["other"] if "other" in item_components else []
         if words and fuzzy_match(self.hardware_terms, words, threshold=0.6):
-            parts = self._deselect_parts(parts, self.lumber_categories)
+            cats = [c for c in self.lumber_categories if attrs is None or c not in attrs]
+            parts = self._deselect_parts(parts, cats)
 
         matches = []
         confidence_scores = []
@@ -841,8 +910,7 @@ class RulesMatcher:
                 print(f"db_components={db_components}")
                 print(f"match_score={match_score}")
                 pdb.set_trace()
-                match_score = self._calculate_lumber_match_score(item_components, db_components, sku=part_number,
-                                                             sell_by_foot=sell_by_foot)
+                match_score = self._calculate_lumber_match_score(item_components, db_components, sku=part_number, sell_by_foot=sell_by_foot, indent=3)
             # if the match was to a friend category, deduct points.
             if part['attr'] in friends:
                 match_score += friends[part['attr']]
