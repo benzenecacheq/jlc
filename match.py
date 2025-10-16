@@ -239,25 +239,20 @@ class RulesMatcher:
         nums2 = [word2[breaks2[i]+1:breaks2[i+1]] for i in range(len(breaks2)-1)]
 
         for n1,n2 in zip(nums1, nums2):
-            # strip off any fractional part
-            if '-' in n1:
-                if not '-' in n2:
-                    return 0         # hard to see how this could be good
+            # see if only the fraction is different.
+            if '-' in n1 and '-' in n2:
+                # strip off any fractional part
                 n1,n2 = n1[:n1.find('-')], n2[:n2.find('-')]
 
-            n1, n2 = re.sub(r'[^0-9]', '', n1), re.sub(r'[^0-9]', '', n2)
-            if n1 == "" or n2 == "":
-                return 0
+                n1, n2 = re.sub(r'[^0-9]', '', n1), re.sub(r'[^0-9]', '', n2)
+                if n1 == "" or n2 == "":
+                    continue
 
-            i1, i2 = int(n1), int(n2)
-            diff = abs(i1-i2)
-            if diff == 0:
-                # give a bonus if the number is large when there's a fraction because
-                # people often screw up the fractional part
-                pass # score = min(1.0, score + i1 * 0.01)
-            else:
-                # penalize by amount of difference
-                score -= 0.01 * abs(diff)
+                i1, i2 = int(n1), int(n2)
+                diff = abs(i1-i2)
+                if diff != 0:
+                    # penalize by amount of difference
+                    score -= 0.01 * abs(diff)
             
         return max(score,0)
 
