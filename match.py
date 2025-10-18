@@ -807,32 +807,31 @@ class RulesMatcher:
             print(indent*' ', f"=============== Final score: {score} ================")
         return score
 
-    def try_sku_match(self, item_str: str, parts_list: List[Dict]) -> List[PartMatch]:
+    def try_sku_match(self, item_str: str) -> List[PartMatch]:
         item_components = self.parse_lumber_item(item_str)
         matches = []
-        items = item_components['attrs'] if 'attrs' in item_components else []
-        items += item_components['other'] if 'other' in item_components else []
+        words = item_components['attrs'] if 'attrs' in item_components else []
+        words += item_components['other'] if 'other' in item_components else []
 
-        # clean out non-alphanumeric from items in the list because skus are all alphanumeric
-        items = [re.sub(r'[^a-zA-Z0-9]', '', s) for s in items]
+        # clean out non-alphanumeric from words in the list because skus are all alphanumeric
+        words = [re.sub(r'[^a-zA-Z0-9]', '', s) for s in words]
 
-        for part in parts_list:
-            indent = None
-            if (self.debug_item == self.current_item and self.debug_part and
-                self.debug_part.lower() == part['Item Number'].lower()):
-                print(f"\n   Parsed item components: {item_str} -> {item_components}")
-                print(f"   db_components={part["components"]}")
-                print(f"   items={items}")
-                pdb.set_trace()
-                indent = 3
-            scores = fuzzy_match(items, part['Item Number'], threshold=self.scoring["skumatch-threshold"])
-            if len(scores):
-                # add any other information that might help improve match
-                score = self._calculate_lumber_match_score(item_components, part['components'], sku="", indent=indent) / 10
-                if score < 0:
+        indent = None
+        if self.debug_item == self.current_item:
+            indent = 3
+            pdb.set_trace()
+            if self.debug_part:
+                scores = fuzzy_match(self.debug_part, words, threshold=self.scoring["skumatch-threshold"])
+
+        scores = fuzzy_match(self.merged_database, words, threshold=self.scoring["skumatch-threshold"])
+        if scores:
+            for sku,score in scores.items():
+                db_components = self.merged_database[sku]["components"]
+                bonus = self._calculate_lumber_match_score(item_components, db_components, sku="", indent=indent) / 10
+                if bonus < 0:
                     continue    # something bad happened
-                self._add_match(matches, item_str, part, max(scores.values()) + score)
-
+                self._add_match(matches, item_str, self.merged_database[sku], score + bonus)
+            
         return matches
 
     def match_lumber_item(self, item: ScannedItem, use_original=False) -> List[PartMatch]:
@@ -891,7 +890,7 @@ class RulesMatcher:
                 parts = self.dim_parts + self.board_parts
             else:
                 # I no longer have a SKU-only list so try the whole database
-                matches = self.try_sku_match(item_desc, self.merged_database.values())
+                matches = self.try_sku_match(item_desc)
                 if len(matches) > 0:
                     return self.sort_matches(item, matches)
 
