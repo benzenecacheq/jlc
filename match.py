@@ -56,6 +56,9 @@ class RulesMatcher:
         self.special_lengths = None
         self.scoring = None
 
+        self.fuzzy_category_matching = False
+        self.fuzzy_keyword_matching = False
+
     def get_setting(self, key):
         if key not in self.settings:
             raise Exception(f"Error in matcher.json: Missing setting for '{key}'")
@@ -76,6 +79,9 @@ class RulesMatcher:
             raise e
 
         # Load misc items from settings json
+        self.fuzzy_category_matching = self.get_setting("misc")["fuzzy category match"]
+        self.fuzzy_keyword_matching = self.get_setting("misc")["fuzzy keyword match"]
+
         self.default_categories = self.get_setting("default categories")
         self.default_other = self.get_setting("default other")
         self.detractors = self.get_setting("detractors")
@@ -321,6 +327,24 @@ class RulesMatcher:
             return fuzzy_match(skus, word, threshold=0.7)
         return []
 
+    def _is_attr(self, word, is_db=True):
+        if not is_db and self.fuzzy_category_matching:
+            matches = fuzzy_match(word, self.attrs, threshold=0.8)
+            if matches:
+                return list(matches)[0]
+        elif word in self.attrs:
+            return word
+        return None
+
+    def _is_keyword(self, word, is_db=True):
+        if not is_db and self.fuzzy_keyword_matching:
+            matches = fuzzy_match(word, self.keywords, threshold=0.8)
+            if matches:
+                return list(matches)[0]
+        elif word in self.keywords:
+            return word
+        return None
+
     def _cleanup(self, description, is_db):
         # perform obvious fixing of things that look like OCR errors and other
         # things that will confuse the matcher
@@ -340,14 +364,14 @@ class RulesMatcher:
                 index = word.find('/')
                 next = word[index+1:]
                 word = word[:index]
-                if word+next in self.attrs:
+                if self._is_attr(word+next, is_db):
                     # join together without /
                     desc[i] = word+next
                     continue
-                elif next+word in self.attrs:
+                elif self._is_attr(next+word, is_db):
                     desc[i] = next+word
                     continue
-                elif word in self.attrs or next in self.attrs:
+                elif self._is_attr(word, is_db) or self._is_attr(next, is_db):
                     # split in two
                     desc[i] = word
                     desc.insert(i+1, next)
@@ -362,7 +386,7 @@ class RulesMatcher:
                     # assume this is a grade
                     gotgrade = True
                 else:
-                    if word[:index] in self.attrs:
+                    if self._is_attr(word[:index], is_db):
                         # break the word here
                         if index == len(word)-1:
                             # just smoke the # if it's at the end of an attr
@@ -386,7 +410,9 @@ class RulesMatcher:
                 split_it = True
                 if is_db:
                     split_it = False
-                elif withoutdash in self.keywords or withoutdash in self.attrs or self._fuzzy_sku_match(withoutdash):
+                elif (self._is_keyword(withoutdash, is_db) or 
+                      self._is_attr(withoutdash, is_db) or 
+                      self._fuzzy_sku_match(withoutdash)):
                     # the dash is confusing things so smoke it
                     desc[i] = withoutdash
                     split_it = False
@@ -405,7 +431,7 @@ class RulesMatcher:
                 # this only matters if the stuff before the h is an attr and the stuff
                 # after the h is a number
                 index = word.find('h')
-                if index == len(word)-2 and word[index+1].isdigit() and word[:index] in self.attrs:
+                if index == len(word)-2 and word[index+1].isdigit() and self._is_attr(word[:index], is_db):
                     desc[i] = word[:index] + "#" + word[index+1:]
                     continue    # reprocess with number sign instead
 
@@ -414,7 +440,7 @@ class RulesMatcher:
                 x = word.find('x')
                 found = False
                 while x > 0 and not found:
-                    if x < len(word)-1 and word[x-1].isdigit() and word[x+1:] in self.attrs:
+                    if x < len(word)-1 and word[x-1].isdigit() and self._is_attr(word[x+1:], is_db):
                         # split it
                         desc[i] = word[:x]
                         desc.insert(i+1, word[x+1:])
@@ -429,14 +455,14 @@ class RulesMatcher:
                 nextword = desc[i+1]
                 # sometimes there are multi-word attributes that may have 
                 # an attribute as a subset, such as KD and KD Doug Fir is three word example
-                if i < len(desc)-2 and word + nextword + desc[i+2] in self.attrs:
-                    desc[i] = self.attrs[word + nextword + desc[i+2]]
+                if i < len(desc)-2 and self._is_attr(word + nextword + desc[i+2], is_db):
+                    desc[i] = self.attrs[self._is_attr(word + nextword + desc[i+2], is_db)]
                     del desc[i+1]
                     del desc[i+1]
                     continue
                 # two word example, such as KD DF
-                if word + nextword in self.attrs:
-                    desc[i] = self.attrs[word + nextword]
+                if self._is_attr(word + nextword, is_db):
+                    desc[i] = self.attrs[self._is_attr(word + nextword, is_db)]
                     del desc[i+1]
                     continue
 
@@ -444,7 +470,7 @@ class RulesMatcher:
                 if 'h' in word:
                     # this only matters if the stuff before the h is an attr and the next word is a number
                     index = word.find('h')
-                    if index == len(word)-1 and nextword.isdigit() and word[:index] in self.attrs:
+                    if index == len(word)-1 and nextword.isdigit() and self._is_attr(word[:index], is_db):
                         # just smoke the #
                         desc[i] = word[:index]
                         continue
@@ -489,9 +515,9 @@ class RulesMatcher:
 
             if self._looks_like_dimension(word, requirex=True):
                 gotdim = True
-            elif word in self.attrs:
+            elif self._is_attr(word, is_db):
                 # change to universal attribute name
-                desc[i] = self.attrs[word]
+                desc[i] = self.attrs[self._is_attr(word, is_db)]
                 gotattr = True
             elif self._looks_like_length(word):
                 gotlen = True
@@ -618,7 +644,7 @@ class RulesMatcher:
             score += penalty
             if indent is not None:
                 line = sys._getframe().f_lineno - 1
-                print(indent*' ' + f"--> line {line}: score={score}, penalty={penalty}")
+                print(indent*' ' + f"--> line {line}: score={score}, detractors penalty={penalty}")
 
         for name,dbc in db_components.items():
             if type(dbc) == type([]):
@@ -791,16 +817,20 @@ class RulesMatcher:
         items = [re.sub(r'[^a-zA-Z0-9]', '', s) for s in items]
 
         for part in parts_list:
+            indent = None
             if (self.debug_item == self.current_item and self.debug_part and
                 self.debug_part.lower() == part['Item Number'].lower()):
                 print(f"\n   Parsed item components: {item_str} -> {item_components}")
                 print(f"   db_components={part["components"]}")
                 print(f"   items={items}")
                 pdb.set_trace()
+                indent = 3
             scores = fuzzy_match(items, part['Item Number'], threshold=self.scoring["skumatch-threshold"])
             if len(scores):
                 # add any other information that might help improve match
-                score = self._calculate_lumber_match_score(item_components, part['components'], sku="") / 10
+                score = self._calculate_lumber_match_score(item_components, part['components'], sku="", indent=indent) / 10
+                if score < 0:
+                    continue    # something bad happened
                 self._add_match(matches, item_str, part, max(scores.values()) + score)
 
         return matches

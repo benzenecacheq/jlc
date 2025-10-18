@@ -2,6 +2,7 @@
    "** comments":[
       "This document contains the various configuration options for the rules-based part matcher.       ",
       "                                                                                                 ",
+      " misc                    - individual settings that affect how the program operates.             ",
       " scoring                 - These are components of the scoring function.  No specific details    ",
       "                           are provided here.  You will need to look at the code to see how they ",
       "                           are used.                                                             ",
@@ -28,6 +29,11 @@
       " hardware terms          - If you see these items in the description, it's a hardware item.      ",
    null],
 
+   "misc":{
+      "fuzzy category match"    : false,
+      "fuzzy keyword match"     : false,
+      "fuzzy matching seems to slow things down too much for minimal gain" : false
+   },
    "scoring":{
       "match-threshold"         : 0.7,
       "keyword-threshold"       : 0.7,
@@ -48,7 +54,8 @@
       "df" : 0.1
    },
    "default other":{
-      "5ply" : 0.005
+      "5ply" : 0.005,
+      "ctd" : 0.03
    },
    "lf only":[
       "pl",
@@ -59,6 +66,7 @@
       "durastrand":10,
       "gold":4,
       "t&g":6,
+      "hdg":5,
       "anchor":6,
       "screw":5,
       "washer":6,
@@ -78,7 +86,11 @@
       "ptcdx" : -0.03,
       "durastrand" : -0.02,
       "non-stock" : -0.01,
-      "ctd" : -0.005
+      "hdg" : -0.005,
+      "ctd" : -0.005,
+      "simpsonhangernails" : -0.2,
+      "simpsontool" : -0.2
+
    },
    "friends":{
       "pl":{"ml":-0.02},
@@ -108,6 +120,7 @@
       "fortress",
       "hexnuts",
       "nails",
+      "gunnails",
       "screws",
       "end-of-list" 
    ],
@@ -115,6 +128,7 @@
       "box", "boxes",
       "screw", "screws",
       "hex", "nut", "nuts", "bolt", "bolts", "washers",
+      "nails", "gun", "gunnails",
       "anchor",
       "eccq","galv",
       "end-of-list" 
