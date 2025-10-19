@@ -61,6 +61,7 @@ furring`df std btr s4s
 struc1`struc 1
 \*22\*`22
 \*14\*`14
+(\d)/pk\b`\1p
 
 # Some plurals
 clips`clip
