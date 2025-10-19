@@ -44,6 +44,7 @@ class RulesMatcher:
         self.detractors = None          # penalize some words if they appear in only one
                                         # of the items being matched
         self.detractor_map = {}         # so we don't have to keep recalculating
+        self.implies = None
 
         self.board_parts = None         # parts that have dimensions and length
         self.dim_parts = None           # parts with dimensions but no length
@@ -87,6 +88,7 @@ class RulesMatcher:
         self.detractors = self.get_setting("detractors")
         self.special_lengths = set(self.get_setting("special lengths"))
         self.scoring = self.get_setting("scoring")
+        self.implies = self.get_setting("implies")
 
         # get keywords and load optional additional keywords
         self.keywords = self.get_setting("keywords")
@@ -220,7 +222,7 @@ class RulesMatcher:
             return 0
 
     def _dimensions_match(self, word1, word2):
-        # replace everythign that's not a number with a space and compare
+        # replace everything that's not a number with a space and compare
         newword1 = " ".join(re.sub(r'[^0-9]', ' ', word1).split())
         newword2 = " ".join(re.sub(r'[^0-9]', ' ', word2).split())
 
@@ -560,6 +562,21 @@ class RulesMatcher:
                 if d not in components['other']:
                     components['other'].append(d)
 
+        if "attrs" in components and not is_db:
+            for attr in components["attrs"]:
+                implied = self.implies[attr] if attr in self.implies else {}
+                for k,implication in implied.items():
+                    if k == "other":
+                        if "other" not in components:
+                            components["other"] = []
+                        components["other"] += [i for i in implication if i not in components["other"]]
+                        if self.debug:
+                            print(f"    Added implied other items {implication}")
+                    elif k not in components:
+                        components[k] = implication
+                        if self.debug:
+                            print(f"    Added {k} {implication}")
+
         return components
 
     # add a found item to the list of matches
@@ -599,13 +616,13 @@ class RulesMatcher:
         score = 0.0
         newindent = None
         if indent is not None:
-            print(indent*' ', f"===============================")
-            print(indent*' ', "_calculate_lumber_match_score(")
-            print(indent*' ', f"      item_components={item_components}")
-            print(indent*' ', f"      db_components={db_components}")
-            print(indent*' ', f"      sku={sku}")
-            print(indent*' ', f"      sell_by_foot={sell_by_foot} )")
-            print(indent*' ', f"===============================")
+            print(indent*' ' + f"===============================")
+            print(indent*' ' + "_calculate_lumber_match_score(")
+            print(indent*' ' + f"      item_components={item_components}")
+            print(indent*' ' + f"      db_components={db_components}")
+            print(indent*' ' + f"      sku={sku}")
+            print(indent*' ' + f"      sell_by_foot={sell_by_foot} )")
+            print(indent*' ' + f"===============================")
             newindent = indent + 3
 
         # some special cases:
@@ -630,7 +647,7 @@ class RulesMatcher:
                     print(indent*' ' + f"--> line {line}: score={score}, skumatch={skumatch}, maxmatch={maxmatch}")
 
             if indent is not None:
-                print(indent*' ', f"=============== Final score: {score} ================")
+                print(indent*' ' + f"=============== Final score: {score} ================")
             return score
 
         # check for detractors that are required to be in both if found in either
@@ -804,7 +821,7 @@ class RulesMatcher:
                 item_components["sell_by_foot"] = db_components["sell_by_foot"] = new_length
 
         if indent is not None:
-            print(indent*' ', f"=============== Final score: {score} ================")
+            print(indent*' ' + f"=============== Final score: {score} ================")
         return score
 
     def try_sku_match(self, item_str: str) -> List[PartMatch]:
