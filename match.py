@@ -629,24 +629,16 @@ class RulesMatcher:
         if len(item_components) == 1 and 'other' in item_components and 'other' in db_components:
             # All we have is 'other'
             divisor = (len(item_components['other'])*2 + len(db_components['other'])) / 3
-            for i in item_components['other']:
-                skumatch = maxmatch = 0.0
-                if sku:
-                    skumatch = fuzzy_match(i, sku)
-                    skumatch = skumatch if skumatch > self.scoring["skumatch-threshold"]  else 0.0
-                for d in db_components['other']:
-                    maxmatch = max(maxmatch, fuzzy_match(i, d))
-                    if maxmatch > 0.8:
-                        break
-                if maxmatch > skumatch:
-                    score += maxmatch / divisor
-                else:
-                    score += skumatch / len(item_components['other'])
-                if indent is not None:
-                    line = sys._getframe().f_lineno - 1
-                    print(indent*' ' + f"--> line {line}: score={score}, skumatch={skumatch}, maxmatch={maxmatch}")
-
+            skumatch = {}
+            if sku:
+                skumatch = fuzzy_match(sku, item_components["other"], threshold=self.scoring["skumatch-threshold"])
+            sku_sum = sum(skumatch.values())
+            dbmatch = fuzzy_match(item_components["other"], db_components["other"])
+            db_sum = sum(dbmatch.values())
+            score += db_sum / divisor + sku_sum / len(item_components['other'])
             if indent is not None:
+                line = sys._getframe().f_lineno - 1
+                print(indent*' ' + f"--> line {line}: score={score}, skumatch={skumatch}, dbmatch={dbmatch}")
                 print(indent*' ' + f"=============== Final score: {score} ================")
             return score
 
@@ -825,13 +817,25 @@ class RulesMatcher:
         return score
 
     def try_sku_match(self, item_str: str) -> List[PartMatch]:
-        item_components = self.parse_lumber_item(item_str)
         matches = []
-        words = item_components['attrs'] if 'attrs' in item_components else []
-        words += item_components['other'] if 'other' in item_components else []
-
+        item_components = self.parse_lumber_item(item_str)
+        if True:
+            # use raw text rather than cleaned-up text
+            words = item_str.split()
+            # add double-words
+            words += [words[i] + words[i+1] for i in range(len(words)-1)]
+            # add triple-words
+            words += [words[i] + words[i+1] + words[i+2] for i in range(len(words)-2)]
+        else:
+            words = item_components['attrs'] if 'attrs' in item_components else []
+            words += item_components['other'] if 'other' in item_components else []
+       
         # clean out non-alphanumeric from words in the list because skus are all alphanumeric
         words = [re.sub(r'[^a-zA-Z0-9]', '', s) for s in words]
+
+        # remove any that are all numbers.  This may miss a few but it signicantly cuts
+        # the number of incorrect matches
+        words = [w for w in words if not w.isdigit()]
 
         indent = None
         if self.debug_item == self.current_item:
@@ -899,6 +903,7 @@ class RulesMatcher:
 
         # If we don't have a category for the item, special treatment applies
         if len(parts) == 0:
+            tried_skumatch = False
             if 'dimensions' in item_components and 'length' in item_components:
                 # if there are dimensions and length, it's probably a board
                 parts = self.board_parts
@@ -910,9 +915,8 @@ class RulesMatcher:
                 matches = self.try_sku_match(item_desc)
                 if len(matches) > 0:
                     return self.sort_matches(item, matches)
+                tried_skumatch = True
 
-            #parts = self.merged_database.values()
-        
         # add any keyword parts to the list
         keywords = self._has_keyword(item_components)
         if keywords:
@@ -922,7 +926,8 @@ class RulesMatcher:
 
         # If this is hardware, don't look at any lumber.
         words = attrs if attrs is not None else [] + item_components["other"] if "other" in item_components else []
-        if words and fuzzy_match(self.hardware_terms, words, threshold=0.6):
+        is_hardware = words and fuzzy_match(self.hardware_terms, words, threshold=0.6)
+        if is_hardware:
             cats = [c for c in self.lumber_categories if attrs is None or c not in attrs]
             parts = self._deselect_parts(parts, cats)
 
