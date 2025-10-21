@@ -134,19 +134,54 @@ class SKUSelectionDialog(QDialog):
         self.current_sku = current_sku
         self.selected_match = None
         self.quantity_override = None
+        
+        # Get database mappings from parent GUI
+        self.description_mapping = {}
+        self.type_mapping = {}
+        self.stocking_multiple_mapping = {}
+        if parent and hasattr(parent, 'description_mapping'):
+            self.description_mapping = parent.description_mapping
+            self.type_mapping = parent.type_mapping
+            self.stocking_multiple_mapping = parent.stocking_multiple_mapping
+        
         self.init_ui()
         
     def init_ui(self):
         """Initialize the dialog UI"""
         self.setWindowTitle("Select SKU and Edit Quantity")
         self.setModal(True)
-        self.resize(500, 400)
+        self.resize(500, 500)
         
         layout = QVBoxLayout(self)
         
         # Instructions
         instructions = QLabel("Select the correct SKU and optionally edit the quantity:")
         layout.addWidget(instructions)
+        
+        # Quantity section (moved to top)
+        quantity_group = QGroupBox("Quantity")
+        quantity_layout = QFormLayout(quantity_group)
+        
+        self.quantity_input = QLineEdit()
+        self.quantity_input.setText(self.current_quantity)
+        self.quantity_input.setPlaceholderText("Enter quantity (leave empty to keep original)")
+        quantity_layout.addRow("Quantity:", self.quantity_input)
+        
+        layout.addWidget(quantity_group)
+        
+        # Add custom SKU section
+        custom_sku_group = QGroupBox("Add Custom SKU")
+        custom_sku_layout = QHBoxLayout(custom_sku_group)
+        
+        self.custom_sku_input = QLineEdit()
+        self.custom_sku_input.setPlaceholderText("Enter SKU to add to list...")
+        custom_sku_layout.addWidget(self.custom_sku_input)
+        
+        add_sku_button = QPushButton("Add SKU")
+        add_sku_button.clicked.connect(self.add_custom_sku)
+        custom_sku_layout.addWidget(add_sku_button)
+        
+        layout.addWidget(custom_sku_group)
         
         # List widget for SKU selection
         self.list_widget = QListWidget()
@@ -177,17 +212,6 @@ class SKUSelectionDialog(QDialog):
             
         layout.addWidget(self.list_widget)
         
-        # Quantity section
-        quantity_group = QGroupBox("Quantity")
-        quantity_layout = QFormLayout(quantity_group)
-        
-        self.quantity_input = QLineEdit()
-        self.quantity_input.setText(self.current_quantity)
-        self.quantity_input.setPlaceholderText("Enter quantity (leave empty to keep original)")
-        quantity_layout.addRow("Quantity:", self.quantity_input)
-        
-        layout.addWidget(quantity_group)
-        
         # Buttons
         button_layout = QHBoxLayout()
         
@@ -200,6 +224,70 @@ class SKUSelectionDialog(QDialog):
         button_layout.addWidget(cancel_button)
         
         layout.addLayout(button_layout)
+        
+    def add_custom_sku(self):
+        """Add a custom SKU to the matches list"""
+        sku_text = self.custom_sku_input.text().strip().upper()
+        if not sku_text:
+            return
+        
+        # Check if SKU already exists in the list
+        for i in range(self.list_widget.count()):
+            item = self.list_widget.item(i)
+            if item and item.data(Qt.ItemDataRole.UserRole):
+                match = item.data(Qt.ItemDataRole.UserRole)
+                if match['part_number'] == sku_text:
+                    # SKU already exists, just select it
+                    self.list_widget.setCurrentRow(i)
+                    self.custom_sku_input.clear()
+                    return
+        
+        # Check if SKU exists in the database
+        description = 'Custom SKU (not in database)'
+        item_type = ''
+        confidence = '1.0'  # High confidence since user explicitly entered it
+        
+        if sku_text in self.description_mapping:
+            # SKU exists in database - use database information
+            description = self.description_mapping[sku_text]
+            item_type = self.type_mapping.get(sku_text, '')
+            confidence = '0.95'  # Slightly lower confidence since it's manually entered but exists in DB
+        else:
+            # SKU not in database - show warning
+            from PyQt6.QtWidgets import QMessageBox
+            reply = QMessageBox.question(
+                self, 
+                'SKU Not Found', 
+                f'SKU "{sku_text}" was not found in the database.\n\nDo you want to add it as a custom SKU anyway?',
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No
+            )
+            if reply != QMessageBox.StandardButton.Yes:
+                return
+        
+        # Create a new match entry for the custom SKU
+        custom_match = {
+            'part_number': sku_text,
+            'description': description,
+            'type': item_type,
+            'confidence': confidence
+        }
+        
+        # Add to matches list
+        self.matches.append(custom_match)
+        
+        # Add to list widget
+        confidence_symbol = self.get_confidence_symbol(custom_match['confidence'])
+        item_text = f"{confidence_symbol} {custom_match['part_number']} - {custom_match['description'][:50]}{'...' if len(custom_match['description']) > 50 else ''}"
+        item = QListWidgetItem(item_text)
+        item.setData(Qt.ItemDataRole.UserRole, custom_match)
+        self.list_widget.addItem(item)
+        
+        # Select the newly added item
+        self.list_widget.setCurrentRow(self.list_widget.count() - 1)
+        
+        # Clear the input field
+        self.custom_sku_input.clear()
         
     def get_confidence_symbol(self, confidence_str):
         """Get confidence symbol based on confidence value"""
@@ -1521,26 +1609,15 @@ class LumberViewerGUI(QMainWindow):
         """Handle single click on table cell"""
         if row in self.row_item_data:
             item = self.row_item_data[row]
-            if len(item['matches']) > 1:
-                # Multiple matches - open SKU selection dialog
-                self.open_sku_dialog(row, item)
-            elif len(item['matches']) == 1:
-                # Single match - open dialog to allow changing
-                self.open_sku_dialog(row, item)
-            else:
-                # No matches - no action needed
-                pass
+            # Always open dialog for any item (multiple matches, single match, or no matches)
+            self.open_sku_dialog(row, item)
     
     def on_cell_double_clicked(self, row: int, column: int):
         """Handle double-click on table cell"""
         if row in self.row_item_data:
             item = self.row_item_data[row]
-            if len(item['matches']) > 1 or len(item['matches']) == 1:
-                # Multiple or single matches - open SKU selection dialog
-                self.open_sku_dialog(row, item)
-            else:
-                # No matches - no action needed
-                pass
+            # Always open dialog for any item (multiple matches, single match, or no matches)
+            self.open_sku_dialog(row, item)
     
     def open_sku_dialog(self, row: int, item: dict):
         """Open SKU selection dialog for an item"""
@@ -1897,7 +1974,7 @@ class LumberViewerGUI(QMainWindow):
                     writer = csv.writer(f)
                     
                     # Write header
-                    # writer.writerow(['SKU', 'Qty', 'Linear Feet'])
+                    # writer.writerow(['SKU', 'Description', 'Qty', 'Linear Feet'])
                     
                     for i, item in enumerate(self.filtered_data):
                         # Check if there's a manual override for this row
@@ -1907,17 +1984,21 @@ class LumberViewerGUI(QMainWindow):
                                 # "No matches" was selected - skip this item
                                 if self.no_match_sku:
                                     sku = self.no_match_sku
+                                    description = "No match found"
                                 else:
                                     continue
                             else:
                                 # Use the manual override
                                 sku = override['part_number']
+                                description = override['description']
                         elif len(item['matches']) > 0:
                             # No manual override - use the first match
                             match = item['matches'][0]
                             sku = match['part_number']
+                            description = match['description']
                         elif self.no_match_sku:
                             sku = self.no_match_sku
+                            description = "No match found"
                         else:
                             # Skip items with no matches
                             continue
@@ -1936,7 +2017,7 @@ class LumberViewerGUI(QMainWindow):
                             lf = re.sub(r'[^0-9/\.\-]', '', lf)
                         else:
                             lf = ""
-                        writer.writerow([sku, quantity, lf])
+                        writer.writerow([sku, description, quantity, lf])
                             
                 QMessageBox.information(self, "Export Complete", f"POS data exported to {filename}")
                 
