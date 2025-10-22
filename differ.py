@@ -159,10 +159,12 @@ class Differ:
                   f"--+{75*'-'}+")
             print('-'*75 + '+' + '-'*75 + '+')
             
-            for i in range(max(len(left_item.matches), len(right_item.matches))):
-               left = get_match_text(left_item.matches[i]) if i < len(left_item.matches) else (" "*74)
-               right = get_match_text(right_item.matches[i]) if i < len(right_item.matches) else (" "*74)
-               print(f"{left} | {right}|")
+            left = left_item.matches if left_item is not None else []
+            right = right_item.matches if right_item is not None else []
+            for i in range(max(len(left), len(right))):
+               l = get_match_text(left[i]) if i < len(left) else (" "*74)
+               r = get_match_text(right[i]) if i < len(right) else (" "*74)
+               print(f"{l} | {r}|")
         print(f"{'='*152}")
 
 def main():
