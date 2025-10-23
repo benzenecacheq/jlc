@@ -14,6 +14,7 @@ class PartMatch:
     part_number: str
     database_name: str
     database_description: str
+    type: str
     score: float
     confidence: str     # "exact", "partial", "similar" or float
     part_idx: int = -1  # not set in AI match

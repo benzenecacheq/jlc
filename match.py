@@ -586,11 +586,12 @@ class RulesMatcher:
         db_components = self.parse_lumber_item(item_desc)
         attr = part.get('attr')
         match = PartMatch(
-            description=item,
+            description=item_desc,
             part_number=item_number,
             database_name=part['database'],
             database_description=f"{item_desc} | Attr: {attr} | "
                                  f"components: {db_components} | Score: {score:.2f}",
+            type=attr,
             score=score,
             lf=length,
             confidence=str(score)
@@ -838,7 +839,7 @@ class RulesMatcher:
         words = [w for w in words if not w.isdigit()]
 
         indent = None
-        if self.debug_item == self.current_item:
+        if self.debug_item is not None and self.debug_item == self.current_item:
             indent = 3
             pdb.set_trace()
             if self.debug_part:
@@ -878,7 +879,7 @@ class RulesMatcher:
         if self.debug:
             print(f"  Parsed item components: {item_desc} -> {item_components}")
 
-        if self.debug_item == self.current_item and self.debug_part is None:
+        if self.debug_item is not None and self.debug_item == self.current_item and self.debug_part is None:
             print(f"  Parsed item components: {item_desc} -> {item_components}")
             pdb.set_trace()     # debug the processing of this item.
             self.parse_lumber_item(item_desc)
@@ -955,8 +956,8 @@ class RulesMatcher:
 
             match_score = self._calculate_lumber_match_score(item_components, db_components, sku=part_number,
                                                              sell_by_foot=sell_by_foot)
-            if (self.debug_item == self.current_item and self.debug_part and
-                self.debug_part.lower() == part_number.lower()):
+            if (self.debug_item is not None and self.debug_item == self.current_item and 
+                self.debug_part and self.debug_part.lower() == part_number.lower()):
                 print(f"item_components={item_components}")
                 print(f"db_components={db_components}")
                 print(f"match_score={match_score}")
