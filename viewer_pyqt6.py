@@ -9,11 +9,13 @@ Features a table view with embedded listboxes for items with multiple SKU matche
 import sys
 import csv
 import os
+import pdb
 import re
 import subprocess
 import configparser
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
     QTableWidget, QTableWidgetItem, QComboBox, QPushButton, QLabel, 
@@ -24,6 +26,23 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QThread, QObject
 from PyQt6.QtGui import QFont, QPalette, QColor, QAction, QKeyEvent
+
+@dataclass
+class PartMatch:
+    """Represents a match between scanned item and database part"""
+    part_number: str
+    description: str
+    confidence: float
+    type: str = ""
+    lf: str = ""        # linear feet if the match is for that kind of lumber
+
+@dataclass
+class ScannedItem:
+    """Represents an item from the scanned list"""
+    quantity: str
+    description: str
+    original_text: str
+    matches: List[PartMatch]
 
 class KeywordFileDialog(QDialog):
     """Dialog for selecting keyword file with text input and browse button"""
@@ -127,13 +146,14 @@ class KeywordFileDialog(QDialog):
 class SKUSelectionDialog(QDialog):
     """Dialog for selecting SKU from multiple matches and editing quantity"""
     
-    def __init__(self, matches: List[Dict], current_quantity: str = "", current_sku: str = "", parent=None):
+    def __init__(self, matches: List[Dict], current_quantity: str = "", current_sku: str = "", parent=None, item_data=None):
         super().__init__(parent)
         self.matches = matches
         self.current_quantity = current_quantity
         self.current_sku = current_sku
         self.selected_match = None
         self.quantity_override = None
+        self.item_data = item_data or {}  # Store the original item data
         
         # Get database mappings from parent GUI
         self.description_mapping = {}
@@ -168,6 +188,26 @@ class SKUSelectionDialog(QDialog):
         quantity_layout.addRow("Quantity:", self.quantity_input)
         
         layout.addWidget(quantity_group)
+        
+        # Text editing section
+        text_group = QGroupBox("Edit Text and Search")
+        text_layout = QVBoxLayout(text_group)
+        
+        # Text input
+        text_input_layout = QHBoxLayout()
+        text_input_layout.addWidget(QLabel("Text:"))
+        self.text_input = QLineEdit()
+        self.text_input.setText(self.item_data.get('processed_text', ''))
+        self.text_input.setPlaceholderText("Edit the item text for searching...")
+        text_input_layout.addWidget(self.text_input)
+        
+        # Search button
+        search_button = QPushButton("Search")
+        search_button.clicked.connect(self.search_matches)
+        text_input_layout.addWidget(search_button)
+        
+        text_layout.addLayout(text_input_layout)
+        layout.addWidget(text_group)
         
         # Add custom SKU section
         custom_sku_group = QGroupBox("Add Custom SKU")
@@ -288,6 +328,123 @@ class SKUSelectionDialog(QDialog):
         
         # Clear the input field
         self.custom_sku_input.clear()
+    
+    def search_matches(self):
+        """Search for matches using RulesMatcher"""
+        try:
+            # Get the edited text
+            edited_text = self.text_input.text().strip()
+            if not edited_text:
+                QMessageBox.warning(self, "No Text", "Please enter some text to search for.")
+                return
+            
+            # Get quantity
+            quantity = self.quantity_input.text().strip() or self.current_quantity
+            
+            # Create ScannedItem
+            scanned_item = ScannedItem(
+                quantity=quantity,
+                description=edited_text,
+                original_text=self.item_data.get('original_text', edited_text),
+                matches=[]
+            )
+            
+            # Try to get RulesMatcher from parent
+            if not hasattr(self.parent(), 'rules_matcher') or not self.parent().rules_matcher:
+                QMessageBox.warning(self, "No Matcher", "RulesMatcher not available. Please load a database first.")
+                return
+            
+            # Search for matches
+            matches = self.parent().rules_matcher.match_lumber_item(scanned_item)
+            
+            if not matches:
+                QMessageBox.information(self, "No Matches", f"No matches found for: {edited_text}")
+                return
+            
+            # Show search results dialog
+            self.show_search_results(matches)
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Search Error", f"Error searching for matches: {str(e)}")
+    
+    def show_search_results(self, matches):
+        """Show search results in a dialog and allow selection"""
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Search Results")
+        dialog.setModal(True)
+        dialog.resize(600, 400)
+        
+        layout = QVBoxLayout(dialog)
+        
+        # Instructions
+        instructions = QLabel(f"Found {len(matches)} matches. Select items to add to the list:")
+        layout.addWidget(instructions)
+        
+        # Results list
+        results_list = QListWidget()
+        results_list.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
+        
+        for match in matches:
+            confidence_symbol = self.get_confidence_symbol(str(match.confidence))
+            item_text = f"{confidence_symbol} {match.part_number} - {match.description[:60]}{'...' if len(match.description) > 60 else ''}"
+            item = QListWidgetItem(item_text)
+            item.setData(Qt.ItemDataRole.UserRole, match)
+            results_list.addItem(item)
+        
+        layout.addWidget(results_list)
+        
+        # Buttons
+        button_layout = QHBoxLayout()
+        
+        add_selected_button = QPushButton("Add Selected")
+        add_selected_button.clicked.connect(lambda: self.add_selected_matches(results_list, dialog))
+        button_layout.addWidget(add_selected_button)
+        
+        cancel_button = QPushButton("Cancel")
+        cancel_button.clicked.connect(dialog.reject)
+        button_layout.addWidget(cancel_button)
+        
+        layout.addLayout(button_layout)
+        
+        dialog.exec()
+    
+    def add_selected_matches(self, results_list, dialog):
+        """Add selected matches to the main list"""
+        selected_items = results_list.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "No Selection", "Please select at least one item to add.")
+            return
+        
+        added_count = 0
+        for item in selected_items:
+            match = item.data(Qt.ItemDataRole.UserRole)
+            if match:
+                # Convert PartMatch to match format
+                match_dict = {
+                    'part_number': match.part_number,
+                    'description': match.description,
+                    'type': match.type,
+                    'confidence': str(match.confidence)
+                }
+                
+                # Add to matches list
+                self.matches.append(match_dict)
+                
+                # Add to list widget
+                confidence_symbol = self.get_confidence_symbol(str(match.confidence))
+                item_text = f"{confidence_symbol} {match.part_number} - {match.description[:50]}{'...' if len(match.description) > 50 else ''}"
+                list_item = QListWidgetItem(item_text)
+                list_item.setData(Qt.ItemDataRole.UserRole, match_dict)
+                self.list_widget.addItem(list_item)
+                
+                added_count += 1
+        
+        # Select the last added item
+        if added_count > 0:
+            self.list_widget.setCurrentRow(self.list_widget.count() - 1)
+        
+        dialog.accept()
+        QMessageBox.information(self, "Matches Added", f"Added {added_count} matches to the list.")
         
     def get_confidence_symbol(self, confidence_str):
         """Get confidence symbol based on confidence value"""
@@ -1314,6 +1471,9 @@ class LumberViewerGUI(QMainWindow):
             # Load database
             self.description_mapping, self.type_mapping, self.stocking_multiple_mapping = self.load_database(self.database_file)
             
+            # Initialize RulesMatcher
+            self.init_rules_matcher()
+            
             # Load and process CSV
             self.raw_data = self.process_csv_file(self.csv_file, self.description_mapping, self.type_mapping)
             self.group_data()
@@ -1357,6 +1517,27 @@ class LumberViewerGUI(QMainWindow):
                     part_to_stocking_multiple[part_number] = stocking_multiple
                     
         return part_to_description, part_to_type, part_to_stocking_multiple
+    
+    def init_rules_matcher(self):
+        """Initialize RulesMatcher for search functionality"""
+        try:
+            # Import required modules
+            from pdf2parts import load_database
+            from match import RulesMatcher
+            
+            # Load database for RulesMatcher
+            db_name = Path(self.database_file).stem
+            database = load_database(self.database_file, db_name, quiet=True)
+            
+            # Create matcherdbs dict
+            matcherdbs = {db_name: database}
+            
+            # Initialize RulesMatcher
+            self.rules_matcher = RulesMatcher(matcherdbs, False)
+            
+        except Exception as e:
+            print(f"Warning: Could not initialize RulesMatcher: {e}")
+            self.rules_matcher = None
         
     def process_csv_file(self, csv_file: str, description_mapping: Dict[str, str], 
                         type_mapping: Dict[str, str]) -> List[Dict]:
@@ -1631,7 +1812,7 @@ class LumberViewerGUI(QMainWindow):
         elif item['matches']:
             current_sku = item['matches'][0]['part_number']
         
-        dialog = SKUSelectionDialog(item['matches'], current_quantity, current_sku, self)
+        dialog = SKUSelectionDialog(item['matches'], current_quantity, current_sku, self, item)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             if dialog.selected_match is None:
                 # "No matches" selected - store as override
