@@ -1196,8 +1196,11 @@ class LumberViewerGUI(QMainWindow):
 
     def closeEvent(self, event):
         """Handle application close event"""
-        self.save_settings()
-        event.accept()
+        if self.ask_save_changes():
+            self.save_settings()
+            event.accept()
+        else:
+            event.ignore()  # Cancel the close operation
         
     def delayed_apply_filters(self):
         """Apply filters with a delay to prevent crashes while typing"""
@@ -1221,18 +1224,11 @@ class LumberViewerGUI(QMainWindow):
         file_menu.addSeparator()
         
         # Load CSV action
-        load_csv_action = QAction('&Load CSV Results...', self)
+        load_csv_action = QAction('&Open Results CSV...', self)
         load_csv_action.setShortcut('Ctrl+O')
-        load_csv_action.setStatusTip('Load CSV matching results file')
+        load_csv_action.setStatusTip('Load matching results CSV file')
         load_csv_action.triggered.connect(self.load_csv_file)
         file_menu.addAction(load_csv_action)
-        
-        # Load Database action
-        load_db_action = QAction('Load &Database...', self)
-        load_db_action.setShortcut('Ctrl+D')
-        load_db_action.setStatusTip('Load SKU database file')
-        load_db_action.triggered.connect(self.load_database_file)
-        file_menu.addAction(load_db_action)
         
         # Save action
         save_action = QAction('&Save', self)
@@ -1243,17 +1239,17 @@ class LumberViewerGUI(QMainWindow):
         self.save_action = save_action  # Store reference for enabling/disabling
         file_menu.addAction(save_action)
         
-        file_menu.addSeparator()
-        
         # Export action
-        export_action = QAction('&Export CSV...', self)
+        export_action = QAction('&Save as...', self)
         export_action.setShortcut('Ctrl+E')
-        export_action.setStatusTip('Export filtered results to CSV')
+        export_action.setStatusTip('Save results to new CSV')
         export_action.triggered.connect(self.export_to_csv)
         export_action.setEnabled(False)
         self.export_action = export_action  # Store reference for enabling/disabling
         file_menu.addAction(export_action)
         
+        file_menu.addSeparator()
+
         # Export to POS System action
         export_pos_action = QAction('Export to &POS System...', self)
         export_pos_action.setShortcut('Ctrl+R')
@@ -1262,6 +1258,15 @@ class LumberViewerGUI(QMainWindow):
         export_pos_action.setEnabled(False)
         self.export_pos_action = export_pos_action  # Store reference for enabling/disabling
         file_menu.addAction(export_pos_action)
+        
+        file_menu.addSeparator()
+
+        # Load Database action
+        load_db_action = QAction('Load &Database...', self)
+        load_db_action.setShortcut('Ctrl+D')
+        load_db_action.setStatusTip('Load SKU database file')
+        load_db_action.triggered.connect(self.load_database_file)
+        file_menu.addAction(load_db_action)
         
         file_menu.addSeparator()
         
@@ -1431,6 +1436,9 @@ class LumberViewerGUI(QMainWindow):
         
     def load_csv_file(self):
         """Load CSV file using file dialog"""
+        if not self.ask_save_changes():
+            return  # User cancelled
+        
         filename, _ = QFileDialog.getOpenFileName(
             self, "Load CSV Results", "", "CSV Files (*.csv);;All Files (*)"
         )
@@ -1444,6 +1452,9 @@ class LumberViewerGUI(QMainWindow):
             
     def load_database_file(self):
         """Load database file using file dialog"""
+        if not self.ask_save_changes():
+            return  # User cancelled
+        
         filename, _ = QFileDialog.getOpenFileName(
             self, "Load SKU Database", "", "CSV Files (*.csv);;All Files (*)"
         )
@@ -1529,8 +1540,38 @@ class LumberViewerGUI(QMainWindow):
                                   f"Changes saved to {Path(self.csv_file).name}\n"
                                   f"Backup created: {Path(backup_file).name}")
             
+            # Clear overrides and reload the CSV to sync state
+            self.manual_overrides.clear()
+            self.quantity_overrides.clear()
+            self.load_data()
+            
         except Exception as e:
             QMessageBox.critical(self, "Save Error", f"Error saving file: {str(e)}")
+    
+    def has_unsaved_changes(self):
+        """Check if there are any unsaved changes (manual overrides)"""
+        return len(self.manual_overrides) > 0 or len(self.quantity_overrides) > 0
+    
+    def ask_save_changes(self):
+        """Ask user if they want to save changes before proceeding"""
+        if not self.has_unsaved_changes():
+            return True  # No changes to save
+        
+        reply = QMessageBox.question(
+            self,
+            "Unsaved Changes",
+            "You have unsaved changes. Do you want to save them before continuing?",
+            QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Save
+        )
+        
+        if reply == QMessageBox.StandardButton.Save:
+            self.save_csv_file()
+            return True
+        elif reply == QMessageBox.StandardButton.Discard:
+            return True
+        else:  # Cancel
+            return False
     
     def apply_overrides_to_row(self, row):
         """Apply manual overrides to a single row - DEPRECATED, use save_csv_file instead"""
