@@ -391,6 +391,10 @@ class SKUSelectionDialog(QDialog):
             item.setData(Qt.ItemDataRole.UserRole, match)
             results_list.addItem(item)
         
+        # Auto-select the first item
+        if results_list.count() > 0:
+            results_list.setCurrentRow(0)
+        
         layout.addWidget(results_list)
         
         # Buttons
@@ -1230,6 +1234,15 @@ class LumberViewerGUI(QMainWindow):
         load_db_action.triggered.connect(self.load_database_file)
         file_menu.addAction(load_db_action)
         
+        # Save action
+        save_action = QAction('&Save', self)
+        save_action.setShortcut('Ctrl+S')
+        save_action.setStatusTip('Save changes to current CSV file')
+        save_action.triggered.connect(self.save_csv_file)
+        save_action.setEnabled(False)
+        self.save_action = save_action  # Store reference for enabling/disabling
+        file_menu.addAction(save_action)
+        
         file_menu.addSeparator()
         
         # Export action
@@ -1439,6 +1452,91 @@ class LumberViewerGUI(QMainWindow):
             self.database_file = filename
             self.load_data()
     
+    def save_csv_file(self):
+        """Save changes back to the current CSV file"""
+        if not self.csv_file:
+            QMessageBox.warning(self, "No File", "No CSV file is currently loaded.")
+            return
+        
+        if not self.raw_data:
+            QMessageBox.warning(self, "No Data", "No data to save.")
+            return
+        
+        try:
+            # Create a backup of the original file
+            backup_file = self.csv_file + ".backup"
+            import shutil
+            shutil.copy2(self.csv_file, backup_file)
+            
+            # Write the updated data back to the CSV file
+            with open(self.csv_file, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                
+                # Write header using original CSV columns
+                if hasattr(self, 'original_csv_columns') and self.original_csv_columns:
+                    writer.writerow(self.original_csv_columns)
+                else:
+                    # Fallback to basic columns
+                    writer.writerow(['Item_Number', 'Quantity', 'Description', 'Original_Text', 'Part_Number', 'Confidence'])
+                
+                # Write data rows - need to work with raw_data but apply overrides from grouped_data
+                for raw_row in self.raw_data:
+                    # Find the corresponding grouped item to check for overrides
+                    item_number = raw_row.get('item_number', '')
+                    
+                    # Find the display row index using row_item_data mapping
+                    display_row_idx = None
+                    for row_idx, item in self.row_item_data.items():
+                        if item.get('item_number') == item_number:
+                            display_row_idx = row_idx
+                            break
+                    
+                    # Apply overrides if this item has them
+                    updated_row = raw_row.copy()
+                    if display_row_idx is not None:
+                        # Apply quantity override
+                        if display_row_idx in self.quantity_overrides:
+                            updated_row['Quantity'] = self.quantity_overrides[display_row_idx]
+                        
+                        # Apply SKU override
+                        if display_row_idx in self.manual_overrides:
+                            override = self.manual_overrides[display_row_idx]
+                            if override is None:
+                                # "No matches" was selected
+                                updated_row['Part_Number'] = ''
+                                updated_row['Confidence'] = ''
+                            else:
+                                # Specific match was selected
+                                updated_row['Part_Number'] = override['part_number']
+                                updated_row['Confidence'] = override['confidence']
+                    
+                    # Write the row
+                    if hasattr(self, 'original_csv_columns') and self.original_csv_columns:
+                        row_values = [updated_row.get(col, '') for col in self.original_csv_columns]
+                    else:
+                        # Fallback to basic values
+                        row_values = [
+                            updated_row.get('Item_Number'),
+                            updated_row.get('Quantity'),
+                            updated_row.get('Processed_Text'),
+                            updated_row.get('Original_Text'),
+                            updated_row.get('Part_Number'),
+                            updated_row.get('Confidence'),
+                        ]
+                    writer.writerow(row_values)
+            
+            QMessageBox.information(self, "Save Complete", 
+                                  f"Changes saved to {Path(self.csv_file).name}\n"
+                                  f"Backup created: {Path(backup_file).name}")
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Save Error", f"Error saving file: {str(e)}")
+    
+    def apply_overrides_to_row(self, row):
+        """Apply manual overrides to a single row - DEPRECATED, use save_csv_file instead"""
+        # This method is no longer used - overrides are applied directly in save_csv_file
+        return row
+    
     def process_document(self):
         """Open the process document dialog"""
         dialog = ProcessDocumentDialog(self)
@@ -1483,6 +1581,7 @@ class LumberViewerGUI(QMainWindow):
             
             self.export_action.setEnabled(True)
             self.export_pos_action.setEnabled(True)
+            self.save_action.setEnabled(True)
             self.status_bar.showMessage(f"Loaded {len(self.raw_data)} rows, {len(self.grouped_data)} unique items")
             
             # Save the loaded files to config
