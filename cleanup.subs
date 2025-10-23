@@ -53,7 +53,7 @@
 1.9/32`5/8
 
 # PT/DF confuses things
-pt/df`pt
+\bpt/df\b`pt
 
 # These fix unusual things we see in the parts database
 std&btr`std btr
