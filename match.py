@@ -991,12 +991,35 @@ class RulesMatcher:
 
         # if we are doing variable length, set the quantity to the qty x length
         if len(matches) > 0 and self.merged_database[matches[0].part_number].get("Stocking Multiple") == "LF":
-            if matches[0].lf == "": 
-                # no length was set so assume quantity is the length
-                item.quantity = "1/" + item.quantity
-            else:
-                item.quantity += "/" + re.sub(r'[^0-9/\.\-]', '', matches[0].lf) + "'"
-                matches[0].lf = ""
+            lf = matches[0].lf
+            qty = item.quantity
+            found = []
+            for o in item_components["other"] if "other" in item_components else []:
+                if re.match(r"[0-9\"'-]*", o) and '/' in o:
+                    found.append(re.sub(r'[^0-9/\.\-]', '', o))
+
+            if re.match(r"[0-9][0-9]*/[0-9][0-9/\.\-]*", lf):
+                found.append(lf)
+                lf = ""
+                qty = ""
+
+            if '/' in qty:
+                if not found:
+                    # This shouldn't happen. set the quantity to *something*
+                    qty = qty[:qty.find('/')]
+                    qty = qty if qty != "" else "1"
+                else:
+                    lf = ""     # if this was not empty, we don't know what to do with it anyway
+                    qty = ""    # we'll use the found list
+            
+            if qty != "":
+                if lf == "": 
+                    # no length was set so assume quantity is the length
+                    found.insert(0, f"1/{qty}")
+                else:
+                    found.insert(0, f"{qty}/{re.sub(r'[^0-9/\.\-]', '', lf)}")
+
+            item.quantity = ", ".join(found)
 
         return matches
 

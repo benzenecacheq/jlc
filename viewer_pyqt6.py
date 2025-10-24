@@ -2365,15 +2365,16 @@ class LumberViewerGUI(QMainWindow):
                             quantity = self.quantity_overrides[i]
                         
                         stocking_multiple = self.stocking_multiple_mapping.get(sku, '')
-                        if ('/' in quantity) != (stocking_multiple.lower() == 'lf'):
-                            raise Exception(f"For item {i}, Quantity is '{quantity}' but "
-                                            f"stocking multiple is '{stocking_multiple}'")
-                        if '/' in quantity:
-                            quantity,lf = quantity.split('/')
-                            lf = re.sub(r'[^0-9/\.\-]', '', lf)
-                        else:
-                            lf = ""
-                        writer.writerow([sku, description, quantity, lf])
+                        row = [sku, description, quantity, ""]
+                        if stocking_multiple.lower() == "lf" and (',' in quantity or '/' in quantity):
+                            row = row[:2]
+                            # should be a comma-separated list with a slash separating the number from the length
+                            for q in quantity.split(','):
+                                slash = q.find('/')
+                                if slash > 0:
+                                    row.append(q[:slash].strip())
+                                    row.append(q[slash+1:].strip())
+                        writer.writerow(row)
                             
                 QMessageBox.information(self, "Export Complete", f"POS data exported to {filename}")
 
