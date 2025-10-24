@@ -54,6 +54,8 @@
 
 # PT/DF confuses things
 \bpt/df\b`pt
+\bptdf\b`pt
+\bdfpt\b`pt
 
 # These fix unusual things we see in the parts database
 std&btr`std btr
