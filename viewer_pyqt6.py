@@ -27,22 +27,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QThread, QObject
 from PyQt6.QtGui import QFont, QPalette, QColor, QAction, QKeyEvent
 
-@dataclass
-class PartMatch:
-    """Represents a match between scanned item and database part"""
-    part_number: str
-    description: str
-    confidence: float
-    type: str = ""
-    lf: str = ""        # linear feet if the match is for that kind of lumber
-
-@dataclass
-class ScannedItem:
-    """Represents an item from the scanned list"""
-    quantity: str
-    description: str
-    original_text: str
-    matches: List[PartMatch]
+from util import *
 
 class KeywordFileDialog(QDialog):
     """Dialog for selecting keyword file with text input and browse button"""
@@ -143,7 +128,7 @@ class KeywordFileDialog(QDialog):
         except Exception as e:
             print(f"Error saving KeywordFileDialog settings: {e}")
 
-class SKUSelectionDialog(QDialog):
+class ItemDetailsDialog(QDialog):
     """Dialog for selecting SKU from multiple matches and editing quantity"""
     
     def __init__(self, matches: List[Dict], current_quantity: str = "", current_sku: str = "", parent=None, item_data=None):
@@ -153,6 +138,8 @@ class SKUSelectionDialog(QDialog):
         self.current_sku = current_sku
         self.selected_match = None
         self.quantity_override = None
+        self.edited_text = None  # Store edited text from search
+        self.description_override = None  # Store edited description
         self.item_data = item_data or {}  # Store the original item data
         
         # Get database mappings from parent GUI
@@ -168,14 +155,14 @@ class SKUSelectionDialog(QDialog):
         
     def init_ui(self):
         """Initialize the dialog UI"""
-        self.setWindowTitle("Select SKU and Edit Quantity")
+        self.setWindowTitle("Edit Item Details")
         self.setModal(True)
         self.resize(500, 500)
         
         layout = QVBoxLayout(self)
         
         # Instructions
-        instructions = QLabel("Select the correct SKU and optionally edit the quantity:")
+        instructions = QLabel("Item Details")
         layout.addWidget(instructions)
         
         # Quantity section (moved to top)
@@ -202,9 +189,9 @@ class SKUSelectionDialog(QDialog):
         text_input_layout.addWidget(self.text_input)
         
         # Search button
-        search_button = QPushButton("Search")
-        search_button.clicked.connect(self.search_matches)
-        text_input_layout.addWidget(search_button)
+        self.search_button = QPushButton("Search")
+        self.search_button.clicked.connect(self.search_matches)
+        text_input_layout.addWidget(self.search_button)
         
         text_layout.addLayout(text_input_layout)
         layout.addWidget(text_group)
@@ -222,6 +209,18 @@ class SKUSelectionDialog(QDialog):
         custom_sku_layout.addWidget(add_sku_button)
         
         layout.addWidget(custom_sku_group)
+        
+        # Description editing section
+        description_group = QGroupBox("Description")
+        description_layout = QFormLayout(description_group)
+        
+        self.description_input = QLineEdit()
+        self.description_input.setPlaceholderText("Description will appear here when an item is selected")
+        self.description_input.setEnabled(False)  # Initially disabled
+        self.description_input.textChanged.connect(self.on_description_changed)
+        description_layout.addRow("Description:", self.description_input)
+        
+        layout.addWidget(description_group)
         
         # List widget for SKU selection
         self.list_widget = QListWidget()
@@ -249,6 +248,12 @@ class SKUSelectionDialog(QDialog):
         
         # Connect double-click to accept selection
         self.list_widget.itemDoubleClicked.connect(self.accept_selection)
+        
+        # Connect selection change to update description field
+        self.list_widget.currentItemChanged.connect(self.on_selection_changed)
+        
+        # Initialize description field based on initial selection
+        self.on_selection_changed(self.list_widget.currentItem(), None)
             
         layout.addWidget(self.list_widget)
         
@@ -264,6 +269,54 @@ class SKUSelectionDialog(QDialog):
         button_layout.addWidget(cancel_button)
         
         layout.addLayout(button_layout)
+        
+    def keyPressEvent(self, event):
+        """Handle key press events"""
+        if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
+            # Get the widget that currently has focus
+            focused_widget = self.focusWidget()
+            
+            if focused_widget == self.text_input:
+                # In text field - perform search
+                self.search_matches()
+            elif focused_widget == self.custom_sku_input:
+                # In custom SKU field - add SKU
+                self.add_custom_sku()
+            else:
+                # In any other field - accept selection (OK)
+                self.accept_selection()
+        else:
+            super().keyPressEvent(event)
+        
+    def on_selection_changed(self, current_item, previous_item):
+        """Handle selection change in the list widget"""
+        if current_item:
+            match = current_item.data(Qt.ItemDataRole.UserRole)
+            if match:
+                # Item selected - enable description field and show description
+                self.description_input.setEnabled(True)
+                self.description_input.setText(match.get('description', ''))
+            else:
+                # "No matches" selected - disable and clear description field
+                self.description_input.setEnabled(False)
+                self.description_input.clear()
+        else:
+            # No item selected - disable and clear description field
+            self.description_input.setEnabled(False)
+            self.description_input.clear()
+        
+    def on_description_changed(self):
+        """Handle description text changes - update the list box display"""
+        current_item = self.list_widget.currentItem()
+        if current_item and current_item.data(Qt.ItemDataRole.UserRole):
+            # Update the match data with the new description
+            match = current_item.data(Qt.ItemDataRole.UserRole)
+            match['description'] = self.description_input.text()
+            
+            # Update the display text in the list box
+            confidence_symbol = self.get_confidence_symbol(match['confidence'])
+            item_text = f"{confidence_symbol} {match['part_number']} - {match['description'][:50]}{'...' if len(match['description']) > 50 else ''}"
+            current_item.setText(item_text)
         
     def add_custom_sku(self):
         """Add a custom SKU to the matches list"""
@@ -338,6 +391,12 @@ class SKUSelectionDialog(QDialog):
                 QMessageBox.warning(self, "No Text", "Please enter some text to search for.")
                 return
             
+            # Show loading state
+            self.search_button.setText("Searching...")
+            self.search_button.setEnabled(False)
+            self.setCursor(Qt.CursorShape.WaitCursor)
+            QApplication.processEvents()  # Update UI immediately
+            
             # Get quantity
             quantity = self.quantity_input.text().strip() or self.current_quantity
             
@@ -366,6 +425,11 @@ class SKUSelectionDialog(QDialog):
             
         except Exception as e:
             QMessageBox.critical(self, "Search Error", f"Error searching for matches: {str(e)}")
+        finally:
+            # Restore normal state
+            self.search_button.setText("Search")
+            self.search_button.setEnabled(True)
+            self.setCursor(Qt.CursorShape.ArrowCursor)
     
     def show_search_results(self, matches):
         """Show search results in a dialog and allow selection"""
@@ -394,7 +458,7 @@ class SKUSelectionDialog(QDialog):
         # Auto-select the first item
         if results_list.count() > 0:
             results_list.setCurrentRow(0)
-        
+        ()
         layout.addWidget(results_list)
         
         # Buttons
@@ -447,6 +511,9 @@ class SKUSelectionDialog(QDialog):
         if added_count > 0:
             self.list_widget.setCurrentRow(self.list_widget.count() - 1)
         
+        # Store the edited text for later use
+        self.edited_text = self.text_input.text().strip()
+        
         dialog.accept()
         QMessageBox.information(self, "Matches Added", f"Added {added_count} matches to the list.")
         
@@ -469,7 +536,12 @@ class SKUSelectionDialog(QDialog):
         """Accept the selected SKU and quantity"""
         current_item = self.list_widget.currentItem()
         if current_item:
+            # Get the current match data (which may have been updated by description changes)
             self.selected_match = current_item.data(Qt.ItemDataRole.UserRole)
+            
+            # Ensure the description in the match data is up to date
+            if self.selected_match and self.description_input.isEnabled():
+                self.selected_match['description'] = self.description_input.text().strip()
             
             # Handle quantity override
             quantity_text = self.quantity_input.text().strip()
@@ -477,6 +549,16 @@ class SKUSelectionDialog(QDialog):
                 self.quantity_override = quantity_text
             else:
                 self.quantity_override = None
+            
+            # Store the edited text
+            self.edited_text = self.text_input.text().strip()
+            
+            # Store the edited description - since on_description_changed updates the match data,
+            # we just need to check if the description field was enabled (meaning an item was selected)
+            if self.description_input.isEnabled():
+                self.description_override = self.description_input.text().strip()
+            else:
+                self.description_override = None
                 
             self.accept()
         else:
@@ -1057,8 +1139,10 @@ class LumberViewerGUI(QMainWindow):
         self.filter_timer.setSingleShot(True)
         self.filter_timer.timeout.connect(self.apply_filters)
         self.row_item_data = {}  # Store item data for each row
-        self.manual_overrides = {}  # Store manual SKU selections
+        self.sku_overrides = {}  # Store manual SKU selections
         self.quantity_overrides = {}  # Store manual quantity overrides
+        self.text_overrides = {}  # Store manual text overrides
+        self.description_overrides = {}  # Store manual description overrides
         
         # Config file path
         self.config_file = Path.home() / ".jlc.ini"
@@ -1463,6 +1547,78 @@ class LumberViewerGUI(QMainWindow):
             self.database_file = filename
             self.load_data()
     
+    def write_csv_file(self, csv_filename):
+        # Write the updated data back to the CSV file
+        with open(csv_filename, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            
+            # Write header using original CSV columns
+            if hasattr(self, 'original_csv_columns') and self.original_csv_columns:
+                writer.writerow(self.original_csv_columns)
+            else:
+                # Fallback to basic columns
+                writer.writerow(['Item_Number', 'Quantity', 'Description', 'Original_Text', 'Part_Number', 'Confidence'])
+            
+            # Write data rows - need to work with raw_data but apply overrides from grouped_data
+            skip_item = 0       # if we have an override, we use that and skip any other matches
+            for raw_row in self.raw_data:
+                # Find the corresponding grouped item to check for overrides
+                item_number = raw_row.get('item_number', '')
+                if item_number == skip_item:
+                    continue
+                
+                # Find the display row index using row_item_data mapping
+                display_row_idx = None
+                for row_idx, item in self.row_item_data.items():
+                    if item.get('item_number') == item_number:
+                        display_row_idx = row_idx
+                        break
+                
+                # Apply overrides if this item has them
+                updated_row = raw_row.copy()
+                if display_row_idx is not None:
+                    # Apply quantity override
+                    if display_row_idx in self.quantity_overrides:
+                        updated_row['Quantity'] = self.quantity_overrides[display_row_idx]
+                    
+                    # Apply text override
+                    if display_row_idx in self.text_overrides:
+                        updated_row['Description'] = self.text_overrides[display_row_idx]
+                    
+                    # Apply description override
+                    if display_row_idx in self.description_overrides:
+                        updated_row['Database_Description'] = self.description_overrides[display_row_idx]
+                    
+                    # Apply SKU override
+                    if display_row_idx in self.sku_overrides:
+                        skip_item = item_number         # only write the overridden item and no other matches
+                        override = self.sku_overrides[display_row_idx]
+                        if override is None:
+                            # "No matches" was selected
+                            updated_row['Part_Number'] = ''
+                            updated_row['Confidence'] = ''
+                        else:
+                            # Specific match was selected
+                            updated_row['Part_Number'] = override['part_number']
+                            updated_row['Confidence'] = override['confidence']
+                            updated_row['Database_Description'] = self._insert_db_description(override['description'],
+                                                                                  updated_row['Database_Description'])
+                
+                # Write the row
+                if hasattr(self, 'original_csv_columns') and self.original_csv_columns:
+                    row_values = [updated_row.get(col, '') for col in self.original_csv_columns]
+                else:
+                    # Fallback to basic values
+                    row_values = [
+                        updated_row.get('Item_Number'),
+                        updated_row.get('Quantity'),
+                        updated_row.get('Processed_Text'),
+                        updated_row.get('Original_Text'),
+                        updated_row.get('Part_Number'),
+                        updated_row.get('Confidence'),
+                    ]
+                writer.writerow(row_values)
+
     def save_csv_file(self):
         """Save changes back to the current CSV file"""
         if not self.csv_file:
@@ -1479,70 +1635,17 @@ class LumberViewerGUI(QMainWindow):
             import shutil
             shutil.copy2(self.csv_file, backup_file)
             
-            # Write the updated data back to the CSV file
-            with open(self.csv_file, 'w', newline='', encoding='utf-8') as f:
-                writer = csv.writer(f)
-                
-                # Write header using original CSV columns
-                if hasattr(self, 'original_csv_columns') and self.original_csv_columns:
-                    writer.writerow(self.original_csv_columns)
-                else:
-                    # Fallback to basic columns
-                    writer.writerow(['Item_Number', 'Quantity', 'Description', 'Original_Text', 'Part_Number', 'Confidence'])
-                
-                # Write data rows - need to work with raw_data but apply overrides from grouped_data
-                for raw_row in self.raw_data:
-                    # Find the corresponding grouped item to check for overrides
-                    item_number = raw_row.get('item_number', '')
-                    
-                    # Find the display row index using row_item_data mapping
-                    display_row_idx = None
-                    for row_idx, item in self.row_item_data.items():
-                        if item.get('item_number') == item_number:
-                            display_row_idx = row_idx
-                            break
-                    
-                    # Apply overrides if this item has them
-                    updated_row = raw_row.copy()
-                    if display_row_idx is not None:
-                        # Apply quantity override
-                        if display_row_idx in self.quantity_overrides:
-                            updated_row['Quantity'] = self.quantity_overrides[display_row_idx]
-                        
-                        # Apply SKU override
-                        if display_row_idx in self.manual_overrides:
-                            override = self.manual_overrides[display_row_idx]
-                            if override is None:
-                                # "No matches" was selected
-                                updated_row['Part_Number'] = ''
-                                updated_row['Confidence'] = ''
-                            else:
-                                # Specific match was selected
-                                updated_row['Part_Number'] = override['part_number']
-                                updated_row['Confidence'] = override['confidence']
-                    
-                    # Write the row
-                    if hasattr(self, 'original_csv_columns') and self.original_csv_columns:
-                        row_values = [updated_row.get(col, '') for col in self.original_csv_columns]
-                    else:
-                        # Fallback to basic values
-                        row_values = [
-                            updated_row.get('Item_Number'),
-                            updated_row.get('Quantity'),
-                            updated_row.get('Processed_Text'),
-                            updated_row.get('Original_Text'),
-                            updated_row.get('Part_Number'),
-                            updated_row.get('Confidence'),
-                        ]
-                    writer.writerow(row_values)
+            self.write_csv_file(self.csv_file)
             
             QMessageBox.information(self, "Save Complete", 
                                   f"Changes saved to {Path(self.csv_file).name}\n"
                                   f"Backup created: {Path(backup_file).name}")
             
             # Clear overrides and reload the CSV to sync state
-            self.manual_overrides.clear()
+            self.sku_overrides.clear()
             self.quantity_overrides.clear()
+            self.text_overrides.clear()
+            self.description_overrides.clear()
             self.load_data()
             
         except Exception as e:
@@ -1550,7 +1653,8 @@ class LumberViewerGUI(QMainWindow):
     
     def has_unsaved_changes(self):
         """Check if there are any unsaved changes (manual overrides)"""
-        return len(self.manual_overrides) > 0 or len(self.quantity_overrides) > 0
+        return (len(self.sku_overrides) > 0 or len(self.quantity_overrides) > 0 or 
+                len(self.text_overrides) > 0 or len(self.description_overrides) > 0)
     
     def ask_save_changes(self):
         """Ask user if they want to save changes before proceeding"""
@@ -1602,8 +1706,10 @@ class LumberViewerGUI(QMainWindow):
         
         try:
             # Clear previous data and overrides when loading new files
-            self.manual_overrides.clear()
+            self.sku_overrides.clear()
             self.quantity_overrides.clear()
+            self.text_overrides.clear()
+            self.description_overrides.clear()
             self.row_item_data.clear()
             self.sku_comboboxes.clear()
             
@@ -1614,7 +1720,7 @@ class LumberViewerGUI(QMainWindow):
             self.init_rules_matcher()
             
             # Load and process CSV
-            self.raw_data = self.process_csv_file(self.csv_file, self.description_mapping, self.type_mapping)
+            self.raw_data = self.process_csv_file(self.csv_file)
             self.group_data()
             self.apply_filters()
             self.update_display()
@@ -1636,6 +1742,7 @@ class LumberViewerGUI(QMainWindow):
         part_to_description = {}
         part_to_type = {}
         part_to_stocking_multiple = {}
+        term_to_type = {}
         
         with open(database_file, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
@@ -1679,8 +1786,24 @@ class LumberViewerGUI(QMainWindow):
             print(f"Warning: Could not initialize RulesMatcher: {e}")
             self.rules_matcher = None
         
-    def process_csv_file(self, csv_file: str, description_mapping: Dict[str, str], 
-                        type_mapping: Dict[str, str]) -> List[Dict]:
+    def _extract_db_description(self, db_desc: str) -> str:
+        divider = db_desc.find('|')
+        if divider >= 0:
+            item_description = db_desc[:divider]
+            return item_description.strip()
+        return db_desc
+
+    def _insert_db_description(self, item_description: str, db_desc: str) -> str:
+        divider = db_desc.find('|')
+        if divider >= 0:
+            db_desc = item_description.strip() + ' ' + db_desc[divider:]
+        else:
+            # must be empty
+            db_desc = item_description.strip() + ' | No other information available'
+
+        return db_desc
+
+    def process_csv_file(self, csv_file: str) -> List[Dict]:
         """Process the CSV file and combine with database information"""
         results = []
         
@@ -1696,15 +1819,15 @@ class LumberViewerGUI(QMainWindow):
                 processed_text = row.get('Description', '').strip()
                 original_text = row.get('Original_Text', '').strip()
                 part_number = row.get('Part_Number', '').strip()
+                database_description = row.get('Database_Description', '').strip()
                 confidence = row.get('Confidence', '').strip()
                 
-                # Get description from database if part number exists
-                item_description = ""
-                item_type = ""
-                if part_number and part_number in description_mapping:
-                    item_description = description_mapping[part_number]
-                    item_type = type_mapping[part_number]
-                
+                # extract the description and type from the Database_Description field
+                #
+                item_description = self._extract_db_description(row.get("Database_Description"))
+                if part_number and part_number in self.type_mapping:
+                    item_type = self.type_mapping[part_number]
+
                 # Create result row - preserve all original columns plus add computed ones
                 result_row = dict(row)  # Start with all original columns
                 
@@ -1907,7 +2030,22 @@ class LumberViewerGUI(QMainWindow):
                         quantity_item.setToolTip("Double-click to edit quantity")
                     
                     self.table.setItem(row_idx, 1, quantity_item)
-                    self.table.setItem(row_idx, 2, QTableWidgetItem(item['processed_text']))
+                    
+                    # Handle text display with override support
+                    text_to_display = item['processed_text']
+                    if row_idx in self.text_overrides:
+                        text_to_display = self.text_overrides[row_idx]
+                    
+                    text_item = QTableWidgetItem(text_to_display)
+                    if row_idx in self.text_overrides:
+                        # Highlight overridden text
+                        font = text_item.font()
+                        font.setBold(True)
+                        text_item.setFont(font)
+                        text_item.setBackground(QColor(255, 255, 200))  # Light yellow background
+                        text_item.setToolTip(f"Original: {item['processed_text']}\nOverride: {self.text_overrides[row_idx]}")
+                    
+                    self.table.setItem(row_idx, 2, text_item)
                     self.table.setItem(row_idx, 3, QTableWidgetItem(item['original_text']))
                 except Exception as e:
                     continue
@@ -1947,19 +2085,23 @@ class LumberViewerGUI(QMainWindow):
         
         # Get current SKU (from manual override or first match)
         current_sku = ""
-        if row in self.manual_overrides and self.manual_overrides[row] is not None:
-            current_sku = self.manual_overrides[row]['part_number']
+        if row in self.sku_overrides and self.sku_overrides[row] is not None:
+            current_sku = self.sku_overrides[row]['part_number']
         elif item['matches']:
             current_sku = item['matches'][0]['part_number']
         
-        dialog = SKUSelectionDialog(item['matches'], current_quantity, current_sku, self, item)
+        dialog = ItemDetailsDialog(item['matches'], current_quantity, current_sku, self, item)
         if dialog.exec() == QDialog.DialogCode.Accepted:
+            # Check if text was edited - if so, this should be treated as a manual override
+            text_was_edited = (dialog.edited_text is not None and 
+                             dialog.edited_text != item['processed_text'])
+            
             if dialog.selected_match is None:
                 # "No matches" selected - store as override
-                self.manual_overrides[row] = None
+                self.sku_overrides[row] = None
             else:
                 # Match selected - store as override
-                self.manual_overrides[row] = dialog.selected_match
+                self.sku_overrides[row] = dialog.selected_match
             
             # Handle quantity override
             if dialog.quantity_override is not None:
@@ -1967,6 +2109,26 @@ class LumberViewerGUI(QMainWindow):
             elif row in self.quantity_overrides:
                 # User cleared the quantity - remove override
                 del self.quantity_overrides[row]
+            
+            # Handle text override
+            if text_was_edited:
+                self.text_overrides[row] = dialog.edited_text
+                # If text was edited and a match was selected, ensure it's in sku_overrides
+                if dialog.selected_match is not None and row not in self.sku_overrides:
+                    self.sku_overrides[row] = dialog.selected_match
+            elif row in self.text_overrides:
+                # User didn't change text - remove override
+                del self.text_overrides[row]
+            
+            # Handle description override
+            if dialog.description_override is not None:
+                self.description_overrides[row] = dialog.description_override
+                # If description was edited and a match was selected, ensure it's in sku_overrides
+                if dialog.selected_match is not None and row not in self.sku_overrides:
+                    self.sku_overrides[row] = dialog.selected_match
+            elif row in self.description_overrides:
+                # User didn't change description - remove override
+                del self.description_overrides[row]
             
             self.update_display_for_row(row, item)
     
@@ -2005,10 +2167,26 @@ class LumberViewerGUI(QMainWindow):
             quantity_item.setToolTip("Double-click to edit quantity")
         
         self.table.setItem(row, 1, quantity_item)
+        
+        # Update text column with override support
+        text_to_display = item['processed_text']
+        if row in self.text_overrides:
+            text_to_display = self.text_overrides[row]
+        
+        text_item = QTableWidgetItem(text_to_display)
+        if row in self.text_overrides:
+            # Highlight overridden text
+            font = text_item.font()
+            font.setBold(True)
+            text_item.setFont(font)
+            text_item.setBackground(QColor(255, 255, 200))  # Light yellow background
+            text_item.setToolTip(f"Original: {item['processed_text']}\nOverride: {self.text_overrides[row]}")
+        
+        self.table.setItem(row, 2, text_item)
             
         # Check if there's a manual override
-        if row in self.manual_overrides:
-            override = self.manual_overrides[row]
+        if row in self.sku_overrides:
+            override = self.sku_overrides[row]
             if override is None:
                 # "No matches" was selected - show bold text and clear fields
                 sku_item = QTableWidgetItem("No matches")
@@ -2122,154 +2300,11 @@ class LumberViewerGUI(QMainWindow):
         
         if filename:
             try:
-                with open(filename, 'w', newline='', encoding='utf-8') as f:
-                    writer = csv.writer(f)
-                    
-                    # Use original CSV columns if available, otherwise fall back to display columns
-                    if hasattr(self, 'original_csv_columns') and self.original_csv_columns:
-                        # Create a mapping of original columns to their values
-                        export_columns = list(self.original_csv_columns)
-                        writer.writerow(export_columns)
-                    else:
-                        writer.writerow(self.columns)
-                        export_columns = self.columns
-                    
-                    for i, item in enumerate(self.filtered_data):
-                        # Check if there's a manual override for this row
-                        if i in self.manual_overrides:
-                            override = self.manual_overrides[i]
-                            if override is None:
-                                # "No matches" was selected - update the relevant fields
-                                export_row = self.create_export_row(item, export_columns)
-                                # Update Part_Number, Type, Confidence fields (keep original Description)
-                                if 'Part_Number' in export_row:
-                                    export_row['Part_Number'] = ""  # Empty, not "No matches"
-                                if 'Type' in export_row:
-                                    export_row['Type'] = ""
-                                if 'Confidence' in export_row:
-                                    export_row['Confidence'] = ""
-                                
-                                # Apply quantity override if it exists for this row
-                                if i in self.quantity_overrides:
-                                    export_row['Quantity'] = self.quantity_overrides[i]
-                                
-                                # Note: Description field keeps original CSV value
-                                
-                                # Write the row
-                                row_values = [export_row.get(col, '') for col in export_columns]
-                                writer.writerow(row_values)
-                            else:
-                                # Specific match was selected - update the relevant fields
-                                # Create a copy of the item with the override data
-                                item_with_override = item.copy()
-                                item_with_override['part_number'] = override['part_number']
-                                item_with_override['item_description'] = override['description']
-                                item_with_override['item_type'] = override['type']
-                                item_with_override['confidence'] = override['confidence']
-                                
-                                # Apply quantity override if it exists for this row
-                                if i in self.quantity_overrides:
-                                    item_with_override['quantity'] = self.quantity_overrides[i]
-                                
-                                # Pass the override data to create_export_row so it can set the correct database description
-                                export_row = self.create_export_row(item_with_override, export_columns, override)
-                                
-                                # Write the row
-                                row_values = [export_row.get(col, '') for col in export_columns]
-                                writer.writerow(row_values)
-                        elif len(item['matches']) > 0:
-                            # No manual override - create one row for each match
-                            for match in item['matches']:
-                                # Create a copy of the item with the specific match data
-                                item_with_match = item.copy()
-                                item_with_match['part_number'] = match['part_number']
-                                item_with_match['item_description'] = match['description']
-                                item_with_match['item_type'] = match['type']
-                                item_with_match['confidence'] = match['confidence']
-                                
-                                # Apply quantity override if it exists for this row
-                                if i in self.quantity_overrides:
-                                    item_with_match['quantity'] = self.quantity_overrides[i]
-                                
-                                # Pass the match data to create_export_row so it can set the correct database description
-                                export_row = self.create_export_row(item_with_match, export_columns, match)
-                                
-                                # Write the row
-                                row_values = [export_row.get(col, '') for col in export_columns]
-                                writer.writerow(row_values)
-                        else:
-                            # No matches at all
-                            export_row = self.create_export_row(item, export_columns)
-                            export_row['Part_Number'] = ""  # Empty, not "No matches"
-                            
-                            # Apply quantity override if it exists for this row
-                            if i in self.quantity_overrides:
-                                export_row['Quantity'] = self.quantity_overrides[i]
-                            
-                            # Note: Description field keeps original CSV value
-                            
-                            # Write the row
-                            row_values = [export_row.get(col, '') for col in export_columns]
-                            writer.writerow(row_values)
-                            
+                self.write_csv_file(filename)
                 QMessageBox.information(self, "Export Complete", f"Data exported to {filename}")
                 
             except Exception as e:
                 QMessageBox.critical(self, "Export Error", f"Error exporting data: {str(e)}")
-    
-    def create_export_row(self, item: dict, export_columns: list, match_data: dict = None) -> dict:
-        """Create an export row with all original CSV data plus computed fields"""
-        export_row = {}
-        
-        # Start with original CSV data if available
-        # The grouped data structure has the original CSV data in the first match or we need to reconstruct it
-        if any(key in item for key in export_columns):
-            for col in export_columns:
-                export_row[col] = item.get(col, '')
-        else:
-            # Fallback to basic mapping
-            for col in export_columns:
-                export_row[col] = ''
-        
-        # Ensure our computed fields are properly mapped
-        if 'Item_Number' in export_columns:
-            export_row['Item_Number'] = item.get('item_number', '')
-        if 'Quantity' in export_columns:
-            # Use overridden quantity if available, otherwise use original
-            quantity = item.get('quantity', '')
-            # Check if there's a quantity override for this row
-            # We need to find the row index to check for overrides
-            for row_idx, row_item in self.row_item_data.items():
-                if row_item == item:
-                    if row_idx in self.quantity_overrides:
-                        quantity = self.quantity_overrides[row_idx]
-                    break
-            export_row['Quantity'] = quantity
-        if 'Description' in export_columns:
-            # Description should be the original CSV "Description" field (processed_text)
-            export_row['Description'] = item.get('processed_text', '')
-        if 'Original_Text' in export_columns:
-            export_row['Original_Text'] = item.get('original_text', '')
-        
-        # Set Part_Number - prioritize match_data over item data
-        part_number = None
-        if match_data and 'part_number' in match_data:
-            part_number = match_data['part_number']
-        else:
-            part_number = item.get('part_number', '')
-        
-        if 'Part_Number' in export_columns:
-            export_row['Part_Number'] = part_number
-        if 'Confidence' in export_columns:
-            export_row['Confidence'] = item.get('confidence', '')
-        
-        if 'Database_Description' in export_columns and part_number != item.get('Part_Number'):
-            # look up the raw data for the description
-            for r in self.raw_data:
-                if r.get('Item_Number') == item['Item_Number'] and r.get('Part_Number') == part_number:
-                    export_row['Database_Description'] = r.get('Database_Description')
-            
-        return export_row
     
     def export_to_pos_system(self):
         """Export filtered data to POS System format (SKU, Qty, Linear Feet)"""
@@ -2299,8 +2334,8 @@ class LumberViewerGUI(QMainWindow):
                     
                     for i, item in enumerate(self.filtered_data):
                         # Check if there's a manual override for this row
-                        if i in self.manual_overrides:
-                            override = self.manual_overrides[i]
+                        if i in self.sku_overrides:
+                            override = self.sku_overrides[i]
                             if override is None:
                                 # "No matches" was selected - skip this item
                                 if self.no_match_sku:
@@ -2341,7 +2376,7 @@ class LumberViewerGUI(QMainWindow):
                         writer.writerow([sku, description, quantity, lf])
                             
                 QMessageBox.information(self, "Export Complete", f"POS data exported to {filename}")
-                
+
             except Exception as e:
                 QMessageBox.critical(self, "Export Error", f"Error exporting POS data: {str(e)}")
 
