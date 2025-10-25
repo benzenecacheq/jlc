@@ -45,6 +45,7 @@ class RulesMatcher:
                                         # of the items being matched
         self.detractor_map = {}         # so we don't have to keep recalculating
         self.implies = None
+        self.substitute_dimensions=None # things that are aliases for dimensions (like penny)
 
         self.board_parts = None         # parts that have dimensions and length
         self.dim_parts = None           # parts with dimensions but no length
@@ -89,6 +90,7 @@ class RulesMatcher:
         self.special_lengths = set(self.get_setting("special lengths"))
         self.scoring = self.get_setting("scoring")
         self.implies = self.get_setting("implies")
+        self.substitute_dimensions = self.get_setting("substitute dimensions")
 
         # get keywords and load optional additional keywords
         self.keywords = self.get_setting("keywords")
@@ -150,7 +152,7 @@ class RulesMatcher:
         self.keyword_parts = {k:[] for k in self.keywords if k not in self.attrs}
 
         for entry in self.merged_database.values():
-            db_components = self.parse_lumber_item(entry["Item Description"], is_db=True)
+            db_components = self.parse_lumber_item(entry["Item Description"], db_attr=entry["attr"])
             entry['components'] = db_components
             attrs = db_components.get('attrs')
             eattr = entry['attr']
@@ -528,9 +530,10 @@ class RulesMatcher:
 
         return desc
 
-    def parse_lumber_item(self, description: str, is_db=False) -> dict:
+    def parse_lumber_item(self, description: str, db_attr=None) -> dict:
         if self.attrs is None:
             self._load_attrs()
+        is_db = db_attr is not None
         desc = self._cleanup(description, is_db)
         if self.debug:
             print(f"    Cleaned description: '{desc}'")
@@ -562,8 +565,9 @@ class RulesMatcher:
                 if d not in components['other']:
                     components['other'].append(d)
 
-        if "attrs" in components and not is_db:
-            for attr in components["attrs"]:
+        # add any implied components:
+        if "attrs" in components or db_attr is not None:
+            for attr in [db_attr] if db_attr is not None else components["attrs"]:
                 implied = self.implies[attr] if attr in self.implies else {}
                 for k,implication in implied.items():
                     if k == "other":
@@ -610,6 +614,10 @@ class RulesMatcher:
         detractors = fuzzy_match(sorted(self.detractors), check, threshold=threshold) if len(check) > 0 else {}
         self.detractor_map[key] = detractors
         return detractors
+
+    def _dbgout(self, indent, line, text):
+        if indent is not None:
+            print(f"{indent*' '}-->line {line}: {text}")
 
     def _calculate_lumber_match_score(self, item_components: dict, db_components: dict, sku: str='', sell_by_foot=False, 
                                              indent=None) -> float:
@@ -664,11 +672,15 @@ class RulesMatcher:
                     matches = fuzzy_match(dbc, item_components[name], threshold=0.6)
                     for n,s in matches.items():
                         s = 1.0 if s > self.scoring["close-enough"] else s
-                        l = self.keywords[n] if n in self.keywords else len(n)
+                        if n in self.substitute_dimensions:
+                            # trick to make resulting calculation add up to the number we want
+                            l = self.substitute_dimensions[n] / multiplier
+                        else:
+                            l = self.keywords[n] if n in self.keywords else len(n)
+                            
                         score += s * multiplier * l
-                        if indent is not None:
-                            line = sys._getframe().f_lineno - 1
-                            print(indent*' ' + f"--> line {line}: score={score}, n={n}, s={s}, l={l}, multiplier={multiplier}")
+                        self._dbgout(indent, sys._getframe().f_lineno - 1, 
+                                     f"score={score}, n={n}, s={s}, l={l}, multiplier={multiplier}")
                 elif name == "attrs":
                     # check for default category
                     for d in dbc:
@@ -712,7 +724,10 @@ class RulesMatcher:
 
         idims = item_components.get("dimensions")
         ddims = db_components.get("dimensions")
-        if idims is None and ddims is None:
+        if not "has_dim" in db_components:
+            db_components["has_dim"] = ddims is not None or ("other" in db_components and 
+                                       (set(db_components["other"]) & set(self.substitute_dimensions)))
+        if not db_components["has_dim"] and idims is None:
             # this is probably not lumber
             if "length" not in item_components and "length" not in db_components:
                 score *= self.scoring["no-dim-no-len-multiplier"]
@@ -851,7 +866,17 @@ class RulesMatcher:
                 db_components = self.merged_database[sku]["components"]
                 bonus = self._calculate_lumber_match_score(item_components, db_components, sku="", indent=indent) / 10
                 if bonus < 0:
-                    continue    # something bad happened
+                    continue            # something bad happened
+
+                # look for detractors.  We don't care about detractors that are in the database but not 
+                # in the item because theoretically this is a SKU match
+                ifound = self._get_detractors(item_components, threshold=0.7)
+                if False: # ifound:
+                    dfound = self._get_detractors(db_components, threshold=0.9)     # should be no typos
+                    found = set(ifound) - set(dfound)
+                    if found:
+                        continue        # probably not a valid sku match
+
                 self._add_match(matches, item_str, self.merged_database[sku], score + bonus)
             
         return matches
@@ -876,10 +901,7 @@ class RulesMatcher:
 
         # Parse the scanned item to extract lumber components
         item_components = self.parse_lumber_item(item_desc)
-        if self.debug:
-            print(f"  Parsed item components: {item_desc} -> {item_components}")
-
-        if self.debug_item is not None and self.debug_item == self.current_item and self.debug_part is None:
+        if self.debug_item == self.current_item and not self.debug_part:
             print(f"  Parsed item components: {item_desc} -> {item_components}")
             pdb.set_trace()     # debug the processing of this item.
             self.parse_lumber_item(item_desc)
@@ -956,8 +978,7 @@ class RulesMatcher:
 
             match_score = self._calculate_lumber_match_score(item_components, db_components, sku=part_number,
                                                              sell_by_foot=sell_by_foot)
-            if (self.debug_item is not None and self.debug_item == self.current_item and 
-                self.debug_part and self.debug_part.lower() == part_number.lower()):
+            if (self.debug_item == self.current_item and part_number.lower() in self.debug_part):
                 print(f"item_components={item_components}")
                 print(f"db_components={db_components}")
                 print(f"match_score={match_score}")
@@ -1041,10 +1062,16 @@ class RulesMatcher:
         """Find matches using original keyword-based matching (for comparison)"""
         if os.getenv("DEBUG_ITEM"):
             di = os.getenv("DEBUG_ITEM")
-            if ':' in di:
-                self.debug_part = di[di.find(':')+1:]
-                di = di[:di.find(':')]
-            self.debug_item = int(di)
+            self.debug_item = None
+            self.debug_part = []
+            while len(di) > 0:
+                c = di.find(':')
+                s = di[:c] if c > 0 else di
+                di = di[c+1:] if c > 0 else ""
+                if self.debug_item is None:
+                    self.debug_item = int(s)
+                else:
+                    self.debug_part.append(s.lower())
 
         if self.debug:
             print("\n" + "="*60)

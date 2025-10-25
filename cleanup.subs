@@ -39,6 +39,17 @@
 ½`-1/2
 ¾`-3/4
 
+# nail sizes
+\b4 d\b`4d
+\b6 d\b`6d
+\b7 d\b`7d
+\b8 d\b`8d
+\b10 d\b`10d
+\b16 d\b`16d
+\b20 d\b`20d
+
+\bgunnails\b`gun nails
+
 # Common things that claude misreads
 \becco\b`eccq
 
@@ -56,6 +67,15 @@
 \bpt/df\b`pt
 \bptdf\b`pt
 \bdfpt\b`pt
+
+# galvanized -> hdg
+\bgalv\w*\b`hdg
+
+\bteco\b`joist gun
+\btecos\b`joist gun
+\btico\b`joist gun
+\bticos\b`joist gun
+\bhco\b`joist gun
 
 # These fix unusual things we see in the parts database
 std&btr`std btr
@@ -96,6 +116,8 @@ versa lam`parallam
 # spanish!?
 \bcajas\b`box
 \bcaja\b`box
+\bcasas\b`box
+\bcasa\b`box
 \bgalvanizados\b`galvanized
 \bgalvaniz\b`galvanized
 \bclavos\b`nails
@@ -104,3 +126,7 @@ versa lam`parallam
 \btornillo\b`screws
 \bhojas\b`sheets
 \bhoja\b`sheet
+\bpistola\b`gun
+\bmano\b`hand
+\btuercas\b`nuts
+\btuerca\b`nut

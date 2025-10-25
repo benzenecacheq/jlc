@@ -859,8 +859,8 @@ Subfloor Screws,2014,"2""   QUICK T25 REC COARSE",EA
 Subfloor Screws,2015,"2-1/2""   QUICK T25 REC COARSE",EA
 Subfloor Screws,2016,"3""   QUICK SUBFLOOR COARSE",EA
 Subfloor Screws,2020,"2-1/2""   QUICK REC COARSE (COATED)",EA
-"Spikes, Nails",10HDGS,"10""   HDG SPIKES 3.5PCS/#  (50LB)",LB
-"Spikes, Nails",12HDGS,"12""   HDG SPIKES 2.5PC/#   (50LB)",LB
+"Spikes",10HDGS,"10""   HDG SPIKES 3.5PCS/#  (50LB)",LB
+"Spikes",12HDGS,"12""   HDG SPIKES 2.5PC/#   (50LB)",LB
 Coupling Nuts HDG,118CNG,"1-1/8""   HDG COUPLING NUT",EA
 Coupling Nuts HDG,58CNG,"5/8""   HDG COUPLE NUT",EA
 Coupling Nuts HDG,78CNG,"7/8""   HDG COUPLE NUT",EA
@@ -883,51 +883,51 @@ Staples,38A11,"3/8""   A-11 STAPLES",EA
 Foundation Bolts,5810FBG,"5/8""X10""   HDG FOUNDATION BOLT",EA
 Foundation Bolts,5812FBG,"5/8""X12""   HDG FOUNDATION BOLT",EA
 Coupling Nuts with Witness Holes HDG,58CNGW,"5/8""   HDG COUPLER NUT WITH WITNESS HOLES",EA
-"Gun Nails, Nails, HDG Nails",G1,"2-3/8""X.113 HDG RING SHANK 5M",BX
-"Gun Nails, Nails, HDG Nails",G12,"2""X.113 HDG RING SHANK HARDI",BX
-"Gun Nails, Nails, HDG Nails",G14,"2""X.113 HDG SMOOTH SHANK HARDI",BX
-"Gun Nails, Nails, HDG Nails",G18,"2""X.113 HDG SMOOTH SHANK 5M",BX
-"Gun Nails, Nails, HDG Nails",G19,"3""X.131 HDG SMOOTH SHANK 4M",BX
-"Gun Nails, Nails, HDG Nails",G20,"2-1/2""X.131 HDG SMOOTH SHANK 4M",BX
-"Gun Nails, Nails, HDG Nails",G27,"3-1/4""X.148 HDG SMOOTH SHANK 3M",BX
-"Gun Nails, Nails, HDG Nails",G29,"2-3/8""X148 HDG SCREW SHANK 4M",BX
-"Gun Nails, Nails, HDG Nails",G3,"2-3/8""X.113 HDG SMOOTH SHANK 5M",BX
-"Gun Nails, Nails",G11,"3""X.131 CTD RING SHANK 4M",BX
-"Gun Nails, Nails",G13,"3-1/2""X.162 CTD SMOOTH SHANK 3M",BX
-"Gun Nails, Nails",G2,"2-1/2""X.131 CTD SMOOTH SHANK 4M",BX
-"Gun Nails, Nails",G24,"3""X.131 CTD SMOOTH SHANK 4M",EA
-"Gun Nails, Nails",G28,"3-1/4""X.148 CTD SMOOTH SHANK 3M",BX
-"Gun Nails, Nails",G4,2-3/8:X.148 CTD SCREW SHANK 4M,BX
-"Gun Nails, Nails",G5,"3""X.148 CTD SMOOTH SHANK 4M",BX
-"Gun Nails, Nails, Tecos, Ticos, HDG Nails",G16,"1-1/2""X.131 HDG JOIST HANGER 4M",EA
-"Gun Nails, Nails, Tecos, Ticos, HDG Nails",G17,"1-1/2""X.148 HDG JOIST HANGER 3M",EA
-"Gun Nails, Nails, Tecos, Ticos, HDG Nails",G25,"2-1/2""X.148 HDG JOIST HANGER 2M",EA
-"Gun Nails, Nails, Coil Nails",G22,2-3/16 X.092 HDG RING SHANK COIL,EA
-"Gun Nails, Nails, Coil Nails",G26,"1-3/4""X.092 HDG RING SHANK COIL",EA
-"Gun Nails, Nails, 10D Gun Nails",G10,"2-1/4""X.148 HDG SMOOTH SHANK 4M",EA
-"Gun Nails, Nails, 10D Gun Nails",G7,"2-1/4""X.148 CTD SMOOTH SHANK 4M",EA
-"Gun Nails, Nails, 16D Gun Nails",G15,"3-1/4""X.131 HDG SMOOTH SHANK 4M",BX
-"Gun Nails, Nails, 16D Gun Nails",G9,"3-1/4""X.131 CTD SMOOTH SHANK 4M",BX
-"Nails, Hand Drive Nails, HDG Common",20HGC,20D HDG COMMON 50#,BX
-"Nails, Hand Drive Nails, HDG Common",16HDC,16D HDG COMMON 50#,BX
-"Nails, Hand Drive Nails, HDG Common",8HDC,8D HDG COMMON 50#,BX
-"Nails, Hand Drive Nails, Bright Common",10COM,10D BRIGHT COMMON 50#,BX
-"Nails, Hand Drive Nails, Bright Common",16COM,16D BRIGHT COMMON 50#,BX
-"Nails, Hand Drive Nails, Bright Common",20COM,20D BRIGHT COMMON 50#,BX
-"Nails, Hand Drive Nails, Bright Common",8COM,8D BRIGHT COMMON 50#,BX
-"Nails, Hand Drive Nails, HDG Box",10HDG,10D HDG BOX 50#,BX
-"Nails, Hand Drive Nails, HDG Box",16HDG,16D HDG BOX 50#,BX
-"Nails, Hand Drive Nails, HDG Box",20HDG,20D HDG BOX 50#,BX
-"Nails, Hand Drive Nails, HDG Box",4HDG,4D HDG BOX 50#,BX
-"Nails, Hand Drive Nails, HDG Box",6HDG,6D HDG BOX 50#,BX
-"Nails, Hand Drive Nails, HDG Box",7HDG,7D HDG BOX 50#,BX
-"Nails, Hand Drive Nails, HDG Box",8HDG,8D HDG BOX 50#,BX
-"Nails, Hand Drive Nails, HDG Joist Hangers",112JHDG,"1-1/2"" HDG JOIST HANGER 50#",BX
-"Nails, Hand Drive Nails, Duplex Nails",6D,6D BRIGHT DUPLEX 50#,BX
-"Nails, Hand Drive Nails, Duplex Nails",8D,8D BRIGHT DUPLEX 50#,BX
-"Nails, Hand Drive Nails, Duplex Nails",16D,16D BRIGHT DUPLEX 50#,BX
-"Nails, Hand Drive Nails, Vinyl Coated, VCS",16VCS,16D COATED SINKER 50#,BX
-"Nails, Hand Drive Nails, Vinyl Coated, VCS",8VCS,8D COATED SINKER 50#,BX
+"Nails, Gun",G1,"2-3/8""X.113 HDG RING SHANK 5M",BX
+"Nails, Gun",G12,"2""X.113 HDG RING SHANK HARDI",BX
+"Nails, Gun",G14,"2""X.113 HDG SMOOTH SHANK HARDI",BX
+"Nails, Gun",G18,"2""X.113 HDG SMOOTH SHANK 5M",BX
+"Nails, Gun",G19,"3""X.131 HDG SMOOTH SHANK 4M",BX
+"Nails, Gun",G20,"2-1/2""X.131 HDG SMOOTH SHANK 4M",BX
+"Nails, Gun",G27,"3-1/4""X.148 HDG SMOOTH SHANK 3M",BX
+"Nails, Gun",G29,"2-3/8""X148 HDG SCREW SHANK 4M",BX
+"Nails, Gun",G3,"2-3/8""X.113 HDG SMOOTH SHANK 5M",BX
+"Nails, Gun",G11,"3""X.131 CTD RING SHANK 4M",BX
+"Nails, Gun",G13,"3-1/2""X.162 CTD SMOOTH SHANK 3M",BX
+"Nails, Gun",G2,"2-1/2""X.131 CTD SMOOTH SHANK 4M",BX
+"Nails, Gun",G24,"3""X.131 CTD SMOOTH SHANK 4M",EA
+"Nails, Gun",G28,"3-1/4""X.148 CTD SMOOTH SHANK 3M",BX
+"Nails, Gun",G4,2-3/8:X.148 CTD SCREW SHANK 4M,BX
+"Nails, Gun",G5,"3""X.148 CTD SMOOTH SHANK 4M",BX
+"Nails, Gun, Tecos, Ticos",G16,"1-1/2""X.131 HDG JOIST HANGER 4M",EA
+"Nails, Gun, Tecos, Ticos",G17,"1-1/2""X.148 HDG JOIST HANGER 3M",EA
+"Nails, Gun, Tecos, Ticos",G25,"2-1/2""X.148 HDG JOIST HANGER 2M",EA
+"Nails, Gun",G22,2-3/16 X.092 HDG RING SHANK COIL,EA
+"Nails, Gun",G26,"1-3/4""X.092 HDG RING SHANK COIL",EA
+"Nails, Gun",G10,"2-1/4""X.148 HDG SMOOTH SHANK 4M 10D",EA
+"Nails, Gun",G7,"2-1/4""X.148 CTD SMOOTH SHANK 4M 10D",EA
+"Nails, Gun",G15,"3-1/4""X.131 HDG SMOOTH SHANK 4M 16D",BX
+"Nails, Gun",G9,"3-1/4""X.131 CTD SMOOTH SHANK 4M 16D",BX
+"Hand Nails, Hand",20HGC,20D HDG COMMON 50#,BX
+"Hand Nails, Hand",16HDC,16D HDG COMMON 50#,BX
+"Hand Nails, Hand",8HDC,8D HDG COMMON 50#,BX
+"Hand Nails, Hand",10COM,10D BRIGHT COMMON 50#,BX
+"Hand Nails, Hand",16COM,16D BRIGHT COMMON 50#,BX
+"Hand Nails, Hand",20COM,20D BRIGHT COMMON 50#,BX
+"Hand Nails, Hand",8COM,8D BRIGHT COMMON 50#,BX
+"Hand Nails, Hand",10HDG,10D HDG BOX 50#,BX
+"Hand Nails, Hand",16HDG,16D HDG BOX 50#,BX
+"Hand Nails, Hand",20HDG,20D HDG BOX 50#,BX
+"Hand Nails, Hand",4HDG,4D HDG BOX 50#,BX
+"Hand Nails, Hand",6HDG,6D HDG BOX 50#,BX
+"Hand Nails, Hand",7HDG,7D HDG BOX 50#,BX
+"Hand Nails, Hand",8HDG,8D HDG BOX 50#,BX
+"Hand Nails, Hand",112JHDG,"1-1/2"" HDG JOIST HANGER 50#",BX
+"Hand Nails, Hand",6D,6D BRIGHT DUPLEX 50#,BX
+"Hand Nails, Hand",8D,8D BRIGHT DUPLEX 50#,BX
+"Hand Nails, Hand",16D,16D BRIGHT DUPLEX 50#,BX
+"Hand Nails, Hand, VCS",16VCS,16D COATED SINKER 50#,BX
+"Hand Nails, Hand, VCS",8VCS,8D COATED SINKER 50#,BX
 L Strap,1212L,1212L   STRAP,EA
 L Strap,66L,66L   STRAP,EA
 L Strap,88L,88L   STRAP,EA
