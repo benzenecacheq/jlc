@@ -106,8 +106,8 @@
    "friends":{
       "pl":{"ml":-0.02},
       "ml":{"pl":-0.02},
-      "handnails":{"nails":-0.02},
-      "nails":{"handnails":-0.02}
+      "nails":{"handnails":-0.02},
+      "end-of-list" : 0
    },
    "implies":{
       "sds" : {"other":["hdg"], "dimensions":"1/4"},

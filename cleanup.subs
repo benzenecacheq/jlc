@@ -71,11 +71,11 @@
 # galvanized -> hdg
 \bgalv\w*\b`hdg
 
-\bteco\b`joist gun
-\btecos\b`joist gun
-\btico\b`joist gun
-\bticos\b`joist gun
-\bhco\b`joist gun
+\bteco\b`.148 joist gun
+\btecos\b`.148 joist gun
+\btico\b`.148 joist gun
+\bticos\b`.148 joist gun
+\bhco\b`.148 joist gun
 
 # These fix unusual things we see in the parts database
 std&btr`std btr
