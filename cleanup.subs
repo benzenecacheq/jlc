@@ -93,7 +93,7 @@ all threaded`allthrd
 all thread`allthrd
 
 # look for cerain keywords followed by hyphen and convert to space
-\bpsl-`psl  
+\bpsl-`psl 
 \bdf-`df 
 
 # misc abbreviations

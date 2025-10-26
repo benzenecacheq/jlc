@@ -712,20 +712,20 @@ OSB GOLD,118GOLD,"4X8 1-1/8""   OSB T&G GOLD EDGE",EA
 OSB GOLD,34GOLD,"4X8 3/4""   OSB T&G GOLD EDGE",EA
 OSB DuraStrand,118OSB6,"4X8 1-1/8""   OSB T&G DURASTRAND",EA
 OSB DuraStrand,34OSB6,"4X8 3/4""   OSB T&G DURASTRAND",EA
-"CDX, Ply, Panel, Roof Plywood, ",1212CDX,"4X12 15/32""   CDX STRUC-1",EA
-"CDX, Ply, Panel, Roof Plywood, ",12CDX5,"4X8 15/32""   CDX 5PLY",EA
-"CDX, Ply, Panel, Roof Plywood, ",1210CDX,"4X10 15/32""   CDX STRUC-1",EA
-"CDX, Ply, Panel, Roof Plywood, ",12CDX,"4X8 15/32""   CDX 3PLY",EA
-"CDX, Ply, Panel, Roof Plywood, ",12STR1,"4X8 15/32""   CDX STRUC-1",EA
-"CDX, Ply, Panel, Roof Plywood, ",129CDX,"4X9 15/32""   CDX STRUC-1",EA
-"CDX, Ply, Panel, Roof Plywood, ",118CDX,"4X8 1-1/8""   CDX SQUARE EDGE",EA
-"CDX, Ply, Panel, Roof Plywood, ",34CDX,"4X8 23/32""   CDX SQUARE EDGE",EA
-"CDX, Ply, Panel, Roof Plywood, ",3810CDX,"4X10 11/32""   CDX STRUC-1",EA
-"CDX, Ply, Panel, Roof Plywood, ",3812CDX,"4X12 11/32""   CDX STRUC-1",EA
-"CDX, Ply, Panel, Roof Plywood, ",389CDX,"4X9 11/32""   CDX STRUC-1",EA
-"CDX, Ply, Panel, Roof Plywood, ",38CDX,"4X8 11/32""   CDX",EA
-"CDX, Ply, Panel, Roof Plywood, ",5810CDX,"4X10 19/32""   CDX STRUC-1",EA
-"CDX, Ply, Panel, Roof Plywood, ",58CDX,"4X8 19/32""   CDX",EA
+"CDX, Ply, Panel, Roof Plywood, Plywood",1212CDX,"4X12 15/32""   CDX STRUC-1",EA
+"CDX, Ply, Panel, Roof Plywood, Plywood",12CDX5,"4X8 15/32""   CDX 5PLY",EA
+"CDX, Ply, Panel, Roof Plywood, Plywood",1210CDX,"4X10 15/32""   CDX STRUC-1",EA
+"CDX, Ply, Panel, Roof Plywood, Plywood",12CDX,"4X8 15/32""   CDX 3PLY",EA
+"CDX, Ply, Panel, Roof Plywood, Plywood",12STR1,"4X8 15/32""   CDX STRUC-1",EA
+"CDX, Ply, Panel, Roof Plywood, Plywood",129CDX,"4X9 15/32""   CDX STRUC-1",EA
+"CDX, Ply, Panel, Roof Plywood, Plywood",118CDX,"4X8 1-1/8""   CDX SQUARE EDGE",EA
+"CDX, Ply, Panel, Roof Plywood, Plywood",34CDX,"4X8 23/32""   CDX SQUARE EDGE",EA
+"CDX, Ply, Panel, Roof Plywood, Plywood",3810CDX,"4X10 11/32""   CDX STRUC-1",EA
+"CDX, Ply, Panel, Roof Plywood, Plywood",3812CDX,"4X12 11/32""   CDX STRUC-1",EA
+"CDX, Ply, Panel, Roof Plywood, Plywood",389CDX,"4X9 11/32""   CDX STRUC-1",EA
+"CDX, Ply, Panel, Roof Plywood, Plywood",38CDX,"4X8 11/32""   CDX",EA
+"CDX, Ply, Panel, Roof Plywood, Plywood",5810CDX,"4X10 19/32""   CDX STRUC-1",EA
+"CDX, Ply, Panel, Roof Plywood, Plywood",58CDX,"4X8 19/32""   CDX",EA
 "CDX T&G, Subfloor",118CDXTG,"4X8 1-1/8""   CDX T&G",EA
 "CDX T&G, Subfloor",58CDXTG,"4X8 19/32""   CDX T&G",EA
 "CDX T&G, Subfloor",34CDXTG,"4X8 23/32""   CDX T&G",EA
@@ -986,7 +986,9 @@ Coiled Strap,CS14,CS14   COIL STRAP 100',EA
 Coiled Strap,CS16150,CS16   COILED STRAP 150' ROLL,EA
 Coiled Strap,CS16R,CS16-R   COILED STRAP 25',EA
 Spacers,D2W,D2W   DECK2WALL SPACERS,EA
+Roof Clip,RBC,RBC   ROOF BLOCKING CLIP,EA
 Truss Clip,DTC,DTC   ROOF TRUSS CLIP,EA
+Truss Clip,STC,STC   TRUSS CLIPS,EA
 Deck Connector,DTT2Z,DTT2Z   Z-MAX DECK POST CONNECTOR,EA
 Column Cap,ECCLLQ444,ECCLLQ444   COLUMN CAP-SDS,EA
 Column Cap,ECCLLQ666,ECCLLQ666   COLUMN CAP-SDS,EA
@@ -1170,7 +1172,6 @@ Post Base,PB66Z,PB66Z   Z-MAX POST BASE,EA
 Post Base,PBS44AZ,PBS44AZ   Z-MAX POST BASE,EA
 Post Cap,PC4Z,PC4Z   Z-MAX POST CAP,EA
 Post Cap,PC6Z,PC6Z   Z-MAX POST CAP,EA
-Roof Clip,RBC,RBC   ROOF BLOCKING CLIP,EA
 Ridge Rafter,RR,RR   RIDGE RAFTER CONNECTOR,EA
 Anchor Bolt,SB5824HDG,SB5/8X24HDG   HDG ANCHOR BOLT,EA
 Anchor Bolt,SB7824HDG,SB7/8X24HDG   HDG ANCHOR BOLT,EA
@@ -1237,7 +1238,6 @@ Wedge Anchor,STB262412MGR,"STB2-62412MGR   5/8""X4-1/2"" HDG MECH BOLT",EA
 Wedge Anchor,STB262500MGR,"STB2-62500MGR   5/8""X5"" HDG MECH BOLT",EA
 Wedge Anchor,STB262600MGR,"STB2-62600MGR   5/8""X6"" HDG MECH BOLT",EA
 Wedge Anchor,STB262700MGR,"STB2-62700MGR   5/8""X7"" HDG MECH BOLT",EA
-Trus Clip,STC,STC   TRUSS CLIPS,EA
 Skewed Hanger,SUL210Z,SUL210Z   Z-MAX SKEWED HANGER LEFT,EA
 Skewed Hanger,SUL26Z,SUL26Z   Z-MAX SKEWED HANGER LEFT,EA
 Skewed Hanger,SUR210Z,SUR210Z   Z-MAX SKEWED HANGER RIGHT,EA
