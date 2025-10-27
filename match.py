@@ -663,6 +663,7 @@ class RulesMatcher:
             self._dbgout(indent, sys._getframe().f_lineno - 1, 
                          f"score={score}, detractors penalty={penalty}")
 
+        subdim_match = False
         for name,dbc in db_components.items():
             if type(dbc) == type([]):
                 matches = []
@@ -674,6 +675,7 @@ class RulesMatcher:
                         if n in self.substitute_dimensions:
                             # trick to make resulting calculation add up to the number we want
                             l = self.substitute_dimensions[n] / multiplier
+                            subdim_match = True
                         else:
                             l = self.keywords[n] if n in self.keywords else len(n)
                             
@@ -795,6 +797,10 @@ class RulesMatcher:
                 acopy["dimensions"] = f"{acopy['length']}x{newdim}"
                 del acopy["length"]
                 score = max(score, self._calculate_match(acopy, db_components, sku=sku, indent=newindent))
+            elif subdim_match:
+                score += self.scoring["no-length-adder"]
+                self._dbgout(indent, sys._getframe().f_lineno - 1,
+                             f"score={score}, subdim no-length-adder={self.scoring['no-length-adder']}")
 
         if by_foot:
             # match cases where we are selling by linear feet instead of each item
