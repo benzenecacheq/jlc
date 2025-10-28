@@ -644,7 +644,7 @@ class RulesMatcher:
                                 for name in found])
             score += penalty
             self._dbgout(indent, sys._getframe().f_lineno - 1, 
-                         f"score={score}, detractors penalty={penalty}")
+                         f"score={score}, detractors={found}, detractors penalty={penalty}")
 
         # some special cases:
         if len(item_components) == 1 and 'other' in item_components and 'other' in db_components:
@@ -694,9 +694,9 @@ class RulesMatcher:
                     # check for default other
                     default_other = self.default_other if name == "other" else []
                     do = fuzzy_match(self.default_other, dbc, threshold = 0.9)
-                    if do and list(do)[0] not in matches:
-                        score += self.default_other[list(do)[0]]
-                        self._dbgout(indent, sys._getframe().f_lineno - 1, f"score={score}, do={do}")
+                    for d in do:
+                        score += self.default_other[d]
+                        self._dbgout(indent, sys._getframe().f_lineno - 1, f"score={score}, d={d}")
             elif name == "dimensions" and name in item_components:
                 match = self._dimensions_match(dbc, item_components[name])
                 score += self.scoring["dimensions-multiplier"] * match

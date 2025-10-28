@@ -58,7 +58,7 @@
       "df" : 0.1
    },
    "default other":{
-      "smooth": 0.1,
+      "smooth": 0.03,
       "common": 0.03,
       "5ply" : 0.005,
       "ctd" : 0.03
@@ -97,9 +97,9 @@
       "durastrand" : -0.02,
       "non-stock" : -0.01,
       "hdg" : -0.005,
-      "ctd" : -0.005,
       "couple" : -0.005,
       "rod" : -0.005,
+      "liquid": -0.03,
       "simpsonhangernails" : -0.2,
       "simpsontool" : -0.2
    },
