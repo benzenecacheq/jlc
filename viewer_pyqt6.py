@@ -1825,6 +1825,7 @@ class LumberViewerGUI(QMainWindow):
                 # extract the description and type from the Database_Description field
                 #
                 item_description = self._extract_db_description(row.get("Database_Description"))
+                item_type = ""
                 if part_number and part_number in self.type_mapping:
                     item_type = self.type_mapping[part_number]
 
