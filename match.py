@@ -634,6 +634,18 @@ class RulesMatcher:
             print(indent*' ' + f"===============================")
             newindent = indent + 3
 
+        # check for detractors that are required to be in both if found in either
+        ifound = self._get_detractors(item_components, threshold=0.7)
+        dfound = self._get_detractors(db_components, threshold=0.9)     # should be no typos
+
+        found = set(ifound) ^ set(dfound)
+        if found:
+            penalty = sum([self.detractors[name] * len(name) * (ifound[name] if name in ifound else dfound[name])
+                                for name in found])
+            score += penalty
+            self._dbgout(indent, sys._getframe().f_lineno - 1, 
+                         f"score={score}, detractors penalty={penalty}")
+
         # some special cases:
         if len(item_components) == 1 and 'other' in item_components and 'other' in db_components:
             # All we have is 'other'
@@ -650,18 +662,6 @@ class RulesMatcher:
             if indent is not None:
                 print(indent*' ' + f"=============== Final score: {score} ================")
             return score
-
-        # check for detractors that are required to be in both if found in either
-        ifound = self._get_detractors(item_components, threshold=0.7)
-        dfound = self._get_detractors(db_components, threshold=0.9)     # should be no typos
-
-        found = set(ifound) ^ set(dfound)
-        if found:
-            penalty = sum([self.detractors[name] * len(name) * (ifound[name] if name in ifound else dfound[name])
-                                for name in found])
-            score += penalty
-            self._dbgout(indent, sys._getframe().f_lineno - 1, 
-                         f"score={score}, detractors penalty={penalty}")
 
         subdim_match = False
         for name,dbc in db_components.items():
