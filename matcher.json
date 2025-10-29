@@ -2,7 +2,8 @@
    "** comments":[
       "This document contains the various configuration options for the rules-based part matcher.       ",
       "                                                                                                 ",
-      " misc                    - individual settings that affect how the program operates.             ",
+      " misc                    - Individual settings that affect how the program operates.             ",
+      " direct map              - If the input text is exactly this, map it to a specific SKU.          ",
       " scoring                 - These are components of the scoring function.  No specific details    ",
       "                           are provided here.  You will need to look at the code to see how they ",
       "                           are used.                                                             ",
@@ -31,12 +32,15 @@
       "                           terms) from matching something in one of these categories.            ",
       " hardware categories     - These are the categories that are used for hardware items.            ",
       " hardware terms          - If you see these items in the description, it's a hardware item.      ",
-   null],
+   0],
 
    "misc":{
       "fuzzy category match"    : false,
       "fuzzy keyword match"     : false,
       "fuzzy matching seems to slow things down too much for minimal gain" : false
+   },
+   "direct map": {
+      "10d" : "G7"
    },
    "scoring":{
       "match-threshold"         : 0.7,
@@ -88,6 +92,9 @@
       "clip":10,
       "handnails":5,
       "50#":0,          "#50 is only on hand nails and just confuses things":0,
+      "8d":3,
+      "10d":3,
+      "16d":3,
       "end-of-list":0
    },
    "detractors":{

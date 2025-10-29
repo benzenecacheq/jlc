@@ -30,6 +30,8 @@ class RulesMatcher:
         self.current_item = None
         self.debug_part = None
 
+        self.direct_map = None
+
         self.default_categories = None  # Encourage this category if none is otherwise present
         self.default_other = None       # Encourage default for other things (like 5ply)
 
@@ -84,6 +86,7 @@ class RulesMatcher:
         self.fuzzy_category_matching = self.get_setting("misc")["fuzzy category match"]
         self.fuzzy_keyword_matching = self.get_setting("misc")["fuzzy keyword match"]
 
+        self.direct_map = self.get_setting("direct map")
         self.default_categories = self.get_setting("default categories")
         self.default_other = self.get_setting("default other")
         self.detractors = self.get_setting("detractors")
@@ -875,6 +878,9 @@ class RulesMatcher:
         return matches
 
     def match_lumber_item(self, item: ScannedItem, use_original=False) -> List[PartMatch]:
+        if self.attrs is None:
+            self._load_attrs()
+
         """Specialized matching for lumber database format"""
         item_desc = item.description
         if use_original:
@@ -887,10 +893,19 @@ class RulesMatcher:
 
             item_desc = otext
 
+        matches = []
         if self.debug:
             print(f"\nDEBUG: Lumber-specific matching for '{item_desc}' in {database_name}")
 
         parts = []
+
+        # first try direct mapping
+        sku = self.direct_map.get(item_desc.lower())
+        if sku is not None:
+            if self.debug_item == self.current_item:
+                pdb.set_trace()
+            self._add_match(matches, item_desc, self.merged_database[sku], 1.0, "")
+            return matches
 
         # Parse the scanned item to extract lumber components
         item_components = self.parse_lumber_item(item_desc)
@@ -898,6 +913,7 @@ class RulesMatcher:
             print(f"  Parsed item components: {item_desc} -> {item_components}")
             pdb.set_trace()     # debug the processing of this item.
             self.parse_lumber_item(item_desc)
+            return matches
 
         friends = {}
         attrs = item_components.get("attrs")
@@ -919,7 +935,6 @@ class RulesMatcher:
 
         # If we don't have a category for the item, special treatment applies
         if len(parts) == 0:
-            tried_skumatch = False
             if 'dimensions' in item_components and 'length' in item_components:
                 # if there are dimensions and length, it's probably a board
                 parts = self.board_parts
@@ -931,7 +946,6 @@ class RulesMatcher:
                 matches = self.try_sku_match(item_desc)
                 if len(matches) > 0:
                     return self.sort_matches(item, matches)
-                tried_skumatch = True
 
         # add any keyword parts to the list
         keywords = self._has_keyword(item_components)
@@ -947,7 +961,6 @@ class RulesMatcher:
             cats = [c for c in self.lumber_categories if attrs is None or c not in attrs]
             parts = self._deselect_parts(parts, cats)
 
-        matches = []
         confidence_scores = []
         parts = self._unique_parts(parts)
         for idx,part in enumerate(parts):

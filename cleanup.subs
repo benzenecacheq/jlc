@@ -92,7 +92,7 @@ coupler`couple
 all threaded`allthrd
 all thread`allthrd
 
-# look for cerain keywords followed by hyphen and convert to space
+# look for certain keywords followed by hyphen and convert to space
 \bpsl-`psl 
 \bdf-`df 
 
