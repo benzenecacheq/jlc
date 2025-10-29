@@ -84,6 +84,11 @@ struc1`struc 1
 \*22\*`22
 \*14\*`14
 (\d)/pk\b`\1p
+\bhardie\b`hardi
+hardiepanel`hardi panel
+hardibacker`hardi backer
+hardishingle`hardi shingle
+hardishingleside`hardi shingle side
 
 # Some plurals
 clips`clip

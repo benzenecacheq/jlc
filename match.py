@@ -913,7 +913,6 @@ class RulesMatcher:
             print(f"  Parsed item components: {item_desc} -> {item_components}")
             pdb.set_trace()     # debug the processing of this item.
             self.parse_lumber_item(item_desc)
-            return matches
 
         friends = {}
         attrs = item_components.get("attrs")
