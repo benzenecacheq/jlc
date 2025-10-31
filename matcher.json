@@ -47,7 +47,7 @@
       "keyword-threshold"       : 0.7,
       "skumatch-threshold"      : 0.7,
       "skumatch-bonus-mult"     : 0.2,
-      "skumatch-word-count-penalty" : 0.05,
+      "skumatch-word-count-penalty" : 0.03,
       "dbmatch-threshold"       : 0.5,
       "close-enough"            : 0.8,
       "dimensions-multiplier"   : 0.4,
@@ -58,6 +58,7 @@
       "no-dim-no-len-multiplier": 2.0,
       "attrs-multiplier"        : 0.05,
       "other-multiplier"        : 0.03,
+      "other-only-multiplier"   : 0.03,
       "length-dim-last-add"     : 0.01,
       "sell-by-foot"            : -0.05
    },

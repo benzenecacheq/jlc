@@ -652,17 +652,27 @@ class RulesMatcher:
         # some special cases:
         if len(item_components) == 1 and 'other' in item_components and 'other' in db_components:
             # All we have is 'other'
-            divisor = (len(item_components['other'])*2 + len(db_components['other'])) / 3
-            skumatch = {}
+            
             if sku:
                 skumatch = fuzzy_match(sku, item_components["other"], threshold=self.scoring["skumatch-threshold"])
-            sku_sum = sum(skumatch.values())
-            dbmatch = fuzzy_match(item_components["other"], db_components["other"], 
+                sku_sum = sum(skumatch.values()) / len(item_components['other'])
+                self._dbgout(indent, sys._getframe().f_lineno - 1, f"sku_sum={sku_sum}")
+                score += sku_sum
+
+            dbmatch = fuzzy_match(item_components["other"], db_components["other"],
                                                                       threshold=self.scoring["dbmatch-threshold"])
-            db_sum = sum(dbmatch.values())
-            score += db_sum / divisor + sku_sum / len(item_components['other'])
-            self._dbgout(indent, sys._getframe().f_lineno - 1, 
-                         f"score={score}, skumatch={skumatch}, dbmatch={dbmatch}, divisor={divisor}")
+            db_sum = 0
+            multiplier = self.scoring["other-multiplier"]
+            for n,s in dbmatch.items():
+                s = 1.0 if s > self.scoring["close-enough"] else s
+                if n in self.substitute_dimensions:
+                    l = self.substitute_dimensions[n] / multiplier
+                else:
+                    l = self.keywords[n] if n in self.keywords else len(n)
+                db_sum += s * multiplier * l
+                self._dbgout(indent, sys._getframe().f_lineno - 1, 
+                             f"db_sum={db_sum}, n={n}, s={s}, l={l}, multiplier={multiplier}")
+            score += db_sum
             if indent is not None:
                 print(indent*' ' + f"=============== Final score: {score} ================")
             return score
