@@ -412,7 +412,7 @@ class RulesMatcher:
             if dash == 0 or dash == len(word)-1:
                 # remove it
                 desc[i] = word[1:] if dash == 0 else word[:-1]
-            elif dash > 0:
+            elif dash > 0 and not self._is_keyword(word, is_db) and not self._is_attr(word, is_db):
                 withoutdash = word[:dash]+word[dash+1:]
                 split_it = True
                 if is_db:
@@ -657,11 +657,12 @@ class RulesMatcher:
             if sku:
                 skumatch = fuzzy_match(sku, item_components["other"], threshold=self.scoring["skumatch-threshold"])
             sku_sum = sum(skumatch.values())
-            dbmatch = fuzzy_match(item_components["other"], db_components["other"])
+            dbmatch = fuzzy_match(item_components["other"], db_components["other"], 
+                                                                      threshold=self.scoring["dbmatch-threshold"])
             db_sum = sum(dbmatch.values())
             score += db_sum / divisor + sku_sum / len(item_components['other'])
             self._dbgout(indent, sys._getframe().f_lineno - 1, 
-                         f"score={score}, skumatch={skumatch}, dbmatch={dbmatch}")
+                         f"score={score}, skumatch={skumatch}, dbmatch={dbmatch}, divisor={divisor}")
             if indent is not None:
                 print(indent*' ' + f"=============== Final score: {score} ================")
             return score
@@ -869,9 +870,11 @@ class RulesMatcher:
         scores = fuzzy_match(self.merged_database, words, threshold=self.scoring["skumatch-threshold"])
         if scores:
             for sku,score in scores.items():
+                score -= self.scoring["skumatch-word-count-penalty"] * (len(words) - 1)
                 db_components = self.merged_database[sku]["components"]
-                bonus = self._calculate_match(item_components, db_components, sku="", indent=indent) / 10
-                if bonus < 0:
+                bonus = self._calculate_match(item_components, db_components, sku="", indent=indent) / 3
+                bonus *= self.scoring["skumatch-bonus-mult"]
+                if bonus < 0 and score != 1.0:
                     continue            # something bad happened
                 self._add_match(matches, item_str, self.merged_database[sku], score + bonus)
 

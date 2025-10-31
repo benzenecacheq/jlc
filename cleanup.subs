@@ -52,6 +52,11 @@
 
 # Common things that claude misreads
 \becco\b`eccq
+\bzmax\b`z-max
+\b2max\b`z-max
+\b2-max\b`z-max
+\b2 max\b`z-max
+\bz max\b`z-max
 
 # These are sizes that round to what we see in the customer list
 23/32`3/4

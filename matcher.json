@@ -46,6 +46,9 @@
       "match-threshold"         : 0.7,
       "keyword-threshold"       : 0.7,
       "skumatch-threshold"      : 0.7,
+      "skumatch-bonus-mult"     : 0.2,
+      "skumatch-word-count-penalty" : 0.05,
+      "dbmatch-threshold"       : 0.5,
       "close-enough"            : 0.8,
       "dimensions-multiplier"   : 0.4,
       "no-length-adder"         : 0.25,
@@ -96,6 +99,7 @@
       "8d":3,
       "10d":3,
       "16d":3,
+      "z-max":5,
       "end-of-list":0
    },
    "detractors":{
