@@ -54,8 +54,11 @@
 \becco\b`eccq
 \bzmax\b`z-max
 \b2max\b`z-max
+\b3max\b`z-max
 \b2-max\b`z-max
+\b3-max\b`z-max
 \b2 max\b`z-max
+\b3 max\b`z-max
 \bz max\b`z-max
 
 # These are sizes that round to what we see in the customer list
@@ -95,10 +98,13 @@ hardibacker`hardi backer
 hardishingle`hardi shingle
 hardishingleside`hardi shingle side
 
-# Some plurals
+# Some plurals and other variations of words.  This is useful because 
+# we currently don't do fuzzy matching on categories.
 clips`clip
 coupling`couple
 coupler`couple
+
+# merge some words
 all threaded`allthrd
 all thread`allthrd
 
@@ -113,6 +119,7 @@ all thread`allthrd
 # blk could be block or black, but usually block and it should fuzzy match either
 \bblk\b`block
 \bblks\b`blocks
+\bblocking\b`block
 \bbx\b`box
 \bsq\b`square
 

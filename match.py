@@ -548,7 +548,7 @@ class RulesMatcher:
                 components['dimensions'] = d
                 if self.debug:
                     print(f'    Found dimensions: {d}')
-            elif d in self.attrs:
+            elif self._is_attr(d, is_db):
                 if 'attrs' not in components:
                     components['attrs'] = []
                 if d not in components['attrs']:
@@ -683,7 +683,7 @@ class RulesMatcher:
                 matches = []
                 if name in item_components:
                     multiplier = self.scoring[name+"-multiplier"]
-                    matches = fuzzy_match(dbc, item_components[name], threshold=0.6)
+                    matches = fuzzy_match(dbc, item_components[name], threshold=self.scoring["dbmatch-threshold"])
                     for n,s in matches.items():
                         s = 1.0 if s > self.scoring["close-enough"] else s
                         if n in self.substitute_dimensions:
@@ -882,9 +882,9 @@ class RulesMatcher:
             for sku,score in scores.items():
                 score -= self.scoring["skumatch-word-count-penalty"] * (len(words) - 1)
                 db_components = self.merged_database[sku]["components"]
-                bonus = self._calculate_match(item_components, db_components, sku="", indent=indent) / 3
+                bonus = self._calculate_match(item_components, db_components, sku="", indent=indent)
                 bonus *= self.scoring["skumatch-bonus-mult"]
-                if bonus < 0 and score != 1.0:
+                if bonus < 0 and len(words) > 1:
                     continue            # something bad happened
                 self._add_match(matches, item_str, self.merged_database[sku], score + bonus)
 
