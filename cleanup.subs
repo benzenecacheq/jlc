@@ -92,6 +92,9 @@
 \bticos\b`.148 joist gun
 \bhco\b`.148 joist gun
 
+\bhand nail`handnail
+\bhand\b`handnails
+
 # These fix unusual things we see in the parts database
 std&btr`std btr
 furring`df std btr s4s

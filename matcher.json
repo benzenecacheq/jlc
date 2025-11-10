@@ -35,6 +35,8 @@
       "                           terms) from matching something in one of these categories.            ",
       " hardware categories     - These are the categories that are used for hardware items.            ",
       " hardware terms          - If you see these items in the description, it's a hardware item.      ",
+      " fix special categories  - Special information used when trying to run the initial description   ",
+      "                           fixer.                                                                ",
    0],
 
    "misc":{
@@ -101,11 +103,12 @@
       "std":0,
       "clip":10,
       "handnails":5,
-      "50#":0,          "#50 is only on hand nails and just confuses things":0,
       "8d":3,
       "10d":3,
       "16d":3,
       "z-max":10,
+      "joist":2,        "joist doesn't really mean anything":0,
+      "50#":0,          "#50 is only on hand nails and just confuses things":0,
       "end-of-list":0
    },
    "detractors":{
@@ -126,7 +129,7 @@
    "friends":{
       "pl":{"ml":-0.02},
       "ml":{"pl":-0.02},
-      "nails":{"handnails":-0.02},
+      "nails":{"handnails":-0.1},
       "end-of-list" : 0
    },
    "category indicators": {
@@ -204,6 +207,9 @@
                        "3-1/2x16", "5-1/4x11-7/8", "5-1/4x9-1/2", "5-1/4x14",
                        "5-1/4x16", "5-1/4x18", "7x11-7/8", "7x14", "7x16", "7x18"] },
       "cdx":{ "dim" : ["4x8", "4x9", "4x10", "4x12"] },
+      "tji":{ "dim" : [],
+              "length" : ["11-7/8", "14", "9-1/2"] },
+
       "end-of-list":0
    },
 

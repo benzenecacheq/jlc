@@ -63,524 +63,524 @@ Cedar,2816WRC,2X8 16    WRC STK S4S DRY,EA
 Cedar,2820WRC,2X8 20    WRC STK S4S DRY,EA
 Cedar,288WRC,2X8 8    WRC STK S4S DRY,EA
 Cedar,CS1,CEDAR SHINGLES #1  (4),EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1010DFL,10X10    DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1012DFL,10X12    DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1014DFL,10X14   DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1016DFL,10X16   DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1212DFL,12X12   DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1214DFL,12X14    DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1414DFL,14X14   DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1616DFL,16X16   DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",81010DF1,8X10 10   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",81012DF1,8X10 12   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",81014DF1,8X10 14   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",81016DF1,8X10 16   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",81018DF1,8X10 18   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",81020DF1,8X10 20   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",8108DF1,8X10 8   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",810DFL,8X10    DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",81210DF1,8X12 10  DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",81212DF1,8X12 12   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",81214DF1,8X12 14   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",81216DF1,8X12 16   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",81218DF1,8X12 18   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",81220DF1,8X12 20   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",81222DF1,8X12 22   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",81224DF1,8X12 24   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",8128DF1,8X12 8  DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",812DFL,8X12    DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",81410DF1,8X14 10   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",81412DF1,8X14 12   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",81414DF1,8X14 14   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",81416DF1,8X14 16   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",81418DF1,8X14 18   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",81420DF1,8X14 20   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",81430DF1,8X14 30   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",81610DF1,8X16 10   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",81612DF1,8X16 12   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",81614DF1,8X16 14   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",81616DF1,8X16 16   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",8168DF1,8X16 8   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",8810DF1,8X8 10   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",8812DF1,8X8 12  DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",8814DF1,8X8 14  DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",8816DF1,8X8 16  DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",8818DF1,8X8 18   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",8820DF1,8X8 20   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",8822DF1,8X8 22   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",8824DF1,8X8 24   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",888DF1,8X8 8   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",88DFL,8X8  DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1210DF,1X2 10   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1212DF,1X2 12  DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1214DF,1X2 14   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1216DF,1X2 16   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1218DF,1X2 18   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",128DF,1X2 8 SPF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",12DFL,1X2  DF STD&BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1316DF,1X3 16   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",13DFL,1X3   DF STD&BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1410DF,1X4 10  HF/DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1412DF,1X4 12  HF/DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1414DF,1X4 14  HF/DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1416DF,1X4 16  HF/DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1418DF,1X4 18   HF/DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1420DF,1X4 20  HF/DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",144DF,1X4 4   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",146DF,1X4 6  HF/DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",148DF,1X4 8  HF/DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",14DFL,1X4   HF/DF STD&BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1610DF,1X6 10  HF/DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1612DF,1X6 12   HF/DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1614DF,1X6 14   HF/DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1616DF,1X6 16   HF/DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1618DF,1X6 18   HF/DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1620DF,1X6 20   HF/DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",166DF,1X6 6  HF/DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",168DF,1X6 8  HF/DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",16DFL,1X6   HF/DF STD&BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",11016DF,1X10 16   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1108DF,1X10 8   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",110DFL,1X10   DF 2 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",11212DF,1X12 12   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",11216DF,1X12 16   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1126DF,1X12 6   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1128DF,1X12 8   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1812DF,1X8 12   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1814DF,1X8 14   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",1816DF,1X8 16   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",186DF,1X8 6   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",188DF,1X8 8   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",18DFL,1X8    DF 2 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21010716DF,"2X10 10-7/16""   DF 2 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21010DF,2X10 10   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2101278DF,"2X10 12-7/8""   DF 2 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21012DF,2X10 12  DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21014716DF,"2X10 14-7/16""   DF 2 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21014716DFDS,"2X10 14-7/16""   DRILLED/SCREEN BLK",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21014DF,2X10 14  DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21016DF,2X10 16  DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21018DF,2X10 18   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21020DF,2X10 20   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21022716DF,"2X10 22-7/16""   DF 2 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21022716DFDS,"2X10 22-7/16""   DRILLED/SCREEN BLK",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2102DF,2X10 2   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2104DF,2X10 4   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2106DF,2X10 6   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2108DF,2X10 8   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",210DFL,2X10   DF 2 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21214716DFDS,"2X12 14-7/16""   DRILLED/SCREEN BLK",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21222716DFDS,"2X12 22-7/16""   DRILLED/SCREEN BLK",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21030DF,2X10 30  DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21022DF,2X10 22   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21024DF,2X10 24   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21026DF,2X10 26   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21028DF,2X10 28   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21032DF,2X10 32  DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21034DF,2X10 34   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21210716DF,"2X12 10-7/16""   DF 2 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21210DF,2X12 10   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2121278DF,"2X12 12-7/8""   DF 2 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21212DF,2X12 12   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21214716DF,"2X12 14-7/16""   DF 2 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21214DF,2X12 14   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21216DF,2X12 16   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21218DF,2X12 18   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21220DF,2X12 20   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21222716DF,"2X12 22-7/16""   DF 2 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21222DF,2X12 22   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21224DF,2X12 24   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2122DF,2X12 2   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21230DF,2X12 30   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2124DF,2X12 4   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2126DF,2X12 6  DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2128DF,2X12 8   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",212DFL,2X12   DF 2 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21226DF,2X12 26   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21228DF,2X12 28   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21230DF1,2X12 30   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21232DF,2X12 32   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2210DF,2X2 10   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2212DF,2X2 12   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2214DF,2X2 14  DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2216DF,2X2 16   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2218DF,2X2 18   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2220DF,2X2 20   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",224DF,2X2 4    DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",226DF,2X2 6   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",228DF,2X2 8   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",22DFL,2X2    DF STD&BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2410414DF,"2X4 104-1/4""   DF STD&BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2410DF,2X4 10   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2411614DF,"2X4 116-1/4""   DF STD&BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",241278DF,"2X4 12-7/8""   DF STD&BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2412DF,2X4 12  DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2414716DF,"2X4 14-7/16""   DF STD&BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2414DF,2X4 14  DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2416DF,2X4 16  DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2418DF,2X4 18  DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",241DF,2X4 1  DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2420DF,2X4 20  DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2422716DF,"2X4 22-7/16""   DF STD&BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",242DF,2X4 2  DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",243DF,2X4 3    DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",244DF,2X4 4   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",245DF,2X4 5   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",246DF,2X4 6   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",247DF,2X4 7   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",248034DF,"2X4 80-3/4""   DF STD&BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",248DF,2X4 8   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",249214DF,"2X4 92-1/4""   DF STD&BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",24DFL,2X4  DF STD&BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2422DF,2X4 22   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2424DF,2X4 24   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2428DF,2X4 28   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2430DF,2X4 30   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2310DF,2X3 10   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2316DF,2X3 16   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",23DFL,2X3   DF STD&BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2422716DFDS,"2X4 22-7/16""   DRILLED/SCREEN BLK",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2610414DF,"2X6 104-1/4""   DF 2 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2610DF,2X6 10   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2611614DF,"2X6 116-1/4""   DF 2 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",261278DF,"2X6 12-7/8""   DF 2 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2612DF,2X6 12  DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2614716DF,"2X6 14-7/16"" DF 2 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2614DF,2X6 14   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2616DF,2X6 16   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2618DF,2X6 18   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2620DF,2X6 20   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2622716DF,"2X6 22-7/16""   DF 2 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2622716DFDS,"2X6 22-7/16""   DRILLED/SCREEN BLK",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2622DF,2X6 22  DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2624DF,2X6 24  DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",262DF,2X6 2  DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",264DF,2X6 4   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",266DF,2X6 6  DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",268034DF,"2X6 80-3/4""   DF 2 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",268DF,2X6 8   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",269214DF,"2X6 92-1/4""   DF 2 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",26DFL,2X6   DF 2 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2626DF,2X6 26   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2628DF,2X6 28   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2630DF,2X6 30   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2632DF,2X6 32   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2810DF,2X8 10   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",281278DF,"2X8 12-7/8""   DF 2 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2812DF,2X8 12   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2814716DF,"2X8 14-7/16""   DF 2 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2814716DFDS,"2X8 14-7/16""   DRILLED/SCREEN BLK",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2814DF,2X8 14   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2816DF,2X8 16   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2818DF,2X8 18    DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2820DF,2X8 20   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2822716DF,"2X8 22-7/16""   DF 2 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2822716DFDS,"2X8 22-7/16""   DRILLED/SCREEN BLK",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2822DF,2X8 22   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2824DF,2X8 24   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",282DF,2X8 2   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",284DF,2X8 4    DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",286DF,2X8 6   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",288DF,2X8 8   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",28DFL,2X8   DF 2 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2826DF,2X8 26   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2828DF,2X8 28   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2830DF,2X8 30   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2832DF,2X8 32   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21410DF,2X14 10   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21412DF,2X14 12   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21414DF,2X14 14   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21416DF,2X14 16   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21418DF,2X14 18   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21420DF,2X14 20   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21422DF,2X14 22   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21424DF,2X14 24   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21426DF,2X14 26   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21428DF,2X14 28   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2142DF,2X14 2   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21430DF,2X14 30   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21432DF,2X14 32   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2144DF,2X14 4   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",2148DF,2X14 8   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",214DFL,2X14    DF 2 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",21620DF,2X16 20   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",216DFL,2X16  DF 2 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",338DF,3X3 8   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",33DFL,3X3    DF 2 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3410414DF,"3X4 104-1/4""   DF STD&BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3410DF,3X4 10   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3412DF,3X4 12   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3414DF,3X4 14   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3416DF,3X4 16   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3418DF,3X4 18   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3420DF,3X4 20   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",348DF,3X4 8   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",349214DF,"3X4 92-1/4""   DF STD&BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",34DFL,3X4   DF STD&BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3610DF,3X6 10   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3612DF,3X6 12   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3614DF,3X6 14   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3616DF,3X6 16   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3618DF,3X6 18   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3620DF,3X6 20    DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",368DF,3X6 8   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",36DFL,3X6  DF 2 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",31010DF,3X10 10   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",31012DF,3X10 12   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",31014DF,3X10 14   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",31016DF,3X10 16   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",31018DF,3X10 18   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",31020DF,3X10 20   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",31022DF,3X10 22   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",31024DF,3X10 24   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3106DF,3X10 6   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3108DF,3X10 8   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",310DFL,3X10   DF 2 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",31210DF,3X12 10   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",31212DF,3X12 12   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",31214DF,3X12 14   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",31216DF,3X12 16   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",31218DF,3X12 18   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",31220DF,3X12 20   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",31222DF,3X12 22   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",31224DF,3X12 24   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3126DF,3X12 6   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3128DF,3X12 8   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",312DFL,3X12   DF 2 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",31414DF,3X14 14   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",31420DF,3X14 20   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",31422DF,3X14 22  DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",31424DF,3X14 24   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",314DFL,3X14    DF 2 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3422DF,3X4 22   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3424DF,3X4 24   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3622DF,3X6 22   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3624DF,3X6 24   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3810DF,3X8 10   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3812DF,3X8 12   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3814DF,3X8 14   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3816DF,3X8 16   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3818DF,3X8 18   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3820DF,3X8 20   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3822DF,3X8 22   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",3824DF,3X8 24   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",386DF,3X8 6   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",388DF,3X8 8   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",38DFL,3X8  DF 2 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41010414DF,"4X10 104-1/4""   DF 1 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41010DF1,4X10 10   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41012DF1,4X10 12   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41014DF1,4X10 14   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41016DF1,4X10 16   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41018DF1,4X10 18   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41020DF1,4X10 20   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4102DF,4X10 2   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4104DF,4X10 4   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4106DF1,4X10 6   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4108DF1,4X10 8   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4109214DF,"4X10 92-1/4""   DF 1 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",410DF1L,4X10    DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41022DF1,4X10 22   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41024DF1,4X10 24   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41026DF1,4X10 26   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41028DF,4X10 28    DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41210414DF,"4X12 104-1/4""   DF 1 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41210DF1,4X12 10   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41212DF1,4X12 12   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41214DF1,4X12 14   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41216DF1,4X12 16   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41218DF1,4X12 18   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4121DF,4X12 1   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41220DF1,4X12 20   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4122DF,4X12 2   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4123DF,4X12 3   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4124DF,4X12 4   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4125DF,4X12 5   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4126DF1,4X12 6   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4127DF,4X12 7   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4128DF1,4X12 8   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",412DF1L,4X12   DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41222DF1,4X12 22   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41224DF1,4X12 24   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41226DF1,4X12 26   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41228DF1,4X12 28   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41230DF1,4X12 30   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41232DF1,4X12 32   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41234DF,4X12 34   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4410414DF,"4X4 104-1/4""   DF STD&BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4410DF,4X4 10   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4411614DF,"4X4 116-1/4""   DF STD&BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4412DF,4X4 12   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4414DF,4X4 14   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4416DF,4X4 16   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4418DF,4X4 18   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4420DF,4X4 20   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",442DF,4X4 2   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",444DF,4X4 4   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",446DF,4X4 6   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",448DF,4X4 8   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",449214DF,"4X4 92-1/4""   DF STD&BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",44DFL,4X4   DF 1 &BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4422DF,4X4 22   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4424DF,4X4 24   DF STD&BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4610414DF,"4X6 104-1/4""   DF 1 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4610DF1,4X6 10   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4611614DF,"4X6 116-1/4""   DF 1 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4612DF1,4X6 12   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4614DF1,4X6 14   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4616DF1,4X6 16   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4618DF1,4X6 18   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4620DF1,4X6 20   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",462DF,4X6 2   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",464DF,4X6 4   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",466DF1,4X6 6   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",468DF1,4X6 8   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",469214DF,"4X6 92-1/4""   DF 1 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",46DF1L,4X6   DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4622DF1,4X6 22   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4624DF1,4X6 24   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4626DF,4X6 26   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4810414DF,"4X8 104-1/4""   DF 1 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4810DF1,4X8 10   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4812DF1,4X8 12   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4814DF1,4X8 14   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4816DF1,4X8 16   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4818DF1,4X8 18   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4820DF1,4X8 20   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",482DF,4X8 2   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",484DF,4X8 4   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",486DF1,4X8 6   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",488DF1,4X8 8   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",489214DF,"4X8 92-1/4""   DF 1 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",48DF1L,4X8    DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4822DF1,4X8 22   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4824DF1,4X8 24   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4826DF,4X8 26   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4828DF,4X8 28   DF 2 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41410DF1,4X14 10   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41412DF1,4X14 12   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41414DF1,4X14 14   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41416DF1,4X14 16   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41418DF1,4X14 18   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41420DF1,4X14 20   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41422DF1,4X14 22   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41424DF1,4X14 24   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41426DF1,4X14 26   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41428DF1,4X14 28   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41430DF1,4X14 30   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41432DF1,4X14 32   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4146DF1,4X14 6   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4148DF1,4X14 8   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",414DFL,4X14   DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41610DF1,4X16 10   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41612DF1,4X16 12   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41614DF1,4X16 14    DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41616DF1,4X16 16   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41618DF1,4X16 18   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41620DF1,4X16 20   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41622DF1,4X16 22   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41624DF1,4X16 24   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41626DF1,4X16 26   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",4168DF1,4X16 8   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",416DFL,4X16   DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41818DF1,4X18 18   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",41822DF1,4X18 22   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61010DF1,6X10 10   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61012DF1,6X10 12   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61014DF1,6X10 14   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61016DF1,6X10 16   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61018DF1,6X10 18   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61020DF1,6X10 20   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6102DF1,6X10 2   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6104DF1,6X10 4   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6106DF1,6X10 6   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6108DF1,6X10 8   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",610DFL,6X10   DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61022DF1,6X10 22   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61024DF1,6X10 24   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61026DF1,6X10 26   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61028DF1,6X10 28   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61030DF1,6X10 30   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61210DF1,6X12 10   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61212DF1,6X12 12   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61214DF1,6X12 14   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61216DF1,6X12 16   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61218DF1,6X12 18   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61220DF1,6X12 20   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6122DF1,6X12 2   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6124DF1,6X12 4   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6126DF1,6X12 6   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6128DF1,6X12 8   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",612DFL,6X12    DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61222DF1,6X12 22   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61224DF1,6X12 24    DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61226DF1,6X12 26   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61228DF1,6X12 28    DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6610414DF1,"6X6 104-1/4""   DF 1 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6610DF1,6X6 10   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6612DF1,6X6 12   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6614DF1,6X6 14   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6616DF1,6X6 16   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6618DF1,6X6 18   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6620DF1,6X6 20   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",662DF1,6X6 2   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",664DF1,6X6 4   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",666DF1,6X6 6   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",668DF1,6X6 8   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",669214DF1,"6X6 92-1/4""   DF 1 & BTR S4S",EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",66DFL,6X6   DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6622DF1,6X6 22   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6624DF1,6X6 24   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6810DF1,6X8 10   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6812DF1,6X8 12   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6814DF1,6X8 14   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6816DF1,6X8 16   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6818DF1,6X8 18   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6820DF1,6X8 20   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",682DF1,6X8 2   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",684DF1,6X8 4   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",686DF1,6X8 6   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",688DF1,6X8 8   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",68DFL,6X8   DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6822DF1,6X8 22   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6824DF1,6X8 24   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6826DF1,6X8 26   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61410DF1,6X14 10   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61412DF1,6X14 12   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61414DF1,6X14 14   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61416DF1,6X14 16   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61418DF1,6X14 18   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61420DF1,6X14 20   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61422DF1,6X14 22   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61424DF1,6X14 24   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61426DF1,6X14 26   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6148DF1,6X14 8   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",614DFL,6X14   DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61610DF1,6X16 10   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61612DF1,6X16 12   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61614DF1,6X16 14   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61616DF1,6X16 16   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61618DF1,6X16 18   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61620DF1,6X16 20   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61622DF1,6X16 22   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61624DF1,6X16 24   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61626DF1,6X16 26   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61628DF1,6X16 28   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6166DF1,6X16 6   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",6168DF1,6X16 8   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",616DFL,6X16   DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61810DF1,6X18 10   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61812DF1,6X18 12   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61814DF1,6X18 14   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61816DF1,6X18 16   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61818DF1,6X18 18   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61820DF1,6X18 20   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61822DF1,6X18 22   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",61824DF1,6X18 24   DF 1 & BTR S4S,EA
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",618DFL,6X18   DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",620DFL,6X20   DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",816DFL,8X16   DF 1 & BTR S4S,LF
-"DF, Douglas Fir, Madera, Post, Girder, FJ, Floor Joist, Plumb, Rim",818DFL,8X18   DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1010DFL,10X10    DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1012DFL,10X12    DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1014DFL,10X14   DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1016DFL,10X16   DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1212DFL,12X12   DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1214DFL,12X14    DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1414DFL,14X14   DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1616DFL,16X16   DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",81010DF1,8X10 10   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",81012DF1,8X10 12   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",81014DF1,8X10 14   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",81016DF1,8X10 16   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",81018DF1,8X10 18   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",81020DF1,8X10 20   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",8108DF1,8X10 8   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",810DFL,8X10    DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",81210DF1,8X12 10  DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",81212DF1,8X12 12   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",81214DF1,8X12 14   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",81216DF1,8X12 16   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",81218DF1,8X12 18   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",81220DF1,8X12 20   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",81222DF1,8X12 22   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",81224DF1,8X12 24   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",8128DF1,8X12 8  DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",812DFL,8X12    DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",81410DF1,8X14 10   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",81412DF1,8X14 12   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",81414DF1,8X14 14   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",81416DF1,8X14 16   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",81418DF1,8X14 18   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",81420DF1,8X14 20   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",81430DF1,8X14 30   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",81610DF1,8X16 10   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",81612DF1,8X16 12   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",81614DF1,8X16 14   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",81616DF1,8X16 16   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",8168DF1,8X16 8   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",8810DF1,8X8 10   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",8812DF1,8X8 12  DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",8814DF1,8X8 14  DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",8816DF1,8X8 16  DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",8818DF1,8X8 18   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",8820DF1,8X8 20   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",8822DF1,8X8 22   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",8824DF1,8X8 24   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",888DF1,8X8 8   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",88DFL,8X8  DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1210DF,1X2 10   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1212DF,1X2 12  DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1214DF,1X2 14   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1216DF,1X2 16   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1218DF,1X2 18   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",128DF,1X2 8 SPF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",12DFL,1X2  DF STD&BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1316DF,1X3 16   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",13DFL,1X3   DF STD&BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1410DF,1X4 10  HF/DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1412DF,1X4 12  HF/DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1414DF,1X4 14  HF/DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1416DF,1X4 16  HF/DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1418DF,1X4 18   HF/DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1420DF,1X4 20  HF/DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",144DF,1X4 4   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",146DF,1X4 6  HF/DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",148DF,1X4 8  HF/DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",14DFL,1X4   HF/DF STD&BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1610DF,1X6 10  HF/DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1612DF,1X6 12   HF/DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1614DF,1X6 14   HF/DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1616DF,1X6 16   HF/DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1618DF,1X6 18   HF/DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1620DF,1X6 20   HF/DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",166DF,1X6 6  HF/DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",168DF,1X6 8  HF/DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",16DFL,1X6   HF/DF STD&BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",11016DF,1X10 16   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1108DF,1X10 8   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",110DFL,1X10   DF 2 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",11212DF,1X12 12   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",11216DF,1X12 16   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1126DF,1X12 6   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1128DF,1X12 8   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1812DF,1X8 12   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1814DF,1X8 14   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",1816DF,1X8 16   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",186DF,1X8 6   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",188DF,1X8 8   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",18DFL,1X8    DF 2 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21010716DF,"2X10 10-7/16""   DF 2 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21010DF,2X10 10   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2101278DF,"2X10 12-7/8""   DF 2 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21012DF,2X10 12  DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21014716DF,"2X10 14-7/16""   DF 2 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21014716DFDS,"2X10 14-7/16""   DRILLED/SCREEN BLK",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21014DF,2X10 14  DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21016DF,2X10 16  DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21018DF,2X10 18   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21020DF,2X10 20   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21022716DF,"2X10 22-7/16""   DF 2 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21022716DFDS,"2X10 22-7/16""   DRILLED/SCREEN BLK",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2102DF,2X10 2   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2104DF,2X10 4   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2106DF,2X10 6   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2108DF,2X10 8   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",210DFL,2X10   DF 2 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21214716DFDS,"2X12 14-7/16""   DRILLED/SCREEN BLK",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21222716DFDS,"2X12 22-7/16""   DRILLED/SCREEN BLK",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21030DF,2X10 30  DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21022DF,2X10 22   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21024DF,2X10 24   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21026DF,2X10 26   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21028DF,2X10 28   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21032DF,2X10 32  DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21034DF,2X10 34   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21210716DF,"2X12 10-7/16""   DF 2 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21210DF,2X12 10   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2121278DF,"2X12 12-7/8""   DF 2 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21212DF,2X12 12   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21214716DF,"2X12 14-7/16""   DF 2 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21214DF,2X12 14   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21216DF,2X12 16   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21218DF,2X12 18   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21220DF,2X12 20   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21222716DF,"2X12 22-7/16""   DF 2 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21222DF,2X12 22   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21224DF,2X12 24   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2122DF,2X12 2   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21230DF,2X12 30   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2124DF,2X12 4   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2126DF,2X12 6  DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2128DF,2X12 8   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",212DFL,2X12   DF 2 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21226DF,2X12 26   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21228DF,2X12 28   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21230DF1,2X12 30   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21232DF,2X12 32   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2210DF,2X2 10   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2212DF,2X2 12   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2214DF,2X2 14  DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2216DF,2X2 16   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2218DF,2X2 18   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2220DF,2X2 20   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",224DF,2X2 4    DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",226DF,2X2 6   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",228DF,2X2 8   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",22DFL,2X2    DF STD&BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2410414DF,"2X4 104-1/4""   DF STD&BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2410DF,2X4 10   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2411614DF,"2X4 116-1/4""   DF STD&BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",241278DF,"2X4 12-7/8""   DF STD&BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2412DF,2X4 12  DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2414716DF,"2X4 14-7/16""   DF STD&BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2414DF,2X4 14  DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2416DF,2X4 16  DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2418DF,2X4 18  DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",241DF,2X4 1  DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2420DF,2X4 20  DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2422716DF,"2X4 22-7/16""   DF STD&BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",242DF,2X4 2  DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",243DF,2X4 3    DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",244DF,2X4 4   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",245DF,2X4 5   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",246DF,2X4 6   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",247DF,2X4 7   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",248034DF,"2X4 80-3/4""   DF STD&BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",248DF,2X4 8   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",249214DF,"2X4 92-1/4""   DF STD&BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",24DFL,2X4  DF STD&BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2422DF,2X4 22   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2424DF,2X4 24   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2428DF,2X4 28   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2430DF,2X4 30   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2310DF,2X3 10   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2316DF,2X3 16   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",23DFL,2X3   DF STD&BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2422716DFDS,"2X4 22-7/16""   DRILLED/SCREEN BLK",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2610414DF,"2X6 104-1/4""   DF 2 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2610DF,2X6 10   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2611614DF,"2X6 116-1/4""   DF 2 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",261278DF,"2X6 12-7/8""   DF 2 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2612DF,2X6 12  DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2614716DF,"2X6 14-7/16"" DF 2 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2614DF,2X6 14   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2616DF,2X6 16   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2618DF,2X6 18   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2620DF,2X6 20   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2622716DF,"2X6 22-7/16""   DF 2 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2622716DFDS,"2X6 22-7/16""   DRILLED/SCREEN BLK",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2622DF,2X6 22  DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2624DF,2X6 24  DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",262DF,2X6 2  DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",264DF,2X6 4   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",266DF,2X6 6  DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",268034DF,"2X6 80-3/4""   DF 2 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",268DF,2X6 8   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",269214DF,"2X6 92-1/4""   DF 2 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",26DFL,2X6   DF 2 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2626DF,2X6 26   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2628DF,2X6 28   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2630DF,2X6 30   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2632DF,2X6 32   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2810DF,2X8 10   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",281278DF,"2X8 12-7/8""   DF 2 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2812DF,2X8 12   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2814716DF,"2X8 14-7/16""   DF 2 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2814716DFDS,"2X8 14-7/16""   DRILLED/SCREEN BLK",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2814DF,2X8 14   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2816DF,2X8 16   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2818DF,2X8 18    DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2820DF,2X8 20   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2822716DF,"2X8 22-7/16""   DF 2 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2822716DFDS,"2X8 22-7/16""   DRILLED/SCREEN BLK",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2822DF,2X8 22   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2824DF,2X8 24   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",282DF,2X8 2   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",284DF,2X8 4    DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",286DF,2X8 6   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",288DF,2X8 8   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",28DFL,2X8   DF 2 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2826DF,2X8 26   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2828DF,2X8 28   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2830DF,2X8 30   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2832DF,2X8 32   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21410DF,2X14 10   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21412DF,2X14 12   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21414DF,2X14 14   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21416DF,2X14 16   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21418DF,2X14 18   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21420DF,2X14 20   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21422DF,2X14 22   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21424DF,2X14 24   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21426DF,2X14 26   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21428DF,2X14 28   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2142DF,2X14 2   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21430DF,2X14 30   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21432DF,2X14 32   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2144DF,2X14 4   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",2148DF,2X14 8   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",214DFL,2X14    DF 2 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",21620DF,2X16 20   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",216DFL,2X16  DF 2 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",338DF,3X3 8   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",33DFL,3X3    DF 2 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3410414DF,"3X4 104-1/4""   DF STD&BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3410DF,3X4 10   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3412DF,3X4 12   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3414DF,3X4 14   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3416DF,3X4 16   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3418DF,3X4 18   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3420DF,3X4 20   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",348DF,3X4 8   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",349214DF,"3X4 92-1/4""   DF STD&BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",34DFL,3X4   DF STD&BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3610DF,3X6 10   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3612DF,3X6 12   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3614DF,3X6 14   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3616DF,3X6 16   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3618DF,3X6 18   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3620DF,3X6 20    DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",368DF,3X6 8   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",36DFL,3X6  DF 2 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",31010DF,3X10 10   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",31012DF,3X10 12   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",31014DF,3X10 14   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",31016DF,3X10 16   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",31018DF,3X10 18   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",31020DF,3X10 20   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",31022DF,3X10 22   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",31024DF,3X10 24   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3106DF,3X10 6   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3108DF,3X10 8   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",310DFL,3X10   DF 2 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",31210DF,3X12 10   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",31212DF,3X12 12   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",31214DF,3X12 14   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",31216DF,3X12 16   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",31218DF,3X12 18   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",31220DF,3X12 20   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",31222DF,3X12 22   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",31224DF,3X12 24   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3126DF,3X12 6   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3128DF,3X12 8   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",312DFL,3X12   DF 2 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",31414DF,3X14 14   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",31420DF,3X14 20   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",31422DF,3X14 22  DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",31424DF,3X14 24   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",314DFL,3X14    DF 2 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3422DF,3X4 22   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3424DF,3X4 24   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3622DF,3X6 22   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3624DF,3X6 24   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3810DF,3X8 10   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3812DF,3X8 12   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3814DF,3X8 14   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3816DF,3X8 16   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3818DF,3X8 18   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3820DF,3X8 20   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3822DF,3X8 22   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",3824DF,3X8 24   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",386DF,3X8 6   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",388DF,3X8 8   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",38DFL,3X8  DF 2 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41010414DF,"4X10 104-1/4""   DF 1 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41010DF1,4X10 10   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41012DF1,4X10 12   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41014DF1,4X10 14   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41016DF1,4X10 16   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41018DF1,4X10 18   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41020DF1,4X10 20   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4102DF,4X10 2   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4104DF,4X10 4   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4106DF1,4X10 6   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4108DF1,4X10 8   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4109214DF,"4X10 92-1/4""   DF 1 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",410DF1L,4X10    DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41022DF1,4X10 22   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41024DF1,4X10 24   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41026DF1,4X10 26   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41028DF,4X10 28    DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41210414DF,"4X12 104-1/4""   DF 1 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41210DF1,4X12 10   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41212DF1,4X12 12   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41214DF1,4X12 14   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41216DF1,4X12 16   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41218DF1,4X12 18   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4121DF,4X12 1   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41220DF1,4X12 20   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4122DF,4X12 2   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4123DF,4X12 3   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4124DF,4X12 4   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4125DF,4X12 5   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4126DF1,4X12 6   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4127DF,4X12 7   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4128DF1,4X12 8   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",412DF1L,4X12   DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41222DF1,4X12 22   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41224DF1,4X12 24   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41226DF1,4X12 26   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41228DF1,4X12 28   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41230DF1,4X12 30   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41232DF1,4X12 32   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41234DF,4X12 34   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4410414DF,"4X4 104-1/4""   DF STD&BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4410DF,4X4 10   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4411614DF,"4X4 116-1/4""   DF STD&BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4412DF,4X4 12   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4414DF,4X4 14   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4416DF,4X4 16   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4418DF,4X4 18   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4420DF,4X4 20   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",442DF,4X4 2   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",444DF,4X4 4   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",446DF,4X4 6   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",448DF,4X4 8   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",449214DF,"4X4 92-1/4""   DF STD&BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",44DFL,4X4   DF 1 &BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4422DF,4X4 22   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4424DF,4X4 24   DF STD&BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4610414DF,"4X6 104-1/4""   DF 1 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4610DF1,4X6 10   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4611614DF,"4X6 116-1/4""   DF 1 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4612DF1,4X6 12   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4614DF1,4X6 14   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4616DF1,4X6 16   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4618DF1,4X6 18   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4620DF1,4X6 20   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",462DF,4X6 2   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",464DF,4X6 4   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",466DF1,4X6 6   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",468DF1,4X6 8   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",469214DF,"4X6 92-1/4""   DF 1 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",46DF1L,4X6   DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4622DF1,4X6 22   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4624DF1,4X6 24   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4626DF,4X6 26   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4810414DF,"4X8 104-1/4""   DF 1 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4810DF1,4X8 10   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4812DF1,4X8 12   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4814DF1,4X8 14   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4816DF1,4X8 16   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4818DF1,4X8 18   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4820DF1,4X8 20   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",482DF,4X8 2   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",484DF,4X8 4   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",486DF1,4X8 6   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",488DF1,4X8 8   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",489214DF,"4X8 92-1/4""   DF 1 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",48DF1L,4X8    DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4822DF1,4X8 22   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4824DF1,4X8 24   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4826DF,4X8 26   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4828DF,4X8 28   DF 2 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41410DF1,4X14 10   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41412DF1,4X14 12   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41414DF1,4X14 14   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41416DF1,4X14 16   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41418DF1,4X14 18   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41420DF1,4X14 20   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41422DF1,4X14 22   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41424DF1,4X14 24   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41426DF1,4X14 26   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41428DF1,4X14 28   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41430DF1,4X14 30   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41432DF1,4X14 32   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4146DF1,4X14 6   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4148DF1,4X14 8   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",414DFL,4X14   DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41610DF1,4X16 10   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41612DF1,4X16 12   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41614DF1,4X16 14    DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41616DF1,4X16 16   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41618DF1,4X16 18   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41620DF1,4X16 20   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41622DF1,4X16 22   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41624DF1,4X16 24   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41626DF1,4X16 26   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",4168DF1,4X16 8   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",416DFL,4X16   DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41818DF1,4X18 18   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",41822DF1,4X18 22   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61010DF1,6X10 10   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61012DF1,6X10 12   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61014DF1,6X10 14   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61016DF1,6X10 16   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61018DF1,6X10 18   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61020DF1,6X10 20   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6102DF1,6X10 2   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6104DF1,6X10 4   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6106DF1,6X10 6   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6108DF1,6X10 8   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",610DFL,6X10   DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61022DF1,6X10 22   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61024DF1,6X10 24   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61026DF1,6X10 26   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61028DF1,6X10 28   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61030DF1,6X10 30   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61210DF1,6X12 10   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61212DF1,6X12 12   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61214DF1,6X12 14   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61216DF1,6X12 16   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61218DF1,6X12 18   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61220DF1,6X12 20   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6122DF1,6X12 2   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6124DF1,6X12 4   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6126DF1,6X12 6   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6128DF1,6X12 8   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",612DFL,6X12    DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61222DF1,6X12 22   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61224DF1,6X12 24    DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61226DF1,6X12 26   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61228DF1,6X12 28    DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6610414DF1,"6X6 104-1/4""   DF 1 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6610DF1,6X6 10   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6612DF1,6X6 12   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6614DF1,6X6 14   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6616DF1,6X6 16   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6618DF1,6X6 18   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6620DF1,6X6 20   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",662DF1,6X6 2   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",664DF1,6X6 4   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",666DF1,6X6 6   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",668DF1,6X6 8   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",669214DF1,"6X6 92-1/4""   DF 1 & BTR S4S",EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",66DFL,6X6   DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6622DF1,6X6 22   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6624DF1,6X6 24   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6810DF1,6X8 10   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6812DF1,6X8 12   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6814DF1,6X8 14   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6816DF1,6X8 16   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6818DF1,6X8 18   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6820DF1,6X8 20   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",682DF1,6X8 2   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",684DF1,6X8 4   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",686DF1,6X8 6   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",688DF1,6X8 8   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",68DFL,6X8   DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6822DF1,6X8 22   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6824DF1,6X8 24   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6826DF1,6X8 26   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61410DF1,6X14 10   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61412DF1,6X14 12   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61414DF1,6X14 14   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61416DF1,6X14 16   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61418DF1,6X14 18   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61420DF1,6X14 20   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61422DF1,6X14 22   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61424DF1,6X14 24   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61426DF1,6X14 26   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6148DF1,6X14 8   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",614DFL,6X14   DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61610DF1,6X16 10   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61612DF1,6X16 12   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61614DF1,6X16 14   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61616DF1,6X16 16   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61618DF1,6X16 18   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61620DF1,6X16 20   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61622DF1,6X16 22   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61624DF1,6X16 24   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61626DF1,6X16 26   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61628DF1,6X16 28   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6166DF1,6X16 6   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",6168DF1,6X16 8   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",616DFL,6X16   DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61810DF1,6X18 10   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61812DF1,6X18 12   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61814DF1,6X18 14   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61816DF1,6X18 16   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61818DF1,6X18 18   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61820DF1,6X18 20   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61822DF1,6X18 22   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",61824DF1,6X18 24   DF 1 & BTR S4S,EA
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",618DFL,6X18   DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",620DFL,6X20   DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",816DFL,8X16   DF 1 & BTR S4S,LF
+"DF, Douglas Fir, Madera, Post, Girder, FJ, Plumb, Rim",818DFL,8X18   DF 1 & BTR S4S,LF
 "Miratec, Azek",M4,4/4X4 16   MIRATEC,EA
 "Miratec, Azek",M54,5/4X4 16   MIRATEC,EA
 "Miratec, Azek",M56,5/4X6 16   MIRATEC,EA

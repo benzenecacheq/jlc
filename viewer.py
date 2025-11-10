@@ -230,7 +230,7 @@ def main():
         matcherdbs = {}
         db_name = Path(database_file).stem
         db = pdf2parts.load_database(database_file, db_name, quiet=True)
-        matcherdbs[db_name] = db
+        matcherdbs[database_file] = db
         matcher = match.RulesMatcher(matcherdbs, False)
 
     print(f"\nProcessing CSV file: {csv_file}")

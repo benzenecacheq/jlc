@@ -12,6 +12,7 @@ import cbor2
 import copy
 import anthropic
 import tempfile
+import string
 from typing import Dict, List, Tuple, Optional
 from pathlib import Path
 from dataclasses import dataclass
@@ -850,17 +851,22 @@ class RulesMatcher:
             newdim = None
             for o in item_components["other"]:
                 if re.fullmatch(r"[0-9/\.\-]*", o) is not None:
-                    if newdim: 
-                        # too many
-                        newdim = None
-                        break
-                    newdim = o
-            if newdim is not None:
-                acopy = copy.deepcopy(item_components)
-                acopy["dimensions"] = f"{acopy['length']}x{newdim}"
-                del acopy["length"]
-                score = max(score, self._calculate_match(acopy, db_components, sku=sku, indent=newindent))
-            elif subdim_match:
+                    acopy = copy.deepcopy(item_components)
+                    acopy["dimensions"] = f"{acopy['length']}x{o}"
+                    del acopy["length"]
+                    newscore = self._calculate_match(acopy, db_components, sku=sku, indent=newindent)
+                    if newscore > score:
+                        self._dbgout(indent, sys._getframe().f_lineno - 2, f"score={newscore}")
+                        score = newscore
+                        if by_foot:
+                            # see if one of the other others could be the length we want
+                            for l in item_components["other"]:
+                                if l != o and self._looks_like_length(l):
+                                    db_components["by_foot"] = l
+                                    break
+                        newdim = o
+
+            if newdim is None and subdim_match:
                 score += self.scoring["no-length-adder"]
                 self._dbgout(indent, sys._getframe().f_lineno - 1,
                              f"score={score}, subdim no-length-adder={self.scoring['no-length-adder']}")
@@ -1006,7 +1012,7 @@ class RulesMatcher:
                 # I no longer have a SKU-only list so try the whole database
                 matches = self.try_sku_match(item_desc)
                 if len(matches) > 0:
-                    return self.sort_matches(item, matches)
+                    return self._sort_matches(item, matches)
 
         # add any keyword parts to the list
         keywords = self._has_keyword(item_components)
@@ -1068,7 +1074,7 @@ class RulesMatcher:
                 if self.debug:
                     print(f"    MATCH: {part_number} -> {part_desc} (score: {match_score:.2f})")
 
-        matches = self.sort_matches(item, matches)
+        matches = self._sort_matches(item, matches)
         if self.debug:
             print(f"  Found {len(sorted_matches)} matches")
         
@@ -1080,17 +1086,23 @@ class RulesMatcher:
 
         # if we are doing variable length, set the quantity to the qty x length
         if len(matches) > 0 and self.merged_database[matches[0].part_number].get("Stocking Multiple") == "LF":
-            lf = matches[0].lf
+            match = matches[0]
+            lf = match.lf
             qty = item.quantity
             found = []
             for o in item_components["other"] if "other" in item_components else []:
-                if re.match(r"[0-9][0-9\"'-]*", o) and '/' in o:
-                    found.append(re.sub(r'[^0-9/\.\-]', '', o))
+                if o in match.database_description:
+                    continue    # Highly unlikely to be a measurement
+                if self._looks_like_cut(o):
+                    found.append(self._looks_like_cut(o))
 
             if re.match(r"[0-9][0-9]*/[0-9][0-9/\.\-]*", lf):
                 found.append(lf)
                 lf = ""
                 qty = ""
+            elif lf.isdigit():
+                if int(lf) > 999:
+                    lf = ""
 
             if '/' in qty:
                 if not found:
@@ -1112,7 +1124,18 @@ class RulesMatcher:
 
         return matches
 
-    def sort_matches(self, item, matches, n=5):
+    def _looks_like_cut(self, word):
+        word = word.strip(string.punctuation)
+        # a cut is an integer followed by a slash (sometimes I've seen parens) followed by a length
+        slash = word.find('/')
+        if slash < 0:
+            slash = word.find(')')
+        if slash > 0 and re.fullmatch(r"[0-9][0-9]*", word[0:slash]):
+            if self._looks_like_length(word[slash+1:]):
+                return word
+        return None
+
+    def _sort_matches(self, item, matches, n=5):
         # Sort by match score (highest first)
         # Use a stable sort that handles ties by using the index as a secondary key
         # Prefer precut to variable length

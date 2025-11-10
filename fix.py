@@ -111,11 +111,19 @@ class Fixer:
             special = self._get_special(prev.attr[1])
             if special:
                 for name,data in special.items():
-                    if name == "dim" and pitem.dim:
+                    if name in pitem.__dict__:
                         found = False
-                        for dim in data:
-                            if self.matcher._dimensions_match(dim, pitem.dim[1]):
+                        if len(data) == 0:
+                            # this means we shouldn't carry forward
+                            return False
+                        for d in data:
+                            if name == "dim" and self.matcher._dimensions_match(d, pitem.dim[1]):
                                 found = True
+                            elif name == "length" and self.matcher._lengths_equal(d, pitem.length[1]):
+                                found = True
+                            elif d == pitem.__dict__[name]:
+                                found = True
+                            if found:
                                 break
                         if not found:
                             return False

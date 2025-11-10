@@ -1777,7 +1777,7 @@ class LumberViewerGUI(QMainWindow):
             database = load_database(self.database_file, db_name, quiet=True)
             
             # Create matcherdbs dict
-            matcherdbs = {db_name: database}
+            matcherdbs = {self.database_file: database}
             
             # Initialize RulesMatcher
             self.rules_matcher = RulesMatcher(matcherdbs, False)

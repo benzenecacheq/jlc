@@ -55,10 +55,10 @@
       echo python pdf2parts.py "$f" skulist.csv -c ${matches}.csv
       if ("$foreground" == "yes") then
          python pdf2parts.py "$f" skulist.csv -c ${matches}.csv -v
-         python viewer.py "${f:r}"_results/$matches.csv skulist.csv >& "${f:r}_results/$matches"
+         python viewer.py "${f:r}"_results/$matches.csv skulist.csv -O >& "${f:r}_results/$matches"
       else
          (python pdf2parts.py "$f" skulist.csv -c ${matches}.csv >& "/tmp/.$f:t:r.out" ; \
-          python viewer.py "${f:r}"_results/$matches.csv skulist.csv >& "${f:r}_results/$matches") >& /dev/null &
+          python viewer.py "${f:r}"_results/$matches.csv skulist.csv -O >& "${f:r}_results/$matches") >& /dev/null &
          sleep 0.2
       endif
    end

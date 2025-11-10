@@ -47,6 +47,8 @@ class CSVItem:
     
     def has_differences(self, other: 'CSVItem') -> bool:
         """Check if this item has different SKUs compared to another item"""
+        if self.quantity != other.quantity:
+            return True
         return self.get_sku_set() != other.get_sku_set()
 
 class CSVParser:
