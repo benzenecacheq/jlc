@@ -141,10 +141,10 @@ class Differ:
             print(f"No differences found between the {left_file_name} and {right_file_name}.")
             return
         
-        print(f"{'='*152}")
+        print(f"{'='*153}")
         
         # left_file.csv                                                              | right_file.csv
-        print(f"{left_file_name:<75}| {right_file_name:<74}|")
+        print(f"{left_file_name:<75}| {right_file_name:<75}|")
 
         # 38CDX      | 11/32 4X8 CDX PLY                   | cdx        | Conf: 0.72 |
         def get_match_text(match):
@@ -152,20 +152,21 @@ class Differ:
                     f"Conf: {float(match['confidence']):.2f}")
 
         for item_number, left_item, right_item in differences:
-            print('-'*75 + '+' + '-'*75 + '+')
-            print(f"-- Item {item_number + ':':<8}| "
-                  f"Qty: {(left_item.quantity if left_item else right_item.quantity):<11} | "
-                  f"{(left_item.text if left_item else right_item.text)[:35]:<35} "
-                  f"--+{75*'-'}+")
-            print('-'*75 + '+' + '-'*75 + '+')
+            print('-'*75 + '+' + '-'*76 + '+')
+            print(f"-- Item {item_number:<4}| "
+                  f"Qty: {(left_item.quantity if left_item else "      "):<6} | "
+                  f"{(left_item.text if left_item else 44*' ')[:44]:<44} --|-- "
+                  f"Qty: {(right_item.quantity if right_item else "      "):<6} | "
+                  f"{(right_item.text if right_item else 50*' ')[:50]:<50} {'-'*8}+")
+            print('-'*75 + '+' + '-'*76 + '+')
             
             left = left_item.matches if left_item is not None else []
             right = right_item.matches if right_item is not None else []
             for i in range(max(len(left), len(right))):
                l = get_match_text(left[i]) if i < len(left) else (" "*74)
                r = get_match_text(right[i]) if i < len(right) else (" "*74)
-               print(f"{l} | {r}|")
-        print(f"{'='*152}")
+               print(f"{l} | {r} |")
+        print(f"{'='*153}")
 
 def main():
     """Main function"""
@@ -222,3 +223,4 @@ Examples:
 
 if __name__ == "__main__":
     main()
+

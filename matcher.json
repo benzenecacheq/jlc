@@ -23,6 +23,9 @@
       "                           in the other, subtract the value times the length of the detractor.   ",
       " friends                 - Other categories (i.e. attrs) that should be included when you see    ",
       "                           the category in question                                              ",
+      " category indicators     - Text strings which, if they appear, tell you what category and item   ",
+      "                           belongs to.  These can appear in mid-word, which different from       ",
+      "                           keywords or attrs.                                                    ",
       " implies                 - These categories imply certain things, like sizes or materials.       ",
       " special lengths         - Precut boards that are measured in inches.                            ",
       " substitute dimensions   - Some things, like nail penny sizes, are really dimensions even though ",
@@ -35,9 +38,11 @@
    0],
 
    "misc":{
+      "fuzzy matching seems to slow things down too much for minimal gain" : 0,
       "fuzzy category match"    : false,
       "fuzzy keyword match"     : false,
-      "fuzzy matching seems to slow things down too much for minimal gain" : false
+
+      "end of list":0
    },
    "direct map": {
       "10d" : "G7"
@@ -104,6 +109,7 @@
       "end-of-list":0
    },
    "detractors":{
+      "adv" : -0.03,
       "t&g" : -0.03,
       "pt" : -0.03,
       "ptcdx" : -0.03,
@@ -113,6 +119,7 @@
       "couple" : -0.005,
       "rod" : -0.005,
       "liquid": -0.03,
+      "timberstrand": -0.01,
       "simpsonhangernails" : -0.2,
       "simpsontool" : -0.2
    },
@@ -121,6 +128,18 @@
       "ml":{"pl":-0.02},
       "nails":{"handnails":-0.02},
       "end-of-list" : 0
+   },
+   "category indicators": {
+      "131": "nails",
+      "113": "nails",
+      "148": "nails",
+      "092": "nails",
+      "162": "nails",
+
+      "drilled": "df",
+      "screen": "df",
+
+      "end-of-list":0
    },
    "implies":{
       "sds" : {"other":["hdg"], "dimensions":"1/4"},
@@ -150,7 +169,6 @@
       "siding", "spruce", "tji", "sturdifloor", "timberstrand",
       "end-of-list"
    ],
-
    "hardware categories":[
       "edge",
       "feeney",
@@ -169,8 +187,25 @@
       "screw", "screws",
       "hex", "nut", "nuts", "bolt", "bolts", "washers",
       "nails", "gun", "gunnails",
-      "anchor",
-      "eccq","galv",
+      "anchor", "coupler",
+      "pccq","ccq","eccq","galv",
+      "gunnails", "handnails",
+      "hdg", "anchor", "screw", "washer", "bolt",
+      "clip", "50#", "8d", "10d", "16d", "z-max",
       "end-of-list" 
-   ]
+   ],
+   "fix special categories": {
+      "ml": { "dim" : ["1-3/4x11-7/7", "1-3/4x14", "1-3/4x16", "1-3/4x7-1/4", 
+                       "1-3/4x9-1/2", "3-1/2x11-7/8", "3-1/2x9-1/2", "3-1/2x14",
+                       "3-1/2x16", "5-1/4x11-7/8", "5-1/4x9-1/2", "5-1/4x14",
+                       "5-1/4x16", "5-1/4x18", "7x11-7/8", "7x14", "7x16", "7x18"] },
+      "pl": { "dim" : ["1-3/4x11-7/7", "1-3/4x14", "1-3/4x16", "1-3/4x7-1/4", 
+                       "1-3/4x9-1/2", "3-1/2x11-7/8", "3-1/2x9-1/2", "3-1/2x14",
+                       "3-1/2x16", "5-1/4x11-7/8", "5-1/4x9-1/2", "5-1/4x14",
+                       "5-1/4x16", "5-1/4x18", "7x11-7/8", "7x14", "7x16", "7x18"] },
+      "cdx":{ "dim" : ["4x8", "4x9", "4x10", "4x12"] },
+      "end-of-list":0
+   },
+
+   "end-of-list":0
 }

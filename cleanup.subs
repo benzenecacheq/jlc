@@ -38,6 +38,7 @@
 ⅝`-5/8
 ½`-1/2
 ¾`-3/4
+⅞`-7/8
 
 # nail sizes
 \b4 d\b`4d
@@ -61,6 +62,11 @@
 \b3 max\b`z-max
 \bz max\b`z-max
 
+# This might be dangerous but I'm seeing 4X when there's a line through the x in dimensions on 
+# forms like 11.pdf
+ 4x ` 
+^4x `
+
 # These are sizes that round to what we see in the customer list
 23/32`3/4
 2.3/32`3/4
@@ -78,6 +84,7 @@
 
 # galvanized -> hdg
 \bgalv\w*\b`hdg
+\badvantech\b`osb
 
 \bteco\b`.148 joist gun
 \btecos\b`.148 joist gun
@@ -97,6 +104,7 @@ hardiepanel`hardi panel
 hardibacker`hardi backer
 hardishingle`hardi shingle
 hardishingleside`hardi shingle side
+drilled/screen`drilled screen
 
 # Some plurals and other variations of words.  This is useful because 
 # we currently don't do fuzzy matching on categories.

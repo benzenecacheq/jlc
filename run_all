@@ -3,6 +3,7 @@
    set lastswitch =
    set onlycount = 
    set onlydiffer = 
+   set foreground = 
    foreach f ($*)
       if (x$f =~ x-*) then
          if ("$f" == "-c") then
@@ -12,6 +13,8 @@
             set lastswitch = ($f)
          else if ("$f" == "-m") then
             set lastswitch = ($f)
+         else if ("$f" == "-fg") then
+            set foreground = yes
          else if ("$f" == "-og") then
             ls testdata/?.pdf > /tmp/files.$$
             ls testdata/??.pdf >> /tmp/files.$$
@@ -50,9 +53,14 @@
       echo ===========================================================
       rm -f "${f:r}_results/$matches.csv" "${f:r}_results/$matches"
       echo python pdf2parts.py "$f" skulist.csv -c ${matches}.csv
-      (python pdf2parts.py "$f" skulist.csv -c ${matches}.csv >& "/tmp/.$f:t:r.out" ; \
-       python viewer.py "${f:r}"_results/{$matches,skulist_fixed}.csv >& "${f:r}_results/$matches") >& /dev/null &
-      sleep 0.2
+      if ("$foreground" == "yes") then
+         python pdf2parts.py "$f" skulist.csv -c ${matches}.csv -v
+         python viewer.py "${f:r}"_results/$matches.csv skulist.csv >& "${f:r}_results/$matches"
+      else
+         (python pdf2parts.py "$f" skulist.csv -c ${matches}.csv >& "/tmp/.$f:t:r.out" ; \
+          python viewer.py "${f:r}"_results/$matches.csv skulist.csv >& "${f:r}_results/$matches") >& /dev/null &
+         sleep 0.2
+      endif
    end
 
    echo ===========================================================

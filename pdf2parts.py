@@ -202,7 +202,7 @@ def run_matcher(document, api_key, database_names, training_data, use_ai_matchin
         db = load_database(db_path, db_name, str(output_dir))
         if db:
             databases_loaded += 1
-            databases[db_name] = db
+            databases[db_path] = db
         else:
             error_func(f"Failure loading database {db_path}")
             return None, None

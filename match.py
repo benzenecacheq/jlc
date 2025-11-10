@@ -8,12 +8,15 @@ import os
 import sys
 import csv
 import json
+import cbor2
 import copy
 import anthropic
+import tempfile
 from typing import Dict, List, Tuple, Optional
 from pathlib import Path
 from dataclasses import dataclass
 from util import *
+from fix import Fixer
 import re
 
 
@@ -46,6 +49,7 @@ class RulesMatcher:
         self.detractors = None          # penalize some words if they appear in only one
                                         # of the items being matched
         self.detractor_map = {}         # so we don't have to keep recalculating
+        self.category_indicators = None #
         self.implies = None
         self.substitute_dimensions=None # things that are aliases for dimensions (like penny)
 
@@ -92,6 +96,7 @@ class RulesMatcher:
         self.detractors = self.get_setting("detractors")
         self.special_lengths = set(self.get_setting("special lengths"))
         self.scoring = self.get_setting("scoring")
+        self.category_indicators = self.get_setting("category indicators")
         self.implies = self.get_setting("implies")
         self.substitute_dimensions = self.get_setting("substitute dimensions")
 
@@ -114,28 +119,68 @@ class RulesMatcher:
         # load attributes from the database.  Map the attribute to the first value and the entry
         # in the database
         self.attrs = {}    # map alternative attribute names
-        self.attrmap = {}       # list of database entries by attribute
 
-        self.merged_database = {}
-        for fname,database in self.databases.items():
-            for entry in database["parts"]:
+        # see if we've already saved a copy of the merged databaase
+        parts = []
+        headers = None
+        fname = tempfile.gettempdir() + "/"
+        time = 0
+        for name,database in self.databases.items():
+            if headers is not None and headers != database["headers"]:
+                raise Exception(f"All databases must have the same column names")
+            headers = database["headers"]
+            parts += database["parts"]
+
+            fname += os.path.basename(name) + "."
+            time = max(time, os.path.getmtime(name))
+        fname += "mdb"
+
+        self.merged_database = None
+        if False: # os.path.exists(fname) and os.path.getmtime(fname) > time:
+            try:
+                with open(fname, "rb") as f:
+                    j = cbor2.load(f)
+                self.attrs = j["attrs"]
+                self.merged_database = j["merged_database"]
+            except:
+                # get rid of offending file
+                os.remove(fname)
+
+        if self.merged_database is None:
+            self.merged_database = {}
+            for entry in parts:
                 # Assume the first column is the attributes
-                attrs = entry[database["headers"][0]].split(',')
+                attrs = entry[headers[0]].split(',')
                 for i,attr in enumerate(attrs):
                     attrs[i] = attr.lower().strip().replace(' ', '')
 
                 # the first attributes in the list is the name we will map others to
                 name = attrs[0]
-                if name not in self.attrmap:
-                    self.attrmap[name] = []
-                self.attrmap[name].append(entry)
-
                 for attr in attrs:
                     if attr not in self.attrs:
                        self.attrs[attr] = name
-
                 entry['attr'] = name
+
+                db_components = self.parse_lumber_item(entry["Item Description"], db_attr=name)
+                entry['components'] = db_components
+                attrs = db_components.get('attrs')
+                db_components['attrs'] = [name]
+                if attrs is not None and attrs != [name]:
+                    if name in attrs:
+                        attrs.remove(name)
+                    if 'other' not in db_components:
+                        db_components['other'] = attrs
+                    else:
+                        db_components['other'] = list(set(db_components['other'] + attrs))
+
                 self.merged_database[entry['Item Number']] = entry
+
+                if False:
+                   # probably should add code to delete obsolete files here
+                   with open(fname, "wb") as f:
+                       j = {"merged_database":self.merged_database, 
+                            "attrs":self.attrs}
+                       cbor2.dump(j, f)
 
         self.sorted_skus = sorted(self.merged_database)
         self.skus_by_letter = {}
@@ -153,24 +198,15 @@ class RulesMatcher:
         self.dim_parts = []
         self.hardware_parts = []
         self.keyword_parts = {k:[] for k in self.keywords if k not in self.attrs}
+        self.attrmap = {}       # list of database entries by attribute
 
         for entry in self.merged_database.values():
-            db_components = self.parse_lumber_item(entry["Item Description"], db_attr=entry["attr"])
-            entry['components'] = db_components
-            attrs = db_components.get('attrs')
-            eattr = entry['attr']
-            db_components['attrs'] = [eattr]
-            if attrs is not None and attrs != [eattr]:
-                if eattr in attrs:
-                    attrs.remove(eattr)
-                if 'other' not in db_components:
-                    db_components['other'] = attrs
-                else:
-                    db_components['other'] = list(set(db_components['other'] + attrs))
-            if 'attrs' not in db_components:
-                db_components['attrs'] = [entry['attr']]
-            elif entry['attr'] not in db_components['attrs']:
-                db_components['attrs'].append(entry['attr'])
+            attr = entry["attr"]
+            if attr not in self.attrmap:
+                self.attrmap[attr] = []
+            self.attrmap[attr].append(entry)
+
+            db_components = entry["components"]
             if 'dimensions' in db_components and ('length' in db_components or 
                                                   entry['Stocking Multiple'].lower() == 'lf'):
                 self.board_parts.append(entry)
@@ -280,10 +316,11 @@ class RulesMatcher:
             return ok1and2
         
         # see if it's too big to be a reasonable length
-        match = re.match(r'\d+', word)
-        if match:
-            if int(match.group()) > 40:
-                return False
+        if False:
+            match = re.match(r'\d+', word)
+            if match:
+                if int(match.group()) > 40:
+                    return False
         return re.match(r'([\d\-/]+)(?:\s*(?:\'|ft|feet))?(?:\s|$)', word) != None
 
     def _lengths_equal(self, word1, word2):
@@ -352,7 +389,7 @@ class RulesMatcher:
             return word
         return None
 
-    def _cleanup(self, description, is_db):
+    def _cleanup(self, description, is_db) -> list[str]:
         # perform obvious fixing of things that look like OCR errors and other
         # things that will confuse the matcher
         # this takes a string and returns a list of words
@@ -498,6 +535,11 @@ class RulesMatcher:
                         i -= 1
                         continue
 
+                if nextword[0] == 'x' and len(nextword) > 1 and self._looks_like_dimension(word + nextword):
+                    desc[i] = word + nextword
+                    del desc[i+1]
+                    continue
+
                 if (word[-1].isdigit() and self._looks_like_dimension(word)
                     and self._looks_like_fraction(nextword)):
                     # this was something like '1 1/2' and we want to make it
@@ -533,7 +575,7 @@ class RulesMatcher:
 
         return desc
 
-    def parse_lumber_item(self, description: str, db_attr=None) -> dict:
+    def parse_lumber_item(self, description: str, db_attr=None, do_implies=True) -> dict:
         if self.attrs is None:
             self._load_attrs()
         is_db = db_attr is not None
@@ -568,8 +610,15 @@ class RulesMatcher:
                 if d not in components['other']:
                     components['other'].append(d)
 
+        if "attrs" not in components or len(components["attrs"]) == 0:
+            for str, cat in self.category_indicators.items():
+                if (str in description or
+                    ("other" in components and fuzzy_match(components, str, threshold=0.7))):
+                    components["attrs"] = [cat]
+                    break
+
         # add any implied components:
-        if "attrs" in components or db_attr is not None:
+        if do_implies and ("attrs" in components or db_attr is not None):
             for attr in [db_attr] if db_attr is not None else components["attrs"]:
                 implied = self.implies[attr] if attr in self.implies else {}
                 for k,implication in implied.items():
@@ -968,7 +1017,7 @@ class RulesMatcher:
 
         # If this is hardware, don't look at any lumber.
         words = attrs if attrs is not None else [] + item_components["other"] if "other" in item_components else []
-        is_hardware = words and fuzzy_match(self.hardware_terms, words, threshold=0.6)
+        is_hardware = words and fuzzy_match(self.hardware_terms, words, threshold=0.7)
         if is_hardware:
             cats = [c for c in self.lumber_categories if attrs is None or c not in attrs]
             parts = self._deselect_parts(parts, cats)
@@ -1035,7 +1084,7 @@ class RulesMatcher:
             qty = item.quantity
             found = []
             for o in item_components["other"] if "other" in item_components else []:
-                if re.match(r"[0-9\"'-]*", o) and '/' in o:
+                if re.match(r"[0-9][0-9\"'-]*", o) and '/' in o:
                     found.append(re.sub(r'[^0-9/\.\-]', '', o))
 
             if re.match(r"[0-9][0-9]*/[0-9][0-9/\.\-]*", lf):
@@ -1092,18 +1141,19 @@ class RulesMatcher:
                 else:
                     self.debug_part.append(s.lower())
 
-        if self.debug:
-            print("\n" + "="*60)
-            print("SEARCHING FOR MATCHES USING KEYWORD MATCHING")
-            print("(Original keyword-based approach for comparison)")
-            print("="*60)
-
         # Create debug log file for detailed output
         debug_log_file = Path(output_dir) / "matching_debug.log"
         with open(debug_log_file, 'w', encoding='utf-8') as log_file:
             log_file.write("DETAILED MATCHING DEBUG LOG (KEYWORD MATCHING)\n")
             log_file.write("=" * 60 + "\n\n")
 
+        print("Initializing matcher")
+        self._load_attrs()
+        print("Fixing missing specifications")
+        fixer = Fixer(self)
+        fixer.fix_missing_specifications(scanned_items, self.debug_item if not self.debug_part else None)
+
+        print("Matching items to database(s)")
         for i, item in enumerate(scanned_items, 1):
             self.current_item = i
             if self.debug:

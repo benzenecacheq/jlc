@@ -53,53 +53,6 @@ class Scanner:
         self.client = anthropic.Anthropic(api_key=api_key)
         self.databases = databases
 
-    def _fix_missing_specifications(self, scanned_items: List[ScannedItem]) -> List[ScannedItem]:
-        """Post-process scanned items to carry forward missing material specifications"""
-        if not scanned_items:
-            # Post-process to fix missing specifications
-            scanned_items = self._fix_missing_specifications(scanned_items)
-            return scanned_items
-        
-        fixed_items = []
-        last_material = None
-        
-        for item in scanned_items:
-            # Check if this looks like a lumber item missing material specs
-            desc = item.description.upper()
-            original = item.original_text.upper()
-            
-            # Pattern: dimension + length but no material (e.g., "4X8 16'" instead of "4X8 PT 16'")
-            lumber_pattern = r'^(\d+X\d+)\s+(\d+[\'"]?)$'
-            match = re.match(lumber_pattern, desc)
-            
-            if match and last_material:
-                # This looks like a lumber item missing material specs
-                dimension = match.group(1)
-                length = match.group(2)
-                
-                # Reconstruct with carried-forward material
-                fixed_desc = f"{dimension} {last_material} {length}"
-                fixed_original = f"{dimension} {last_material} {length}"
-                
-                # Create new item with fixed description
-                fixed_item = ScannedItem(
-                    quantity=item.quantity,
-                    description=fixed_desc,
-                    original_text=fixed_original,
-                    matches=item.matches
-                )
-                fixed_items.append(fixed_item)
-            else:
-                # Check if this item has material specs to carry forward
-                # Look for common lumber materials in the description
-                material_match = re.search(r'\b(PT|DF|CEDAR|PINE|POC|DFH2|DFHC|ADVANTAGE|GLU\s*LAM)\b', desc)
-                if material_match:
-                    last_material = material_match.group(1)
-                
-                fixed_items.append(item)
-        
-        return fixed_items
-    
     def _should_skip_scanning(self, image_path: str, document_mtime=None) -> bool:
         """Check if we can skip scanning based on file modification times"""
         try:
@@ -142,11 +95,10 @@ class Scanner:
                         quantity=item_data.get('quantity', ''),
                         description=item_data.get('description', ''),
                         original_text=item_data.get('original_text', ''),
+                        components=None,
                         matches=[]
                     )
                     page_items.append(item)
-
-                page_items = self._fix_missing_specifications(page_items)
 
                 debug_file = Path(output_dir) / (Path(cached_file).stem + "_context_extracted_json_fixed.json")
                 with open(debug_file, 'w', encoding='utf-8') as f:
@@ -272,15 +224,16 @@ class Scanner:
                     quantity=item_data.get('quantity', ''),
                     description=item_data.get('description', ''),
                     original_text=item_data.get('original_text', ''),
+                    components=None,
                     matches=[]
                 )
                 scanned_items.append(item)
 
-            print(f"✓ Scanned {len(scanned_items)} items with database context")
+            print(f"✓ Scanned {len(scanned_items)} items")
 
             # Print items to console only if verbose
             if verbose:
-                print("\nSCANNED ITEMS (WITH DATABASE CONTEXT):")
+                print("\nSCANNED ITEMS:")
                 print("-" * 50)
                 for i, item in enumerate(scanned_items, 1):
                     print(f"[{i:2d}] {item.quantity:8s} | {item.description}")
@@ -290,7 +243,7 @@ class Scanner:
                 # Save detailed output to file instead
                 items_file = Path(output_dir) / "scanned_items.txt"
                 with open(items_file, 'w', encoding='utf-8') as f:
-                    f.write("SCANNED ITEMS (WITH DATABASE CONTEXT):\n")
+                    f.write("SCANNED ITEMS:\n")
                     f.write("-" * 50 + "\n")
                     for i, item in enumerate(scanned_items, 1):
                         f.write(f"[{i:2d}] {item.quantity:8s} | {item.description}\n")
@@ -299,8 +252,6 @@ class Scanner:
                 print(f"✓ Detailed item list saved to: {items_file}")
 
             # Post-process to fix missing specifications
-            scanned_items = self._fix_missing_specifications(scanned_items)
-
             return scanned_items
 
         except Exception as e:
