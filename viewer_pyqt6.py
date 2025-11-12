@@ -146,10 +146,12 @@ class ItemDetailsDialog(QDialog):
         self.description_mapping = {}
         self.type_mapping = {}
         self.stocking_multiple_mapping = {}
+        self.family_mapping = {}
         if parent and hasattr(parent, 'description_mapping'):
             self.description_mapping = parent.description_mapping
             self.type_mapping = parent.type_mapping
             self.stocking_multiple_mapping = parent.stocking_multiple_mapping
+            self.family_mapping = parent.family_mapping
         
         self.init_ui()
         
@@ -1452,8 +1454,9 @@ class LumberViewerGUI(QMainWindow):
         
         # Set up columns
         self.columns = [
-            "Item #", "Quantity", "Text", "Original", 
-            "SKU", "Description", "Type", "Confidence"
+            "Item #", "Quantity", 
+            "SKU", "Description", "Type", "Confidence",
+            "Text", "Original"
         ]
         self.table.setColumnCount(len(self.columns))
         self.table.setHorizontalHeaderLabels(self.columns)
@@ -1462,18 +1465,18 @@ class LumberViewerGUI(QMainWindow):
         header = self.table.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)  # Item #
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)  # Quantity
-        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)  # Text
-        header.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)  # Original
-        header.setSectionResizeMode(4, QHeaderView.ResizeMode.Fixed)  # SKU
-        header.setSectionResizeMode(5, QHeaderView.ResizeMode.Stretch)  # Description
-        header.setSectionResizeMode(6, QHeaderView.ResizeMode.Fixed)  # Type
-        header.setSectionResizeMode(7, QHeaderView.ResizeMode.Fixed)  # Confidence
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)  # SKU
+        header.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)  # Description
+        header.setSectionResizeMode(4, QHeaderView.ResizeMode.Fixed)  # Type
+        header.setSectionResizeMode(5, QHeaderView.ResizeMode.Fixed)  # Confidence
+        header.setSectionResizeMode(6, QHeaderView.ResizeMode.Stretch)  # Text
+        header.setSectionResizeMode(7, QHeaderView.ResizeMode.Stretch)  # Original
         
         self.table.setColumnWidth(0, 60)   # Item #
         self.table.setColumnWidth(1, 80)   # Quantity
-        self.table.setColumnWidth(4, 120)  # SKU
-        self.table.setColumnWidth(6, 100)  # Type
-        self.table.setColumnWidth(7, 100)  # Confidence
+        self.table.setColumnWidth(2, 120)  # SKU
+        self.table.setColumnWidth(4, 100)  # Type
+        self.table.setColumnWidth(5, 100)  # Confidence
         
     def apply_styling(self):
         """Apply custom styling to the application"""
@@ -1714,7 +1717,8 @@ class LumberViewerGUI(QMainWindow):
             self.sku_comboboxes.clear()
             
             # Load database
-            self.description_mapping, self.type_mapping, self.stocking_multiple_mapping = self.load_database(self.database_file)
+            (self.description_mapping, self.type_mapping, 
+             self.stocking_multiple_mapping, self.family_mapping) = self.load_database(self.database_file)
             
             # Initialize RulesMatcher
             self.init_rules_matcher()
@@ -1742,6 +1746,7 @@ class LumberViewerGUI(QMainWindow):
         part_to_description = {}
         part_to_type = {}
         part_to_stocking_multiple = {}
+        part_to_family = {}
         term_to_type = {}
         
         with open(database_file, 'r', encoding='utf-8') as f:
@@ -1750,6 +1755,7 @@ class LumberViewerGUI(QMainWindow):
                 part_number = row.get('Item Number', '').strip()
                 description = row.get('Item Description', '').strip()
                 stocking_multiple = row.get('Stocking Multiple', '').strip()
+                family = row.get("Material Type", "").strip()
                 
                 # Find type column (look for "Terms" in column name)
                 item_type = ""
@@ -1762,8 +1768,9 @@ class LumberViewerGUI(QMainWindow):
                     part_to_description[part_number] = description
                     part_to_type[part_number] = item_type
                     part_to_stocking_multiple[part_number] = stocking_multiple
+                    part_to_family[part_number] = family
                     
-        return part_to_description, part_to_type, part_to_stocking_multiple
+        return part_to_description, part_to_type, part_to_stocking_multiple, part_to_family
     
     def init_rules_matcher(self):
         """Initialize RulesMatcher for search functionality"""
@@ -2046,8 +2053,8 @@ class LumberViewerGUI(QMainWindow):
                         text_item.setBackground(QColor(255, 255, 200))  # Light yellow background
                         text_item.setToolTip(f"Original: {item['processed_text']}\nOverride: {self.text_overrides[row_idx]}")
                     
-                    self.table.setItem(row_idx, 2, text_item)
-                    self.table.setItem(row_idx, 3, QTableWidgetItem(item['original_text']))
+                    self.table.setItem(row_idx, 6, text_item)
+                    self.table.setItem(row_idx, 7, QTableWidgetItem(item['original_text']))
                 except Exception as e:
                     continue
                 
@@ -2183,7 +2190,7 @@ class LumberViewerGUI(QMainWindow):
             text_item.setBackground(QColor(255, 255, 200))  # Light yellow background
             text_item.setToolTip(f"Original: {item['processed_text']}\nOverride: {self.text_overrides[row]}")
         
-        self.table.setItem(row, 2, text_item)
+        self.table.setItem(row, 6, text_item)
             
         # Check if there's a manual override
         if row in self.sku_overrides:
@@ -2194,7 +2201,7 @@ class LumberViewerGUI(QMainWindow):
                 font = sku_item.font()
                 font.setBold(True)
                 sku_item.setFont(font)
-                self.table.setItem(row, 4, sku_item)
+                self.table.setItem(row, 2, sku_item)
                 # Clear description and other fields using update_item_details
                 self.update_item_details(row, None)
             else:
@@ -2203,7 +2210,7 @@ class LumberViewerGUI(QMainWindow):
                 font = sku_item.font()
                 font.setBold(True)
                 sku_item.setFont(font)
-                self.table.setItem(row, 4, sku_item)
+                self.table.setItem(row, 2, sku_item)
                 self.update_item_details(row, override)
             
             # Highlight the entire row for manual overrides AFTER updating all items
@@ -2214,7 +2221,7 @@ class LumberViewerGUI(QMainWindow):
             font = sku_item.font()
             font.setBold(True)
             sku_item.setFont(font)
-            self.table.setItem(row, 4, sku_item)
+            self.table.setItem(row, 2, sku_item)
             # Set initial values for the first match
             if item['matches']:
                 self.update_item_details(row, item['matches'][0])
@@ -2222,15 +2229,15 @@ class LumberViewerGUI(QMainWindow):
             # Single match - show normal text (no action needed)
             match = item['matches'][0]
             sku_item = QTableWidgetItem(match['part_number'])
-            self.table.setItem(row, 4, sku_item)
+            self.table.setItem(row, 2, sku_item)
             self.update_item_details(row, match)
         else:
             # No matches - show normal text (no action needed)
             sku_item = QTableWidgetItem("No matches")
-            self.table.setItem(row, 4, sku_item)
+            self.table.setItem(row, 2, sku_item)
+            self.table.setItem(row, 3, QTableWidgetItem(""))
+            self.table.setItem(row, 4, QTableWidgetItem(""))
             self.table.setItem(row, 5, QTableWidgetItem(""))
-            self.table.setItem(row, 6, QTableWidgetItem(""))
-            self.table.setItem(row, 7, QTableWidgetItem(""))
     
     def on_sku_selected(self, row_idx: int, match: Dict):
         """Handle SKU selection from combobox"""
@@ -2244,17 +2251,17 @@ class LumberViewerGUI(QMainWindow):
         try:
             if match is None:
                 # "No matches" selected - clear all fields
+                self.table.setItem(row_idx, 3, QTableWidgetItem(""))
+                self.table.setItem(row_idx, 4, QTableWidgetItem(""))
                 self.table.setItem(row_idx, 5, QTableWidgetItem(""))
-                self.table.setItem(row_idx, 6, QTableWidgetItem(""))
-                self.table.setItem(row_idx, 7, QTableWidgetItem(""))
             else:
                 # Normal match - update fields
                 description = match.get('description', '')
                 item_type = match.get('type', '')
                 confidence = match.get('confidence', '')
                 
-                self.table.setItem(row_idx, 5, QTableWidgetItem(str(description)))
-                self.table.setItem(row_idx, 6, QTableWidgetItem(str(item_type)))
+                self.table.setItem(row_idx, 3, QTableWidgetItem(str(description)))
+                self.table.setItem(row_idx, 4, QTableWidgetItem(str(item_type)))
                 
                 confidence_symbol = self.get_confidence_symbol(confidence)
                 # Format confidence to 2 decimal places
@@ -2264,13 +2271,13 @@ class LumberViewerGUI(QMainWindow):
                 except (ValueError, TypeError):
                     confidence_text = f"{confidence_symbol} {confidence}"
                 
-                self.table.setItem(row_idx, 7, QTableWidgetItem(confidence_text))
+                self.table.setItem(row_idx, 5, QTableWidgetItem(confidence_text))
         except Exception as e:
             # Set safe defaults
             try:
-                self.table.setItem(row_idx, 5, QTableWidgetItem(""))
-                self.table.setItem(row_idx, 6, QTableWidgetItem(""))
-                self.table.setItem(row_idx, 7, QTableWidgetItem("⚠"))
+                self.table.setItem(row_idx, 3, QTableWidgetItem(""))
+                self.table.setItem(row_idx, 4, QTableWidgetItem(""))
+                self.table.setItem(row_idx, 5, QTableWidgetItem("⚠"))
             except Exception as e2:
                 pass
         
@@ -2333,49 +2340,53 @@ class LumberViewerGUI(QMainWindow):
                     # Write header
                     # writer.writerow(['SKU', 'Description', 'Qty', 'Linear Feet'])
                     
-                    for i, item in enumerate(self.filtered_data):
-                        # Check if there's a manual override for this row
-                        if i in self.sku_overrides:
-                            override = self.sku_overrides[i]
-                            if override is None:
-                                # "No matches" was selected - skip this item
-                                if self.no_match_sku:
-                                    sku = self.no_match_sku
-                                    description = "No match found"
+                    for family in ["L", "H", ""]:
+                        for i, item in enumerate(self.filtered_data):
+                            # Check if there's a manual override for this row
+                            if i in self.sku_overrides:
+                                override = self.sku_overrides[i]
+                                if override is None:
+                                    # "No matches" was selected - skip this item
+                                    if self.no_match_sku:
+                                        sku = self.no_match_sku
+                                        description = "No match found"
+                                    else:
+                                        continue
                                 else:
-                                    continue
+                                    # Use the manual override
+                                    sku = override['part_number']
+                                    description = override['description']
+                            elif len(item['matches']) > 0:
+                                # No manual override - use the first match
+                                match = item['matches'][0]
+                                sku = match['part_number']
+                                description = match['description']
+                            elif self.no_match_sku:
+                                sku = self.no_match_sku
+                                description = "No match found"
                             else:
-                                # Use the manual override
-                                sku = override['part_number']
-                                description = override['description']
-                        elif len(item['matches']) > 0:
-                            # No manual override - use the first match
-                            match = item['matches'][0]
-                            sku = match['part_number']
-                            description = match['description']
-                        elif self.no_match_sku:
-                            sku = self.no_match_sku
-                            description = "No match found"
-                        else:
-                            # Skip items with no matches
-                            continue
+                                # Skip items with no matches
+                                continue
 
-                        # Use overridden quantity if available
-                        quantity = item.get('quantity', '')
-                        if i in self.quantity_overrides:
-                            quantity = self.quantity_overrides[i]
-                        
-                        stocking_multiple = self.stocking_multiple_mapping.get(sku, '')
-                        row = [sku, description, quantity, ""]
-                        if stocking_multiple.lower() == "lf" and (',' in quantity or '/' in quantity):
-                            row = row[:2]
-                            # should be a comma-separated list with a slash separating the number from the length
-                            for q in quantity.split(','):
-                                slash = q.find('/')
-                                if slash > 0:
-                                    row.append(q[:slash].strip())
-                                    row.append(q[slash+1:].strip())
-                        writer.writerow(row)
+                            if self.family_mapping.get(sku, "") != family:
+                                continue
+
+                            # Use overridden quantity if available
+                            quantity = item.get('quantity', '')
+                            if i in self.quantity_overrides:
+                                quantity = self.quantity_overrides[i]
+                            
+                            stocking_multiple = self.stocking_multiple_mapping.get(sku, '')
+                            row = [sku, description, quantity, ""]
+                            if stocking_multiple.lower() == "lf" and (',' in quantity or '/' in quantity):
+                                row = row[:2]
+                                # should be a comma-separated list with a slash separating the qty from the length
+                                for q in quantity.split(','):
+                                    slash = q.find('/')
+                                    if slash > 0:
+                                        row.append(q[:slash].strip())
+                                        row.append(q[slash+1:].strip())
+                            writer.writerow(row)
                             
                 QMessageBox.information(self, "Export Complete", f"POS data exported to {filename}")
 

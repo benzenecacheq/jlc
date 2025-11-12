@@ -107,6 +107,7 @@
       "10d":3,
       "16d":3,
       "z-max":10,
+      "radiant":7,
       "joist":2,        "joist doesn't really mean anything":0,
       "50#":0,          "#50 is only on hand nails and just confuses things":0,
       "end-of-list":0
@@ -116,7 +117,9 @@
       "t&g" : -0.03,
       "pt" : -0.03,
       "ptcdx" : -0.03,
-      "durastrand" : -0.02,
+      "durastrand" : -0.03,
+      "gold" : -0.03,
+      "osb" : -0.03,
       "non-stock" : -0.01,
       "hdg" : -0.005,
       "couple" : -0.005,
@@ -124,7 +127,10 @@
       "liquid": -0.03,
       "timberstrand": -0.01,
       "simpsonhangernails" : -0.2,
-      "simpsontool" : -0.2
+      "simpsontool" : -0.2,
+      "sturdy" : -0.05,
+      "radiant" : -0.003,
+      "end-of-list" : 0
    },
    "friends":{
       "pl":{"ml":-0.02},
@@ -147,6 +153,7 @@
    "implies":{
       "sds" : {"other":["hdg"], "dimensions":"1/4"},
       "nails" : {"other":["gun"]},
+      "sturdifloor" : {"other":["sturdy"]},
       "end-of-list" : 0
    },
    "special lengths": [

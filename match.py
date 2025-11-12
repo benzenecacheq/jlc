@@ -8,7 +8,7 @@ import os
 import sys
 import csv
 import json
-import cbor2
+# import cbor2
 import copy
 import anthropic
 import tempfile
