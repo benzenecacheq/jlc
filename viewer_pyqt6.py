@@ -1387,6 +1387,20 @@ class LumberViewerGUI(QMainWindow):
         self.show_no_matches_action.triggered.connect(self.apply_filters)
         view_menu.addAction(self.show_no_matches_action)
         
+        view_menu.addSeparator()  # Add separator for Stock filters
+        
+        self.show_stock_items_action = QAction('Show &Stock Items', self)
+        self.show_stock_items_action.setCheckable(True)
+        self.show_stock_items_action.setChecked(True)
+        self.show_stock_items_action.triggered.connect(self.apply_filters)
+        view_menu.addAction(self.show_stock_items_action)
+        
+        self.show_so_items_action = QAction('Show &S/O Items', self)
+        self.show_so_items_action.setCheckable(True)
+        self.show_so_items_action.setChecked(True)
+        self.show_so_items_action.triggered.connect(self.apply_filters)
+        view_menu.addAction(self.show_so_items_action)
+        
         # Options menu
         options_menu = menubar.addMenu('&Options')
         
@@ -1904,6 +1918,8 @@ class LumberViewerGUI(QMainWindow):
             show_unique_matches = self.show_unique_matches_action.isChecked()
             show_multiple_matches = self.show_multiple_matches_action.isChecked()
             show_no_matches = self.show_no_matches_action.isChecked()
+            show_stock_items = self.show_stock_items_action.isChecked()
+            show_so_items = self.show_so_items_action.isChecked()
             
             self.filtered_data = []
             
@@ -1951,6 +1967,23 @@ class LumberViewerGUI(QMainWindow):
                     except Exception as e:
                         # If there's an error, include the item anyway
                         pass
+                
+                # Check Stock/SO filter
+                # Get the SKU from the first match (or override if available)
+                selected_sku = None
+                if has_matches and item['matches']:
+                    # Use first match's SKU to determine Stock/SO status
+                    selected_sku = item['matches'][0].get('part_number')
+                
+                # Check the Stock/SO status if we have a SKU
+                if selected_sku and selected_sku in self.order_status_mapping:
+                    stk_so_value = self.order_status_mapping[selected_sku]
+                    if stk_so_value == "Stock" and not show_stock_items:
+                        continue
+                    if stk_so_value == "S/O" and not show_so_items:
+                        continue
+                # If no SKU or SKU not in mapping, include the item (don't filter it out)
+                
                 self.filtered_data.append(item)
                 
             self.update_display()
@@ -1968,6 +2001,8 @@ class LumberViewerGUI(QMainWindow):
         self.show_unique_matches_action.setChecked(True)
         self.show_multiple_matches_action.setChecked(True)
         self.show_no_matches_action.setChecked(True)
+        self.show_stock_items_action.setChecked(True)
+        self.show_so_items_action.setChecked(True)
         self.apply_filters()
         
     def select_keyword_file(self):
