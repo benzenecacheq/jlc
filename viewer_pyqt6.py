@@ -22,12 +22,54 @@ from PyQt6.QtWidgets import (
     QLineEdit, QSpinBox, QCheckBox, QHeaderView, QMessageBox, 
     QFileDialog, QStatusBar, QSplitter, QTextEdit, QFrame, QMenuBar,
     QMenu, QToolBar, QDialog, QListWidget, QListWidgetItem, QFormLayout,
-    QGroupBox, QScrollArea, QProgressBar
+    QGroupBox, QScrollArea, QProgressBar, QStyledItemDelegate
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QThread, QObject
-from PyQt6.QtGui import QFont, QPalette, QColor, QAction, QKeyEvent
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QThread, QObject, QModelIndex
+from PyQt6.QtGui import QFont, QPalette, QColor, QAction, QKeyEvent, QPainter, QPen
 
 from util import *
+
+class DeletedItemDelegate(QStyledItemDelegate):
+    """Custom delegate that draws a continuous line across deleted rows"""
+    def __init__(self, parent=None, deleted_items=None):
+        super().__init__(parent)
+        self.deleted_items = deleted_items or set()
+        self.row_item_data = {}
+    
+    def set_deleted_items(self, deleted_items):
+        """Update the set of deleted items"""
+        self.deleted_items = deleted_items
+    
+    def set_row_item_data(self, row_item_data):
+        """Update the row item data mapping"""
+        self.row_item_data = row_item_data
+    
+    def paint(self, painter, option, index):
+        """Paint the item with a continuous line if deleted"""
+        # First, do the standard painting
+        super().paint(painter, option, index)
+        
+        # Check if this row represents a deleted item
+        row = index.row()
+        if row in self.row_item_data:
+            item = self.row_item_data[row]
+            item_number = item.get('item_number')
+            if item_number and item_number in self.deleted_items:
+                # Draw a line across this cell
+                # Since all cells in the row are painted with the same delegate,
+                # the lines will appear continuous across the entire row
+                painter.save()
+                pen = QPen(QColor(0, 0, 0), 2)  # Black pen, 2 pixels wide for visibility
+                painter.setPen(pen)
+                
+                # Get the row height and calculate the middle
+                row_height = option.rect.height()
+                y = option.rect.top() + row_height // 2
+                
+                # Draw line from left edge to right edge of the cell
+                # The line will appear continuous because all cells in the row are painted
+                painter.drawLine(option.rect.left(), y, option.rect.right(), y)
+                painter.restore()
 
 class KeywordFileDialog(QDialog):
     """Dialog for selecting keyword file with text input and browse button"""
@@ -131,7 +173,7 @@ class KeywordFileDialog(QDialog):
 class ItemDetailsDialog(QDialog):
     """Dialog for selecting SKU from multiple matches and editing quantity"""
     
-    def __init__(self, matches: List[Dict], current_quantity: str = "", current_sku: str = "", parent=None, item_data=None):
+    def __init__(self, matches: List[Dict], current_quantity: str = "", current_sku: str = "", parent=None, item_data=None, is_deleted=False):
         super().__init__(parent)
         self.matches = matches
         self.current_quantity = current_quantity
@@ -141,6 +183,8 @@ class ItemDetailsDialog(QDialog):
         self.edited_text = None  # Store edited text from search
         self.description_override = None  # Store edited description
         self.item_data = item_data or {}  # Store the original item data
+        self.is_deleted = is_deleted  # Track if item is deleted
+        self.delete_requested = False  # Track if delete/undelete button was clicked
         
         # Get database mappings from parent GUI
         self.description_mapping = {}
@@ -263,6 +307,14 @@ class ItemDetailsDialog(QDialog):
         
         # Buttons
         button_layout = QHBoxLayout()
+        
+        # Delete/Undelete button
+        self.delete_button = QPushButton("Undelete Item" if self.is_deleted else "Delete Item")
+        self.delete_button.clicked.connect(self.toggle_delete)
+        button_layout.addWidget(self.delete_button)
+        
+        # Add stretch to push OK/Cancel to the right
+        button_layout.addStretch()
         
         ok_button = QPushButton("OK")
         ok_button.clicked.connect(self.accept_selection)
@@ -535,6 +587,14 @@ class ItemDetailsDialog(QDialog):
                 return "⚠"
         except (ValueError, TypeError, AttributeError):
             return "⚠"
+    
+    def toggle_delete(self):
+        """Toggle delete/undelete status and close dialog"""
+        self.is_deleted = not self.is_deleted
+        self.delete_requested = True
+        self.delete_button.setText("Undelete Item" if self.is_deleted else "Delete Item")
+        # Close the dialog immediately
+        self.accept()
             
     def accept_selection(self):
         """Accept the selected SKU and quantity"""
@@ -1147,6 +1207,7 @@ class LumberViewerGUI(QMainWindow):
         self.quantity_overrides = {}  # Store manual quantity overrides
         self.text_overrides = {}  # Store manual text overrides
         self.description_overrides = {}  # Store manual description overrides
+        self.deleted_items = set()  # Store deleted items by item_number
         
         # Config file path
         self.config_file = Path.home() / ".jlc.ini"
@@ -1476,6 +1537,13 @@ class LumberViewerGUI(QMainWindow):
         ]
         self.table.setColumnCount(len(self.columns))
         self.table.setHorizontalHeaderLabels(self.columns)
+        
+        # Set up custom delegate for deleted items (after columns are defined)
+        self.deleted_delegate = DeletedItemDelegate(self.table, self.deleted_items)
+        self.deleted_delegate.set_row_item_data(self.row_item_data)
+        # Apply delegate to all columns
+        for col in range(len(self.columns)):
+            self.table.setItemDelegateForColumn(col, self.deleted_delegate)
 
         self.column_numbers = {
             "Item #": 0, "Quantity": 1, 
@@ -1591,6 +1659,11 @@ class LumberViewerGUI(QMainWindow):
             for raw_row in self.raw_data:
                 # Find the corresponding grouped item to check for overrides
                 item_number = raw_row.get('item_number', '')
+                
+                # Skip deleted items
+                if item_number in self.deleted_items:
+                    continue
+                
                 if item_number == skip_item:
                     continue
                 
@@ -2117,6 +2190,9 @@ class LumberViewerGUI(QMainWindow):
             except Exception:
                 self.status_bar.showMessage("Display updated")
             
+            # Update the deleted delegate with current data
+            self.update_deleted_delegate()
+            
         except Exception as e:
             print(f"Error in update_display: {e}")
             self.status_bar.showMessage("Error updating display")
@@ -2147,7 +2223,10 @@ class LumberViewerGUI(QMainWindow):
         elif item['matches']:
             current_sku = item['matches'][0]['part_number']
         
-        dialog = ItemDetailsDialog(item['matches'], current_quantity, current_sku, self, item)
+        # Check if item is deleted
+        is_deleted = item.get('item_number') in self.deleted_items
+        
+        dialog = ItemDetailsDialog(item['matches'], current_quantity, current_sku, self, item, is_deleted)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             # Check if text was edited - if so, this should be treated as a manual override
             text_was_edited = (dialog.edited_text is not None and 
@@ -2187,6 +2266,17 @@ class LumberViewerGUI(QMainWindow):
                 # User didn't change description - remove override
                 del self.description_overrides[row]
             
+            # Handle delete/undelete action
+            if dialog.delete_requested:
+                item_number = item.get('item_number')
+                if item_number:
+                    if dialog.is_deleted:
+                        self.deleted_items.add(item_number)
+                    else:
+                        self.deleted_items.discard(item_number)
+                # Update delegate with new deleted items
+                self.update_deleted_delegate()
+            
             self.update_display_for_row(row, item)
     
     def highlight_row(self, row: int):
@@ -2202,10 +2292,19 @@ class LumberViewerGUI(QMainWindow):
                 new_item.setBackground(QColor(255, 255, 200))
                 self.table.setItem(row, col, new_item)
     
+    def update_deleted_delegate(self):
+        """Update the deleted delegate with current data"""
+        if hasattr(self, 'deleted_delegate'):
+            self.deleted_delegate.set_deleted_items(self.deleted_items)
+            self.deleted_delegate.set_row_item_data(self.row_item_data)
+    
     def update_display_for_row(self, row: int, item: dict):
         """Update display for a single row"""
         if row not in self.row_item_data:
             return
+        
+        # Check if item is deleted
+        is_deleted = item.get('item_number') in self.deleted_items
         
         # Update quantity column first
         quantity_text = str(item['quantity'])
@@ -2288,6 +2387,11 @@ class LumberViewerGUI(QMainWindow):
             self.table.setItem(row, self.column_numbers["Type"], QTableWidgetItem(""))
             self.table.setItem(row, self.column_numbers["Confidence"], QTableWidgetItem(""))
             self.update_stk_so_column(row, None)  # Clear Stk/SO column
+        
+        # Delegate will handle drawing the line for deleted items
+        # Just update the delegate reference
+        if hasattr(self, 'deleted_delegate'):
+            self.deleted_delegate.set_row_item_data(self.row_item_data)
     
     def on_sku_selected(self, row_idx: int, match: Dict):
         """Handle SKU selection from combobox"""
@@ -2417,6 +2521,10 @@ class LumberViewerGUI(QMainWindow):
                     
                     for family in ["L", "H", ""]:
                         for i, item in enumerate(self.filtered_data):
+                            # Skip deleted items
+                            if item.get('item_number') in self.deleted_items:
+                                continue
+                            
                             # Check if there's a manual override for this row
                             if i in self.sku_overrides:
                                 override = self.sku_overrides[i]
