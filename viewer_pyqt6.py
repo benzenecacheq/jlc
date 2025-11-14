@@ -614,6 +614,28 @@ class ItemDetailsDialog(QDialog):
             else:
                 self.quantity_override = None
             
+            # Validate quantity if a match is selected (for new items or when required)
+            # Check if this is a new item (empty original quantity) or if quantity is required
+            if self.selected_match is not None:
+                # A match is selected - quantity is required
+                final_quantity = self.quantity_override if self.quantity_override else (quantity_text if quantity_text else self.current_quantity)
+                if not final_quantity or not final_quantity.strip():
+                    QMessageBox.warning(self, "Quantity Required", 
+                                      "Please enter a quantity for this item.")
+                    return  # Don't accept the dialog
+                # Also check if quantity is zero
+                try:
+                    # Try to parse as number - check if it's zero
+                    qty_value = float(final_quantity.replace(',', '').replace('/', '').split()[0] if final_quantity else '0')
+                    if qty_value == 0:
+                        QMessageBox.warning(self, "Invalid Quantity", 
+                                          "Quantity cannot be zero. Please enter a valid quantity.")
+                        return  # Don't accept the dialog
+                except (ValueError, AttributeError):
+                    # If we can't parse it, that's okay - might be a complex quantity like "2/8"
+                    # Just check it's not empty (already done above)
+                    pass
+            
             # Store the edited text
             self.edited_text = self.text_input.text().strip()
             
@@ -1372,6 +1394,15 @@ class LumberViewerGUI(QMainWindow):
         
         file_menu.addSeparator()
         
+        # New Item action
+        new_item_action = QAction('&New Item', self)
+        new_item_action.setShortcut('Ctrl+N')
+        new_item_action.setStatusTip('Add a new item to the list')
+        new_item_action.triggered.connect(self.add_new_item)
+        file_menu.addAction(new_item_action)
+        
+        file_menu.addSeparator()
+        
         # Load CSV action
         load_csv_action = QAction('&Open Results CSV...', self)
         load_csv_action.setShortcut('Ctrl+O')
@@ -1483,6 +1514,14 @@ class LumberViewerGUI(QMainWindow):
         """Create the toolbar with search and filters"""
         toolbar = QToolBar()
         self.addToolBar(toolbar)
+        
+        # New Item button (moved to left side)
+        new_item_action = QAction('➕ New Item', self)
+        new_item_action.setStatusTip('Add a new item to the list')
+        new_item_action.triggered.connect(self.add_new_item)
+        toolbar.addAction(new_item_action)
+        
+        toolbar.addSeparator()
         
         # Search
         toolbar.addWidget(QLabel("Search:"))
@@ -1668,11 +1707,21 @@ class LumberViewerGUI(QMainWindow):
                     continue
                 
                 # Find the display row index using row_item_data mapping
+                # Also check grouped_data for newly added items that might not be in row_item_data yet
                 display_row_idx = None
                 for row_idx, item in self.row_item_data.items():
                     if item.get('item_number') == item_number:
                         display_row_idx = row_idx
                         break
+                
+                # If not found in row_item_data, check if it's a newly added item in grouped_data
+                # and find its index in filtered_data (which is what row_item_data is based on)
+                if display_row_idx is None:
+                    # Try to find it in filtered_data to get the correct index
+                    for idx, filtered_item in enumerate(self.filtered_data):
+                        if filtered_item.get('item_number') == item_number:
+                            display_row_idx = idx
+                            break
                 
                 # Apply overrides if this item has them
                 updated_row = raw_row.copy()
@@ -1705,17 +1754,18 @@ class LumberViewerGUI(QMainWindow):
                                                                                   updated_row['Database_Description'])
                 
                 # Write the row
+                # For newly added items, ensure all fields are properly set
                 if hasattr(self, 'original_csv_columns') and self.original_csv_columns:
                     row_values = [updated_row.get(col, '') for col in self.original_csv_columns]
                 else:
                     # Fallback to basic values
                     row_values = [
-                        updated_row.get('Item_Number'),
-                        updated_row.get('Quantity'),
-                        updated_row.get('Processed_Text'),
-                        updated_row.get('Original_Text'),
-                        updated_row.get('Part_Number'),
-                        updated_row.get('Confidence'),
+                        updated_row.get('Item_Number', ''),
+                        updated_row.get('Quantity', ''),
+                        updated_row.get('Description', updated_row.get('Processed_Text', '')),
+                        updated_row.get('Original_Text', ''),
+                        updated_row.get('Part_Number', ''),
+                        updated_row.get('Confidence', ''),
                     ]
                 writer.writerow(row_values)
 
@@ -2278,6 +2328,100 @@ class LumberViewerGUI(QMainWindow):
                 self.update_deleted_delegate()
             
             self.update_display_for_row(row, item)
+    
+    def add_new_item(self):
+        """Add a new item to the list"""
+        if not self.grouped_data:
+            # If no data loaded, start with item number 1
+            new_item_number = "1"
+        else:
+            # Find the maximum item number
+            max_item_number = 0
+            for item in self.grouped_data:
+                try:
+                    item_num = int(item.get('item_number', '0'))
+                    max_item_number = max(max_item_number, item_num)
+                except (ValueError, TypeError):
+                    continue
+            new_item_number = str(max_item_number + 1)
+        
+        # Create a new empty item
+        new_item = {
+            'item_number': new_item_number,
+            'quantity': '',
+            'processed_text': '',
+            'original_text': '',
+            'matches': []
+        }
+        
+        # Open the item details dialog
+        dialog = ItemDetailsDialog([], '', '', self, new_item, False)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            # Check if a match was selected
+            if dialog.selected_match is not None:
+                # Quantity validation is now done in the dialog's accept_selection method
+                # Get the quantity from the dialog
+                quantity = dialog.quantity_override if dialog.quantity_override else ''
+                
+                # Update the item with dialog data
+                new_item['quantity'] = quantity
+                new_item['processed_text'] = dialog.edited_text if dialog.edited_text else ''
+                new_item['original_text'] = dialog.edited_text if dialog.edited_text else ''
+                new_item['matches'] = [dialog.selected_match]
+                
+                # Add to raw_data (create a row for CSV export)
+                # Format Database_Description properly
+                description = dialog.selected_match.get('description', '')
+                item_type = dialog.selected_match.get('type', '')
+                # Use the same format as in process_csv_file
+                db_description = description
+                if item_type:
+                    db_description = f"{description} | {item_type}"
+                else:
+                    db_description = f"{description} | No other information available"
+                
+                new_raw_row = {
+                    'Item_Number': new_item_number,
+                    'Quantity': new_item['quantity'],
+                    'Description': new_item['processed_text'],
+                    'Original_Text': new_item['original_text'],
+                    'Part_Number': dialog.selected_match['part_number'],
+                    'Database_Description': db_description,
+                    'Confidence': dialog.selected_match.get('confidence', ''),
+                    'item_number': new_item_number,
+                    'quantity': new_item['quantity'],
+                    'processed_text': new_item['processed_text'],
+                    'original_text': new_item['original_text'],
+                    'part_number': dialog.selected_match['part_number'],
+                    'item_description': description,
+                    'item_type': item_type,
+                    'confidence': dialog.selected_match.get('confidence', ''),
+                }
+                
+                # Preserve original CSV columns if they exist
+                if hasattr(self, 'original_csv_columns') and self.original_csv_columns:
+                    for col in self.original_csv_columns:
+                        if col not in new_raw_row:
+                            new_raw_row[col] = ''
+                
+                self.raw_data.append(new_raw_row)
+                
+                # Add to grouped_data
+                self.grouped_data.append(new_item)
+                
+                # Refresh the display
+                self.apply_filters()
+                self.update_display()
+                
+                # Scroll to the new item (it should be at the end)
+                if self.filtered_data:
+                    last_row = len(self.filtered_data) - 1
+                    self.table.scrollToItem(self.table.item(last_row, 0))
+                    self.table.selectRow(last_row)
+            else:
+                # User clicked OK but didn't select a match - don't add the item
+                QMessageBox.information(self, "No Selection", 
+                                      "Please select a SKU match to add the item.")
     
     def highlight_row(self, row: int):
         """Highlight a row to indicate manual override"""
