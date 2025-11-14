@@ -27,7 +27,6 @@ class ScannedItem:
     quantity: str
     description: str
     original_text: str
-    components: dict
     matches: List[PartMatch]
 
 ###############################################################################

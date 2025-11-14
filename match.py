@@ -977,7 +977,7 @@ class RulesMatcher:
 
         # Parse the scanned item to extract lumber components
         item_components = self.parse_lumber_item(item_desc)
-        if self.debug_item == self.current_item and not self.debug_part:
+        if self.debug_item and self.debug_item == self.current_item and not self.debug_part:
             print(f"  Parsed item components: {item_desc} -> {item_components}")
             pdb.set_trace()     # debug the processing of this item.
             self.parse_lumber_item(item_desc)
@@ -1051,7 +1051,7 @@ class RulesMatcher:
 
             match_score = self._calculate_match(item_components, db_components, sku=part_number,
                                                              by_foot=by_foot)
-            if (self.debug_item == self.current_item and part_number.lower() in self.debug_part):
+            if (self.debug_item and self.debug_item == self.current_item and part_number.lower() in self.debug_part):
                 print(f"item_components={item_components}")
                 print(f"db_components={db_components}")
                 print(f"match_score={match_score}")

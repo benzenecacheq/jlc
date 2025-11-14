@@ -95,7 +95,6 @@ class Scanner:
                         quantity=item_data.get('quantity', ''),
                         description=item_data.get('description', ''),
                         original_text=item_data.get('original_text', ''),
-                        components=None,
                         matches=[]
                     )
                     page_items.append(item)
@@ -224,7 +223,6 @@ class Scanner:
                     quantity=item_data.get('quantity', ''),
                     description=item_data.get('description', ''),
                     original_text=item_data.get('original_text', ''),
-                    components=None,
                     matches=[]
                 )
                 scanned_items.append(item)
