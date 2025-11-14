@@ -1230,6 +1230,7 @@ class LumberViewerGUI(QMainWindow):
         self.text_overrides = {}  # Store manual text overrides
         self.description_overrides = {}  # Store manual description overrides
         self.deleted_items = set()  # Store deleted items by item_number
+        self.saved_column_widths = {}  # Store saved column widths from config
         
         # Config file path
         self.config_file = Path.home() / ".jlc.ini"
@@ -1244,6 +1245,7 @@ class LumberViewerGUI(QMainWindow):
         
         self.init_ui()
         self.load_settings()  # Load settings after UI is initialized
+        self.apply_column_widths()  # Apply saved column widths after loading settings
         
     def init_ui(self):
         """Initialize the user interface"""
@@ -1317,6 +1319,17 @@ class LumberViewerGUI(QMainWindow):
             if self.database_file:
                 config['LastResults']['database_file'] = str(self.database_file)
             
+            # Save column widths
+            if hasattr(self, 'table') and self.table and hasattr(self, 'column_numbers') and self.column_numbers:
+                config['ColumnWidths'] = {}
+                for col_name, col_idx in self.column_numbers.items():
+                    width = self.table.columnWidth(col_idx)
+                    config['ColumnWidths'][col_name] = str(width)
+                    print(f"DEBUG: Saving column width for {col_name}: {width}")
+                print(f"DEBUG: Saved {len(config['ColumnWidths'])} column widths")
+            else:
+                print(f"DEBUG: Cannot save column widths - table exists: {hasattr(self, 'table')}, column_numbers exists: {hasattr(self, 'column_numbers')}")
+            
             # Write to file
             with open(self.config_file, 'w') as f:
                 config.write(f)
@@ -1349,6 +1362,26 @@ class LumberViewerGUI(QMainWindow):
                 self.keyword_file = config.get('Options', 'keyword_file', fallback='')
                 self.last_keyword_dir = config.get('Options', 'keyword_dir', fallback='')
             
+            # Load column widths FIRST (before load_data which might reset the table)
+            if 'ColumnWidths' in config:
+                self.saved_column_widths = {}
+                # Load all column widths from config
+                # ConfigParser lowercases keys, so we need to map them back to original case
+                for col_name_lower in config['ColumnWidths']:
+                    width_str = config.get('ColumnWidths', col_name_lower, fallback='')
+                    if width_str:
+                        try:
+                            # Store with lowercase key for case-insensitive lookup
+                            self.saved_column_widths[col_name_lower.lower()] = int(width_str)
+                            print(f"DEBUG: Loaded column width for {col_name_lower}: {int(width_str)}")
+                        except ValueError:
+                            print(f"DEBUG: Failed to parse width for {col_name_lower}: {width_str}")
+                            pass
+                print(f"DEBUG: Loaded {len(self.saved_column_widths)} column widths from config")
+            else:
+                print("DEBUG: No ColumnWidths section in config file")
+                self.saved_column_widths = {}
+            
             # Load LastResults settings
             if 'LastResults' in config:
                 csv_file = config.get('LastResults', 'csv_file', fallback='')
@@ -1362,6 +1395,7 @@ class LumberViewerGUI(QMainWindow):
                         
         except Exception as e:
             print(f"Error loading settings: {e}")
+            self.saved_column_widths = {}
 
         self.no_match_sku = os.getenv("NO_MATCH_SKU") if os.getenv("NO_MATCH_SKU") is not None else "20"
 
@@ -1613,24 +1647,110 @@ class LumberViewerGUI(QMainWindow):
             "Text": 7, "Original": 8
         }
         
-        # Set column widths
+        # Set column widths and resize modes
         header = self.table.horizontalHeader()
-        header.setSectionResizeMode(self.column_numbers["Item #"], QHeaderView.ResizeMode.Fixed)  # Item #
-        header.setSectionResizeMode(self.column_numbers["Quantity"], QHeaderView.ResizeMode.Fixed)  # Quantity
-        header.setSectionResizeMode(self.column_numbers["SKU"], QHeaderView.ResizeMode.Fixed)  # SKU
-        header.setSectionResizeMode(self.column_numbers["Description"], QHeaderView.ResizeMode.Stretch)  # Description
-        header.setSectionResizeMode(self.column_numbers["Type"], QHeaderView.ResizeMode.Fixed)  # Type
-        header.setSectionResizeMode(self.column_numbers["Stk/SO"], QHeaderView.ResizeMode.Fixed)  # Stk/SO
-        header.setSectionResizeMode(self.column_numbers["Confidence"], QHeaderView.ResizeMode.Fixed)  # Confidence
-        header.setSectionResizeMode(self.column_numbers["Text"], QHeaderView.ResizeMode.Stretch)  # Text
-        header.setSectionResizeMode(self.column_numbers["Original"], QHeaderView.ResizeMode.Stretch)  # Original
+        # Set all columns to Interactive so users can resize them by dragging the divider
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
         
-        self.table.setColumnWidth(self.column_numbers["Item #"], 60)   # Item #
-        self.table.setColumnWidth(self.column_numbers["Quantity"], 80)   # Quantity
-        self.table.setColumnWidth(self.column_numbers["SKU"], 120)  # SKU
-        self.table.setColumnWidth(self.column_numbers["Type"], 100)  # Type
-        self.table.setColumnWidth(self.column_numbers["Stk/SO"], 60)  # Stk/SO
-        self.table.setColumnWidth(self.column_numbers["Confidence"], 100)  # Confidence
+        # Default column widths (will be overridden by saved settings if available)
+        default_widths = {
+            "Item #": 60,
+            "Quantity": 80,
+            "SKU": 120,
+            "Description": 200,
+            "Type": 100,
+            "Stk/SO": 60,
+            "Confidence": 100,
+            "Text": 200,
+            "Original": 200
+        }
+        
+        # Set initial column widths (will be overridden by apply_column_widths if saved widths exist)
+        for col_name, col_idx in self.column_numbers.items():
+            self.table.setColumnWidth(col_idx, default_widths.get(col_name, 100))
+    
+    def apply_column_widths(self):
+        """Apply saved column widths from config file"""
+        print(f"DEBUG: apply_column_widths called")
+        if not hasattr(self, 'table') or not self.table:
+            print("DEBUG: No table found, returning")
+            return
+        
+        if not hasattr(self, 'column_numbers') or not self.column_numbers:
+            print("DEBUG: No column_numbers found, returning")
+            return
+        
+        if not hasattr(self, 'saved_column_widths'):
+            print("DEBUG: No saved_column_widths found, using defaults")
+            self.saved_column_widths = {}
+        
+        print(f"DEBUG: saved_column_widths = {self.saved_column_widths}")
+        
+        # Default column widths
+        default_widths = {
+            "Item #": 60,
+            "Quantity": 80,
+            "SKU": 120,
+            "Description": 200,
+            "Type": 100,
+            "Stk/SO": 60,
+            "Confidence": 100,
+            "Text": 200,
+            "Original": 200
+        }
+        
+        # Apply saved widths or use defaults
+        # Note: ConfigParser lowercases keys, so we need case-insensitive lookup
+        for col_name, col_idx in self.column_numbers.items():
+            # Try both exact match and lowercase match
+            width = None
+            if col_name in self.saved_column_widths:
+                width = self.saved_column_widths[col_name]
+            elif col_name.lower() in self.saved_column_widths:
+                width = self.saved_column_widths[col_name.lower()]
+            
+            if width is not None:
+                self.table.setColumnWidth(col_idx, width)
+                print(f"DEBUG: Applied saved width for {col_name} (col {col_idx}): {width}")
+            else:
+                width = default_widths.get(col_name, 100)
+                self.table.setColumnWidth(col_idx, width)
+                print(f"DEBUG: Applied default width for {col_name} (col {col_idx}): {width}")
+        
+        # Adjust window width to fit all columns
+        self.adjust_window_width()
+    
+    def adjust_window_width(self):
+        """Adjust window width to fit all columns plus window decorations"""
+        if not hasattr(self, 'table') or not self.table:
+            return
+        
+        if not hasattr(self, 'column_numbers') or not self.column_numbers:
+            return
+        
+        # Calculate total column width
+        total_column_width = 0
+        for col_idx in range(len(self.column_numbers)):
+            total_column_width += self.table.columnWidth(col_idx)
+        
+        # Add padding for window decorations:
+        # - Vertical scrollbar (if needed): ~20px
+        # - Window borders: ~10px
+        # - Menu bar, toolbar, status bar don't affect horizontal width
+        # - Some extra padding for safety: ~70px
+        padding = 100
+        
+        # Get current window size
+        current_width = self.width()
+        current_height = self.height()
+        
+        # Calculate new width
+        new_width = total_column_width + padding
+        
+        # Only resize if new width is larger than current (don't shrink)
+        if new_width > current_width:
+            self.resize(new_width, current_height)
+            print(f"DEBUG: Adjusted window width to {new_width} (columns: {total_column_width}, padding: {padding})")
         
     def apply_styling(self):
         """Apply custom styling to the application"""
@@ -1887,6 +2007,9 @@ class LumberViewerGUI(QMainWindow):
             self.export_pos_action.setEnabled(True)
             self.save_action.setEnabled(True)
             self.status_bar.showMessage(f"Loaded {len(self.raw_data)} rows, {len(self.grouped_data)} unique items")
+            
+            # Apply saved column widths after display is updated
+            self.apply_column_widths()
             
             # Save the loaded files to config
             self.save_settings()
