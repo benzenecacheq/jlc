@@ -1729,52 +1729,34 @@ class LumberViewerGUI(QMainWindow):
                 if item_number == skip_item:
                     continue
                 
-                # Find the display row index using row_item_data mapping
-                # Also check grouped_data for newly added items that might not be in row_item_data yet
-                display_row_idx = None
-                for row_idx, item in self.row_item_data.items():
-                    if item.get('item_number') == item_number:
-                        display_row_idx = row_idx
-                        break
-                
-                # If not found in row_item_data, check if it's a newly added item in grouped_data
-                # and find its index in filtered_data (which is what row_item_data is based on)
-                if display_row_idx is None:
-                    # Try to find it in filtered_data to get the correct index
-                    for idx, filtered_item in enumerate(self.filtered_data):
-                        if filtered_item.get('item_number') == item_number:
-                            display_row_idx = idx
-                            break
-                
-                # Apply overrides if this item has them
+                # Apply overrides if this item has them - use item_number as key
                 updated_row = raw_row.copy()
-                if display_row_idx is not None:
-                    # Apply quantity override
-                    if display_row_idx in self.quantity_overrides:
-                        updated_row['Quantity'] = self.quantity_overrides[display_row_idx]
-                    
-                    # Apply text override
-                    if display_row_idx in self.text_overrides:
-                        updated_row['Description'] = self.text_overrides[display_row_idx]
-                    
-                    # Apply description override
-                    if display_row_idx in self.description_overrides:
-                        updated_row['Database_Description'] = self.description_overrides[display_row_idx]
-                    
-                    # Apply SKU override
-                    if display_row_idx in self.sku_overrides:
-                        skip_item = item_number         # only write the overridden item and no other matches
-                        override = self.sku_overrides[display_row_idx]
-                        if override is None:
-                            # "No matches" was selected
-                            updated_row['Part_Number'] = ''
-                            updated_row['Confidence'] = ''
-                        else:
-                            # Specific match was selected
-                            updated_row['Part_Number'] = override['part_number']
-                            updated_row['Confidence'] = override['confidence']
-                            updated_row['Database_Description'] = self._insert_db_description(override['description'],
-                                                                                  updated_row['Database_Description'])
+                # Apply quantity override
+                if item_number in self.quantity_overrides:
+                    updated_row['Quantity'] = self.quantity_overrides[item_number]
+                
+                # Apply text override
+                if item_number in self.text_overrides:
+                    updated_row['Description'] = self.text_overrides[item_number]
+                
+                # Apply description override
+                if item_number in self.description_overrides:
+                    updated_row['Database_Description'] = self.description_overrides[item_number]
+                
+                # Apply SKU override
+                if item_number in self.sku_overrides:
+                    skip_item = item_number         # only write the overridden item and no other matches
+                    override = self.sku_overrides[item_number]
+                    if override is None:
+                        # "No matches" was selected
+                        updated_row['Part_Number'] = ''
+                        updated_row['Confidence'] = ''
+                    else:
+                        # Specific match was selected
+                        updated_row['Part_Number'] = override['part_number']
+                        updated_row['Confidence'] = override['confidence']
+                        updated_row['Database_Description'] = self._insert_db_description(override['description'],
+                                                                              updated_row['Database_Description'])
                 
                 # Write the row
                 # For newly added items, ensure all fields are properly set
@@ -2194,12 +2176,8 @@ class LumberViewerGUI(QMainWindow):
             
             # Set table rows
             try:
-                # Limit the number of rows to prevent memory issues
-                max_rows = min(len(self.filtered_data), 200)  # Limit to 200 rows
-                if max_rows < len(self.filtered_data):
-                    self.filtered_data = self.filtered_data[:max_rows]
-                
                 self.table.setRowCount(len(self.filtered_data))
+
             except Exception as e:
                 print(f"Error setting table row count: {e}")
                 return
@@ -2216,37 +2194,38 @@ class LumberViewerGUI(QMainWindow):
                     # Basic item info
                     self.table.setItem(row_idx, self.column_numbers["Item #"], QTableWidgetItem(str(item['item_number'])))
                     
-                    # Handle quantity display with override support
+                    # Handle quantity display with override support - use item_number as key
+                    item_number = item.get('item_number')
                     quantity_text = str(item['quantity'])
-                    if row_idx in self.quantity_overrides:
-                        quantity_text = f"🔧 {self.quantity_overrides[row_idx]}"
+                    if item_number in self.quantity_overrides:
+                        quantity_text = f"🔧 {self.quantity_overrides[item_number]}"
                     
                     quantity_item = QTableWidgetItem(quantity_text)
-                    if row_idx in self.quantity_overrides:
+                    if item_number in self.quantity_overrides:
                         # Highlight overridden quantities
                         font = quantity_item.font()
                         font.setBold(True)
                         quantity_item.setFont(font)
                         quantity_item.setBackground(QColor(255, 255, 200))  # Light yellow background
-                        quantity_item.setToolTip(f"Original: {item['quantity']}\nOverride: {self.quantity_overrides[row_idx]}")
+                        quantity_item.setToolTip(f"Original: {item['quantity']}\nOverride: {self.quantity_overrides[item_number]}")
                     else:
                         quantity_item.setToolTip("Double-click to edit quantity")
                     
                     self.table.setItem(row_idx, self.column_numbers["Quantity"], quantity_item)
                     
-                    # Handle text display with override support
+                    # Handle text display with override support - use item_number as key
                     text_to_display = item['processed_text']
-                    if row_idx in self.text_overrides:
-                        text_to_display = self.text_overrides[row_idx]
+                    if item_number in self.text_overrides:
+                        text_to_display = self.text_overrides[item_number]
                     
                     text_item = QTableWidgetItem(text_to_display)
-                    if row_idx in self.text_overrides:
+                    if item_number in self.text_overrides:
                         # Highlight overridden text
                         font = text_item.font()
                         font.setBold(True)
                         text_item.setFont(font)
                         text_item.setBackground(QColor(255, 255, 200))  # Light yellow background
-                        text_item.setToolTip(f"Original: {item['processed_text']}\nOverride: {self.text_overrides[row_idx]}")
+                        text_item.setToolTip(f"Original: {item['processed_text']}\nOverride: {self.text_overrides[item_number]}")
                     
                     self.table.setItem(row_idx, self.column_numbers["Text"], text_item)
                     self.table.setItem(row_idx, self.column_numbers["Original"], QTableWidgetItem(item['original_text']))
@@ -2286,18 +2265,20 @@ class LumberViewerGUI(QMainWindow):
     
     def open_sku_dialog(self, row: int, item: dict):
         """Open SKU selection dialog for an item"""
-        # Get current quantity (original or override)
-        current_quantity = self.quantity_overrides.get(row, item['quantity'])
+        item_number = item.get('item_number')
         
-        # Get current SKU (from manual override or first match)
+        # Get current quantity (original or override) - use item_number as key
+        current_quantity = self.quantity_overrides.get(item_number, item['quantity'])
+        
+        # Get current SKU (from manual override or first match) - use item_number as key
         current_sku = ""
-        if row in self.sku_overrides and self.sku_overrides[row] is not None:
-            current_sku = self.sku_overrides[row]['part_number']
+        if item_number in self.sku_overrides and self.sku_overrides[item_number] is not None:
+            current_sku = self.sku_overrides[item_number]['part_number']
         elif item['matches']:
             current_sku = item['matches'][0]['part_number']
         
         # Check if item is deleted
-        is_deleted = item.get('item_number') in self.deleted_items
+        is_deleted = item_number in self.deleted_items
         
         dialog = ItemDetailsDialog(item['matches'], current_quantity, current_sku, self, item, is_deleted)
         if dialog.exec() == QDialog.DialogCode.Accepted:
@@ -2306,38 +2287,38 @@ class LumberViewerGUI(QMainWindow):
                              dialog.edited_text != item['processed_text'])
             
             if dialog.selected_match is None:
-                # "No matches" selected - store as override
-                self.sku_overrides[row] = None
+                # "No matches" selected - store as override using item_number
+                self.sku_overrides[item_number] = None
             else:
-                # Match selected - store as override
-                self.sku_overrides[row] = dialog.selected_match
+                # Match selected - store as override using item_number
+                self.sku_overrides[item_number] = dialog.selected_match
             
-            # Handle quantity override
+            # Handle quantity override using item_number
             if dialog.quantity_override is not None:
-                self.quantity_overrides[row] = dialog.quantity_override
-            elif row in self.quantity_overrides:
+                self.quantity_overrides[item_number] = dialog.quantity_override
+            elif item_number in self.quantity_overrides:
                 # User cleared the quantity - remove override
-                del self.quantity_overrides[row]
+                del self.quantity_overrides[item_number]
             
-            # Handle text override
+            # Handle text override using item_number
             if text_was_edited:
-                self.text_overrides[row] = dialog.edited_text
+                self.text_overrides[item_number] = dialog.edited_text
                 # If text was edited and a match was selected, ensure it's in sku_overrides
-                if dialog.selected_match is not None and row not in self.sku_overrides:
-                    self.sku_overrides[row] = dialog.selected_match
-            elif row in self.text_overrides:
+                if dialog.selected_match is not None and item_number not in self.sku_overrides:
+                    self.sku_overrides[item_number] = dialog.selected_match
+            elif item_number in self.text_overrides:
                 # User didn't change text - remove override
-                del self.text_overrides[row]
+                del self.text_overrides[item_number]
             
-            # Handle description override
+            # Handle description override using item_number
             if dialog.description_override is not None:
-                self.description_overrides[row] = dialog.description_override
+                self.description_overrides[item_number] = dialog.description_override
                 # If description was edited and a match was selected, ensure it's in sku_overrides
-                if dialog.selected_match is not None and row not in self.sku_overrides:
-                    self.sku_overrides[row] = dialog.selected_match
-            elif row in self.description_overrides:
+                if dialog.selected_match is not None and item_number not in self.sku_overrides:
+                    self.sku_overrides[item_number] = dialog.selected_match
+            elif item_number in self.description_overrides:
                 # User didn't change description - remove override
-                del self.description_overrides[row]
+                del self.description_overrides[item_number]
             
             # Handle delete/undelete action
             if dialog.delete_requested:
@@ -2470,46 +2451,48 @@ class LumberViewerGUI(QMainWindow):
         if row not in self.row_item_data:
             return
         
-        # Check if item is deleted
-        is_deleted = item.get('item_number') in self.deleted_items
+        item_number = item.get('item_number')
         
-        # Update quantity column first
+        # Check if item is deleted
+        is_deleted = item_number in self.deleted_items
+        
+        # Update quantity column first - use item_number as key
         quantity_text = str(item['quantity'])
-        if row in self.quantity_overrides:
-            quantity_text = f"🔧 {self.quantity_overrides[row]}"
+        if item_number in self.quantity_overrides:
+            quantity_text = f"🔧 {self.quantity_overrides[item_number]}"
         
         quantity_item = QTableWidgetItem(quantity_text)
-        if row in self.quantity_overrides:
+        if item_number in self.quantity_overrides:
             # Highlight overridden quantities
             font = quantity_item.font()
             font.setBold(True)
             quantity_item.setFont(font)
             quantity_item.setBackground(QColor(255, 255, 200))  # Light yellow background
-            quantity_item.setToolTip(f"Original: {item['quantity']}\nOverride: {self.quantity_overrides[row]}")
+            quantity_item.setToolTip(f"Original: {item['quantity']}\nOverride: {self.quantity_overrides[item_number]}")
         else:
             quantity_item.setToolTip("Double-click to edit quantity")
         
         self.table.setItem(row, self.column_numbers["Quantity"], quantity_item)
         
-        # Update text column with override support
+        # Update text column with override support - use item_number as key
         text_to_display = item['processed_text']
-        if row in self.text_overrides:
-            text_to_display = self.text_overrides[row]
+        if item_number in self.text_overrides:
+            text_to_display = self.text_overrides[item_number]
         
         text_item = QTableWidgetItem(text_to_display)
-        if row in self.text_overrides:
+        if item_number in self.text_overrides:
             # Highlight overridden text
             font = text_item.font()
             font.setBold(True)
             text_item.setFont(font)
             text_item.setBackground(QColor(255, 255, 200))  # Light yellow background
-            text_item.setToolTip(f"Original: {item['processed_text']}\nOverride: {self.text_overrides[row]}")
+            text_item.setToolTip(f"Original: {item['processed_text']}\nOverride: {self.text_overrides[item_number]}")
         
         self.table.setItem(row, self.column_numbers["Text"], text_item)
             
-        # Check if there's a manual override
-        if row in self.sku_overrides:
-            override = self.sku_overrides[row]
+        # Check if there's a manual override - use item_number as key
+        if item_number in self.sku_overrides:
+            override = self.sku_overrides[item_number]
             if override is None:
                 # "No matches" was selected - show bold text and clear fields
                 sku_item = QTableWidgetItem("No matches")
@@ -2689,12 +2672,13 @@ class LumberViewerGUI(QMainWindow):
                     for family in ["L", "H", ""]:
                         for i, item in enumerate(self.filtered_data):
                             # Skip deleted items
-                            if item.get('item_number') in self.deleted_items:
+                            item_number = item.get('item_number')
+                            if item_number in self.deleted_items:
                                 continue
                             
-                            # Check if there's a manual override for this row
-                            if i in self.sku_overrides:
-                                override = self.sku_overrides[i]
+                            # Check if there's a manual override for this item - use item_number as key
+                            if item_number in self.sku_overrides:
+                                override = self.sku_overrides[item_number]
                                 if override is None:
                                     # "No matches" was selected - skip this item
                                     if self.no_match_sku:
@@ -2721,10 +2705,10 @@ class LumberViewerGUI(QMainWindow):
                             if self.family_mapping.get(sku, "") != family:
                                 continue
 
-                            # Use overridden quantity if available
+                            # Use overridden quantity if available - use item_number as key
                             quantity = item.get('quantity', '')
-                            if i in self.quantity_overrides:
-                                quantity = self.quantity_overrides[i]
+                            if item_number in self.quantity_overrides:
+                                quantity = self.quantity_overrides[item_number]
                             
                             stocking_multiple = self.stocking_multiple_mapping.get(sku, '')
                             row = [sku, description, quantity, ""]
