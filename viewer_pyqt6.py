@@ -1391,6 +1391,7 @@ class LumberViewerGUI(QMainWindow):
         process_doc_action.setStatusTip('Process PDF document with PDF2Parts')
         process_doc_action.triggered.connect(self.process_document)
         file_menu.addAction(process_doc_action)
+        self.process_doc_action = process_doc_action  # Store reference for toolbar
         
         file_menu.addSeparator()
         
@@ -1409,6 +1410,8 @@ class LumberViewerGUI(QMainWindow):
         load_csv_action.setStatusTip('Load matching results CSV file')
         load_csv_action.triggered.connect(self.load_csv_file)
         file_menu.addAction(load_csv_action)
+        self.load_csv_action = load_csv_action  # Store reference for toolbar
+        
         
         # Save action
         save_action = QAction('&Save', self)
@@ -1515,16 +1518,36 @@ class LumberViewerGUI(QMainWindow):
         toolbar = QToolBar()
         self.addToolBar(toolbar)
         
-        # New Item button (moved to left side)
+        # New Item button
         new_item_action = QAction('➕ New Item', self)
         new_item_action.setStatusTip('Add a new item to the list')
         new_item_action.triggered.connect(self.add_new_item)
         toolbar.addAction(new_item_action)
         
+        # process doc
+        toolbar.addSeparator()
+        toolbar.addAction(self.process_doc_action)
+        toolbar.addSeparator()
+
+        # File operations buttons
+        # Create a separate action for toolbar with shorter text
+        open_toolbar_action = QAction('Open', self)
+        open_toolbar_action.setToolTip('Open results CSV')
+        open_toolbar_action.triggered.connect(self.load_csv_file)
+        toolbar.addAction(open_toolbar_action)
+        toolbar.addAction(self.save_action)
+        toolbar.addAction(self.export_action)
+        toolbar.addSeparator()
+        # Create a separate action for toolbar with shorter text
+        export_pos_toolbar_action = QAction('Export', self)
+        export_pos_toolbar_action.setToolTip('Export to POS system')
+        export_pos_toolbar_action.triggered.connect(self.export_to_pos_system)
+        toolbar.addAction(export_pos_toolbar_action)
+        
         toolbar.addSeparator()
         
         # Search
-        toolbar.addWidget(QLabel("Search:"))
+        toolbar.addWidget(QLabel("Search:  "))
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Search items...")
         self.search_input.setMaximumWidth(200)
