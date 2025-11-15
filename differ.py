@@ -137,16 +137,28 @@ class Differ:
         
         return differences
     
-    def format_output(self, left_file_name, right_file_name, differences: List[Tuple[str, CSVItem, CSVItem]]):
+    def format_output(self, left_file_name, right_file_name, differences: List[Tuple[str, CSVItem, CSVItem]], directory: str = None):
         """Format and display the differences"""
         if not differences:
-            print(f"No differences found between the {left_file_name} and {right_file_name}.")
+            print(f"No differences found between the {directory}/{left_file_name} and {directory}/{right_file_name}.")
             return
-        
+        print(f"{'='*153}")
+        if directory:
+            print(f"Differences between {directory}/{left_file_name} and {directory}/{right_file_name}")
+        else:
+            print(f"Differences between {left_file_name} and {right_file_name}")
         print(f"{'='*153}")
         
+        # Format header with directory if provided
+        if directory:
+            left_header = f"{directory}/{left_file_name}"
+            right_header = f"{directory}/{right_file_name}"
+        else:
+            left_header = left_file_name
+            right_header = right_file_name
+        
         # left_file.csv                                                              | right_file.csv
-        print(f"{left_file_name:<75}| {right_file_name:<75}|")
+        print(f"{left_header:<75}| {right_header:<75}|")
 
         # 38CDX      | 11/32 4X8 CDX PLY                   | cdx        | Conf: 0.72 |
         def get_match_text(match):
@@ -168,7 +180,55 @@ class Differ:
                l = get_match_text(left[i]) if i < len(left) else (" "*74)
                r = get_match_text(right[i]) if i < len(right) else (" "*74)
                print(f"{l} | {r} |")
-        print(f"{'='*153}")
+        print(f"{'='*153}\n")
+
+def process_directory_list(directory_list_file: str, file1_name: str, file2_name: str) -> int:
+    """Process a list of directories and compare files in each directory.
+    Returns the total number of differences found across all directories."""
+    try:
+        with open(directory_list_file, 'r', encoding='utf-8') as f:
+            directories = [line.strip() for line in f if line.strip()]
+    except FileNotFoundError:
+        print(f"Error: Directory list file not found: {directory_list_file}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error reading directory list file: {e}")
+        sys.exit(1)
+    
+    if not directories:
+        print("Error: Directory list file is empty")
+        sys.exit(1)
+    
+    total_differences = 0
+    
+    # Process each directory
+    for directory in directories:
+        if not os.path.isdir(directory):
+            print(f"Warning: Directory does not exist, skipping: {directory}")
+            continue
+        
+        left_file = os.path.join(directory, file1_name)
+        right_file = os.path.join(directory, file2_name)
+        
+        # Validate files exist
+        if not Path(left_file).exists():
+            print(f"Warning: Left file does not exist, skipping: {left_file}")
+            continue
+        
+        if not Path(right_file).exists():
+            print(f"Warning: Right file does not exist, skipping: {right_file}")
+            continue
+        
+        # Create differ and run comparison
+        differ = Differ(left_file, right_file)
+        differ.load_files()
+        
+        differences = differ.find_differences()
+        differ.format_output(file1_name, file2_name, differences, directory=directory)
+        
+        total_differences += len(differences)
+    
+    return total_differences
 
 def main():
     """Main function"""
@@ -179,49 +239,71 @@ def main():
 Examples:
   python differ.py file1.csv file2.csv
   python differ.py --left results1.csv --right results2.csv
+  python differ.py -d directories.txt file1.csv file2.csv
         """
     )
     
     parser.add_argument('files', nargs='*', help='Two CSV files to compare (left and right)')
     parser.add_argument('--left', '-l', help='Left CSV file')
     parser.add_argument('--right', '-r', help='Right CSV file')
+    parser.add_argument('-d', '--directory-list', dest='directory_list', 
+                       help='File containing a list of directories (one per line)')
     
     args = parser.parse_args()
     
-    # Determine left and right files
-    left_file = None
-    right_file = None
+    total_differences = 0
     
-    if args.left and args.right:
-        left_file = args.left
-        right_file = args.right
-    elif len(args.files) == 2:
-        left_file = args.files[0]
-        right_file = args.files[1]
+    # If directory list is provided, process directories
+    if args.directory_list:
+        if len(args.files) != 2:
+            print("Error: When using -d/--directory-list, exactly two file names must be provided.")
+            print("Usage: python differ.py -d directories.txt file1.csv file2.csv")
+            sys.exit(1)
+        file1_name = args.files[0]
+        file2_name = args.files[1]
+        total_differences = process_directory_list(args.directory_list, file1_name, file2_name)
     else:
-        print("Error: Please provide exactly two CSV files to compare.")
-        print("Usage: python differ.py file1.csv file2.csv")
-        print("   or: python differ.py --left file1.csv --right file2.csv")
-        sys.exit(1)
+        # Otherwise, use the original single comparison mode
+        # Determine left and right files
+        left_file = None
+        right_file = None
+        
+        if args.left and args.right:
+            left_file = args.left
+            right_file = args.right
+        elif len(args.files) == 2:
+            left_file = args.files[0]
+            right_file = args.files[1]
+        else:
+            print("Error: Please provide exactly two CSV files to compare.")
+            print("Usage: python differ.py file1.csv file2.csv")
+            print("   or: python differ.py --left file1.csv --right file2.csv")
+            print("   or: python differ.py -d directories.txt file1.csv file2.csv")
+            sys.exit(1)
+        
+        # Validate files exist
+        if not Path(left_file).exists():
+            print(f"Error: Left file does not exist: {left_file}")
+            sys.exit(1)
+        
+        if not Path(right_file).exists():
+            print(f"Error: Right file does not exist: {right_file}")
+            sys.exit(1)
+        
+        # Create differ and run comparison
+        differ = Differ(left_file, right_file)
+        differ.load_files()
+        
+        differences = differ.find_differences()
+        differ.format_output(left_file, os.path.basename(right_file), differences)
+        
+        total_differences = len(differences)
     
-    # Validate files exist
-    if not Path(left_file).exists():
-        print(f"Error: Left file does not exist: {left_file}")
-        sys.exit(1)
-    
-    if not Path(right_file).exists():
-        print(f"Error: Right file does not exist: {right_file}")
-        sys.exit(1)
-    
-    # Create differ and run comparison
-    differ = Differ(left_file, right_file)
-    differ.load_files()
-    
-    differences = differ.find_differences()
-    differ.format_output(left_file, os.path.basename(right_file), differences)
-   
-    if False: # len(differences):
-        print(f"Summary: Found {len(differences)} items with differences\n")
+    # Print summary
+    print(f"\n{'='*80}")
+    print(f"Total differences found: {total_differences}")
+    print(f"{'='*80}")
 
 if __name__ == "__main__":
     main()
+
