@@ -116,19 +116,6 @@ differ:
       exit 1
    endif
 
-   @ total_diffs = 0
-   while (! -z /tmp/files.$$)
-      set f = "`head -1 /tmp/files.$$`"
-      tail -n +2 /tmp/files.$$ > /tmp/files2.$$
-      mv /tmp/files2.$$ /tmp/files.$$
-
-      echo python differ.py "$f:r"_results/{$matches.csv,$onlydiffer.csv}
-      python differ.py "$f:r"_results/{$matches.csv,$onlydiffer.csv}
-      set ndiff = `python differ.py "$f:r"_results/{$matches.csv,$onlydiffer.csv} | fgrep ' Item ' | wc -l`
-      @ total_diffs = $total_diffs + $ndiff
-   end
-   rm -f /tmp/files.$${,.sav}
-   echo ===========================================
-   echo Total of $total_diffs differences found
-   echo ===========================================
-
+   sed 's/\.pdf/_results/' /tmp/files.$$ > /tmp/files.$$.results
+   echo python differ.py -d /tmp/files.$$.results --file1 $matches.csv --file2 $onlydiffer.csv
+   python differ.py -d /tmp/files.$$.results $matches.csv $onlydiffer.csv
