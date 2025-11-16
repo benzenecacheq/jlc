@@ -24,7 +24,7 @@ from PyQt6.QtWidgets import (
     QMenu, QToolBar, QDialog, QListWidget, QListWidgetItem, QFormLayout,
     QGroupBox, QScrollArea, QProgressBar, QStyledItemDelegate
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QThread, QObject, QModelIndex
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QThread, QObject, QModelIndex, QPoint
 from PyQt6.QtGui import QFont, QPalette, QColor, QAction, QKeyEvent, QPainter, QPen
 
 from util import *
@@ -1325,10 +1325,6 @@ class LumberViewerGUI(QMainWindow):
                 for col_name, col_idx in self.column_numbers.items():
                     width = self.table.columnWidth(col_idx)
                     config['ColumnWidths'][col_name] = str(width)
-                    print(f"DEBUG: Saving column width for {col_name}: {width}")
-                print(f"DEBUG: Saved {len(config['ColumnWidths'])} column widths")
-            else:
-                print(f"DEBUG: Cannot save column widths - table exists: {hasattr(self, 'table')}, column_numbers exists: {hasattr(self, 'column_numbers')}")
             
             # Write to file
             with open(self.config_file, 'w') as f:
@@ -1373,13 +1369,9 @@ class LumberViewerGUI(QMainWindow):
                         try:
                             # Store with lowercase key for case-insensitive lookup
                             self.saved_column_widths[col_name_lower.lower()] = int(width_str)
-                            print(f"DEBUG: Loaded column width for {col_name_lower}: {int(width_str)}")
                         except ValueError:
-                            print(f"DEBUG: Failed to parse width for {col_name_lower}: {width_str}")
                             pass
-                print(f"DEBUG: Loaded {len(self.saved_column_widths)} column widths from config")
             else:
-                print("DEBUG: No ColumnWidths section in config file")
                 self.saved_column_widths = {}
             
             # Load LastResults settings
@@ -1621,6 +1613,10 @@ class LumberViewerGUI(QMainWindow):
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.setSortingEnabled(True)
         
+        # Enable context menu
+        self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.table.customContextMenuRequested.connect(self.show_context_menu)
+        
         # Connect click and double-click events
         self.table.cellClicked.connect(self.on_cell_clicked)
         self.table.cellDoubleClicked.connect(self.on_cell_double_clicked)
@@ -1671,20 +1667,14 @@ class LumberViewerGUI(QMainWindow):
     
     def apply_column_widths(self):
         """Apply saved column widths from config file"""
-        print(f"DEBUG: apply_column_widths called")
         if not hasattr(self, 'table') or not self.table:
-            print("DEBUG: No table found, returning")
             return
         
         if not hasattr(self, 'column_numbers') or not self.column_numbers:
-            print("DEBUG: No column_numbers found, returning")
             return
         
         if not hasattr(self, 'saved_column_widths'):
-            print("DEBUG: No saved_column_widths found, using defaults")
             self.saved_column_widths = {}
-        
-        print(f"DEBUG: saved_column_widths = {self.saved_column_widths}")
         
         # Default column widths
         default_widths = {
@@ -1711,11 +1701,9 @@ class LumberViewerGUI(QMainWindow):
             
             if width is not None:
                 self.table.setColumnWidth(col_idx, width)
-                print(f"DEBUG: Applied saved width for {col_name} (col {col_idx}): {width}")
             else:
                 width = default_widths.get(col_name, 100)
                 self.table.setColumnWidth(col_idx, width)
-                print(f"DEBUG: Applied default width for {col_name} (col {col_idx}): {width}")
         
         # Adjust window width to fit all columns
         self.adjust_window_width()
@@ -1750,7 +1738,6 @@ class LumberViewerGUI(QMainWindow):
         # Only resize if new width is larger than current (don't shrink)
         if new_width > current_width:
             self.resize(new_width, current_height)
-            print(f"DEBUG: Adjusted window width to {new_width} (columns: {total_column_width}, padding: {padding})")
         
     def apply_styling(self):
         """Apply custom styling to the application"""
@@ -1807,8 +1794,12 @@ class LumberViewerGUI(QMainWindow):
         if filename:
             self.csv_file = filename
             # Auto-detect database file in same directory
-            csv_dir = Path(filename).parent
-            self.database_file = csv_dir / "skulist_fixed.csv"
+            csv_filename = Path(filename).parent / "skulist_fixed.csv"
+            if os.path.exists(str(csv_filename)):
+                self.database_file = csv_filename
+            if not self.database_file or not os.path.exists(self.database_file):
+                self.database_file = Path(__file__).parent / "skulist.csv"
+
             self.load_data()
             
     def load_database_file(self):
@@ -2110,7 +2101,7 @@ class LumberViewerGUI(QMainWindow):
                 
                 # extract the description and type from the Database_Description field
                 #
-                item_description = self._extract_db_description(row.get("Database_Description"))
+                item_description = self._extract_db_description(database_description)
                 item_type = ""
                 if part_number and part_number in self.type_mapping:
                     item_type = self.type_mapping[part_number]
@@ -2456,8 +2447,7 @@ class LumberViewerGUI(QMainWindow):
             
             self.update_display_for_row(row, item)
     
-    def add_new_item(self):
-        """Add a new item to the list"""
+    def get_next_item_number(self):
         if not self.grouped_data:
             # If no data loaded, start with item number 1
             new_item_number = "1"
@@ -2471,6 +2461,12 @@ class LumberViewerGUI(QMainWindow):
                 except (ValueError, TypeError):
                     continue
             new_item_number = str(max_item_number + 1)
+        
+        return new_item_number
+
+    def add_new_item(self):
+        """Add a new item to the list"""
+        new_item_number = self.get_next_item_number()
         
         # Create a new empty item
         new_item = {
@@ -2547,8 +2543,166 @@ class LumberViewerGUI(QMainWindow):
                     self.table.selectRow(last_row)
             else:
                 # User clicked OK but didn't select a match - don't add the item
-                QMessageBox.information(self, "No Selection", 
+                QMessageBox.information(self, "No Selection",
                                       "Please select a SKU match to add the item.")
+    
+    def show_context_menu(self, position: QPoint):
+        """Show context menu on right-click"""
+        item = self.table.itemAt(position)
+        if item is None:
+            return
+        
+        row = item.row()
+        if row not in self.row_item_data:
+            return
+        
+        selected_item = self.row_item_data[row]
+        item_number = selected_item.get('item_number')
+        is_deleted = item_number in self.deleted_items
+        
+        # Create context menu
+        menu = QMenu(self)
+        
+        # Delete/Undelete action
+        if is_deleted:
+            delete_action = QAction("Undelete", self)
+            delete_action.triggered.connect(lambda: self.toggle_delete_item(row, selected_item))
+        else:
+            delete_action = QAction("Delete", self)
+            delete_action.triggered.connect(lambda: self.toggle_delete_item(row, selected_item))
+        menu.addAction(delete_action)
+        
+        # Insert action
+        insert_action = QAction("Insert", self)
+        insert_action.triggered.connect(lambda: self.insert_item_before(row, selected_item))
+        menu.addAction(insert_action)
+        
+        # Show menu
+        menu.exec(self.table.viewport().mapToGlobal(position))
+    
+    def toggle_delete_item(self, row: int, item: dict):
+        """Toggle delete/undelete status of an item"""
+        item_number = item.get('item_number')
+        if not item_number:
+            return
+        
+        if item_number in self.deleted_items:
+            # Undelete
+            self.deleted_items.discard(item_number)
+        else:
+            # Delete
+            self.deleted_items.add(item_number)
+        
+        # Update delegate and display
+        self.update_deleted_delegate()
+        self.update_display_for_row(row, item)
+    
+    def insert_item_before(self, row: int, selected_item: dict):
+        """Insert a new item before the selected item"""
+        selected_item_number = selected_item.get('item_number')
+        if not selected_item_number:
+            QMessageBox.warning(self, "Error", "Cannot determine item number for insertion")
+            return
+
+        try:
+            selected_item_num = int(selected_item_number)
+        except (ValueError, TypeError):
+            QMessageBox.warning(self, "Error", f"Invalid item number: {selected_item_number}")
+            return
+
+        # Create a new item and insert ahead of this one
+        new_item = {
+            'item_number': self.get_next_item_number(),
+            'quantity': '',
+            'processed_text': '',
+            'original_text': '',
+            'matches': []
+        }
+        
+        # Open the item details dialog
+        dialog = ItemDetailsDialog([], '', '', self, new_item, False)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            # Check if a match was selected
+            if dialog.selected_match is not None:
+                # Quantity validation is now done in the dialog's accept_selection method
+                # Get the quantity from the dialog
+                quantity = dialog.quantity_override if dialog.quantity_override else ''
+                
+                # Update the item with dialog data
+                new_item['quantity'] = quantity
+                new_item['processed_text'] = dialog.edited_text if dialog.edited_text else ''
+                new_item['original_text'] = dialog.edited_text if dialog.edited_text else ''
+                new_item['matches'] = [dialog.selected_match]
+                
+                # Add to raw_data (create a row for CSV export)
+                # Format Database_Description properly
+                description = dialog.selected_match.get('description', '')
+                item_type = dialog.selected_match.get('type', '')
+                # Use the same format as in process_csv_file
+                db_description = description
+                if item_type:
+                    db_description = f"{description} | {item_type}"
+                else:
+                    db_description = f"{description} | No other information available"
+                
+                new_raw_row = {
+                    'Item_Number': new_item['item_number'],
+                    'Quantity': new_item['quantity'],
+                    'Description': new_item['processed_text'],
+                    'Original_Text': new_item['original_text'],
+                    'Part_Number': dialog.selected_match['part_number'],
+                    'Database_Description': db_description,
+                    'Confidence': dialog.selected_match.get('confidence', ''),
+                    'item_number': new_item['item_number'],
+                    'quantity': new_item['quantity'],
+                    'processed_text': new_item['processed_text'],
+                    'original_text': new_item['original_text'],
+                    'part_number': dialog.selected_match['part_number'],
+                    'item_description': description,
+                    'item_type': item_type,
+                    'confidence': dialog.selected_match.get('confidence', ''),
+                }
+                
+                # Preserve original CSV columns if they exist
+                if hasattr(self, 'original_csv_columns') and self.original_csv_columns:
+                    for col in self.original_csv_columns:
+                        if col not in new_raw_row:
+                            new_raw_row[col] = ''
+                
+                # Find the position to insert in raw_data and grouped_data
+                insert_pos = None
+                for idx, item in enumerate(self.grouped_data):
+                    try:
+                        item_num = int(item.get('item_number', '0'))
+                        if item_num >= selected_item_num:
+                            insert_pos = idx
+                            break
+                    except (ValueError, TypeError):
+                        continue
+                
+                if insert_pos is not None:
+                    self.raw_data.insert(insert_pos, new_raw_row)
+                    self.grouped_data.insert(insert_pos, new_item)
+                else:
+                    # If no position found, append to end
+                    self.raw_data.append(new_raw_row)
+                    self.grouped_data.append(new_item)
+                
+                # Refresh the display
+                self.apply_filters()
+                self.update_display()
+                
+                # Scroll to the new item
+                if self.filtered_data:
+                    for idx, item in enumerate(self.filtered_data):
+                        if item.get('item_number') == str(selected_item_num):
+                            self.table.scrollToItem(self.table.item(idx, 0))
+                            self.table.selectRow(idx)
+                            break
+            else:
+                # User clicked OK but didn't select a match - undo the renumbering
+                self.renumber_items(selected_item_num, -1)
+                QMessageBox.information(self, "No Selection", "Please select a SKU match to add the item.")
     
     def highlight_row(self, row: int):
         """Highlight a row to indicate manual override"""
