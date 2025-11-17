@@ -13,6 +13,7 @@ import pdb
 import re
 import subprocess
 import configparser
+import argparse
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
@@ -1213,8 +1214,9 @@ class SKUComboBox(QComboBox):
 class LumberViewerGUI(QMainWindow):
     """Main GUI application for lumber list matching results"""
     
-    def __init__(self):
+    def __init__(self, show_item_numbers: bool = False):
         super().__init__()
+        self.show_item_numbers = show_item_numbers  # Whether to show Item # column
         self.raw_data = []
         self.grouped_data = []
         self.filtered_data = []
@@ -1621,12 +1623,30 @@ class LumberViewerGUI(QMainWindow):
         self.table.cellClicked.connect(self.on_cell_clicked)
         self.table.cellDoubleClicked.connect(self.on_cell_double_clicked)
         
-        # Set up columns
-        self.columns = [
-            "Item #", "Quantity", 
-            "SKU", "Description", "Type", "Stk/SO", "Confidence",
-            "Text", "Original"
-        ]
+        # Set up columns - conditionally include Item # column
+        if self.show_item_numbers:
+            self.columns = [
+                "Item #", "Quantity", 
+                "SKU", "Description", "Type", "Stk/SO", "Confidence",
+                "Text", "Original"
+            ]
+            self.column_numbers = {
+                "Item #": 0, "Quantity": 1, 
+                "SKU": 2, "Description": 3, "Type": 4, "Stk/SO": 5, "Confidence": 6,
+                "Text": 7, "Original": 8
+            }
+        else:
+            self.columns = [
+                "Quantity", 
+                "SKU", "Description", "Type", "Stk/SO", "Confidence",
+                "Text", "Original"
+            ]
+            self.column_numbers = {
+                "Quantity": 0, 
+                "SKU": 1, "Description": 2, "Type": 3, "Stk/SO": 4, "Confidence": 5,
+                "Text": 6, "Original": 7
+            }
+        
         self.table.setColumnCount(len(self.columns))
         self.table.setHorizontalHeaderLabels(self.columns)
         
@@ -1636,12 +1656,6 @@ class LumberViewerGUI(QMainWindow):
         # Apply delegate to all columns
         for col in range(len(self.columns)):
             self.table.setItemDelegateForColumn(col, self.deleted_delegate)
-
-        self.column_numbers = {
-            "Item #": 0, "Quantity": 1, 
-            "SKU": 2, "Description": 3, "Type": 4, "Stk/SO": 5, "Confidence": 6,
-            "Text": 7, "Original": 8
-        }
         
         # Set column widths and resize modes
         header = self.table.horizontalHeader()
@@ -1660,6 +1674,9 @@ class LumberViewerGUI(QMainWindow):
             "Text": 200,
             "Original": 200
         }
+        # Remove Item # from default_widths if not showing it
+        if not self.show_item_numbers and "Item #" in default_widths:
+            del default_widths["Item #"]
         
         # Set initial column widths (will be overridden by apply_column_widths if saved widths exist)
         for col_name, col_idx in self.column_numbers.items():
@@ -1688,6 +1705,9 @@ class LumberViewerGUI(QMainWindow):
             "Text": 200,
             "Original": 200
         }
+        # Remove Item # from default_widths if not showing it
+        if not self.show_item_numbers and "Item #" in default_widths:
+            del default_widths["Item #"]
         
         # Apply saved widths or use defaults
         # Note: ConfigParser lowercases keys, so we need case-insensitive lookup
@@ -2305,8 +2325,9 @@ class LumberViewerGUI(QMainWindow):
                 self.row_item_data[row_idx] = item
                     
                 try:
-                    # Basic item info
-                    self.table.setItem(row_idx, self.column_numbers["Item #"], QTableWidgetItem(str(item['item_number'])))
+                    # Basic item info - only set Item # if column is visible
+                    if self.show_item_numbers:
+                        self.table.setItem(row_idx, self.column_numbers["Item #"], QTableWidgetItem(str(item['item_number'])))
                     
                     # Handle quantity display with override support - use item_number as key
                     item_number = item.get('item_number')
@@ -3006,14 +3027,26 @@ class LumberViewerGUI(QMainWindow):
 
 def main():
     """Main function to run the application"""
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(
+        description="Lumber List Matching Results Viewer",
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument('--show-item-numbers', '-i', dest='show_item_numbers',
+                       action='store_true', default=False,
+                       help='Display the Item # column (default: hidden)')
+    
+    # Parse known args to avoid conflicts with Qt's argument parsing
+    args, unknown = parser.parse_known_args()
+    
     app = QApplication(sys.argv)
     
     # Set application properties
     app.setApplicationName("Lumber List Matching Results Viewer")
     app.setApplicationVersion("1.0")
     
-    # Create and show main window
-    window = LumberViewerGUI()
+    # Create and show main window with show_item_numbers option
+    window = LumberViewerGUI(show_item_numbers=args.show_item_numbers)
     window.show()
     
     # Start event loop

@@ -13,6 +13,7 @@
 ###############################################################################
 import os
 import sys
+import configparser
 import csv
 import json
 import base64
@@ -316,6 +317,9 @@ subdirectory named after the input file (e.g., 'document_results/', 'lumber_list
     
     parser.add_argument('--keyword-file',
                         help='Name of a .csv file that provides additional keywords')
+
+    parser.add_argument('-K', '--keyword-ini', action='store_true',
+                        help='Load keyword specified in ~/.jlc.ini')
                         
     parser.add_argument('-o', '--output-dir', default="",
                         help='Base directory to save output files. A subdirectory named after the input '
@@ -345,7 +349,18 @@ def main():
     """Main program execution"""
     args = parse_arguments()
 
-    if args.keyword_file:
+    if args.keyword_ini:
+        if args.keyword_file:
+            print("Only one keyword file is permitted.  Ignoring --keyword-file option.", file=sys.stderr)
+        try:
+            configfile = Path.home() / ".jlc.ini"
+            config = configparser.ConfigParser()
+            config.read(configfile)
+            keyword_file = config.get('Options', 'keyword_file', fallback='')
+            os.environ["MATCHER_KEYWORDS"] = keyword_file
+        except:
+            pass
+    elif args.keyword_file:
         os.environ["MATCHER_KEYWORDS"] = args.keyword_file
     
     print("LUMBER LIST SCANNER AND PARTS MATCHER")

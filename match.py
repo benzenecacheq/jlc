@@ -105,12 +105,13 @@ class RulesMatcher:
         self.keywords = self.get_setting("keywords")
         kwfile = os.getenv("MATCHER_KEYWORDS")
         if kwfile:
-            kw = csv2dict(kwfile)
+            print(f"=== Loading additional keywords from {kwfile} ===")
             try:
+                kw = csv2dict(kwfile)
                 kw = { name.lower():float(val) for name,val in kw.items() }
+                self.keywords |= kw
             except:
-                raise Exception(f"Invalid format for keyword file {kwfile}")
-            self.keywords |= kw
+                print("=== Missing or invalid keyword file", file=sys.stderr)
 
         # Get the hardware characteristics
         self.lumber_categories = self.get_setting('lumber categories')
