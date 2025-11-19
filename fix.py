@@ -65,20 +65,20 @@ class Fixer:
         length2 = None
         for i,word in enumerate(item.words):
             if self.matcher._looks_like_dimension(word, requirex=True) and item.dim is None:
-                item.dim = (i, word)
+                item.dim = word
             elif self.matcher._looks_like_length(word, ok1and2=False):
                 if item.length is not None:
-                    length2 = (i, word)
+                    length2 = word
                 else:
-                    item.length = (i, word)
+                    item.length = word
             elif self.matcher._is_attr(word, False):
-                item.attr = (i,word)
+                item.attr = word
             elif len(word) > 1 and word.startswith('#') and word[1].isdigit():
-                item.grade = (i,word)
+                item.grade = word
             elif fuzzy_match(word, self.matcher.hardware_terms, threshold = 0.7):
                 item.hardware_terms.append(word)
             elif self.matcher._is_keyword(word, False):
-                item.keywords.append((i, word))
+                item.keywords.append(word)
 
         if False: # length2 and item.dim is None:
             item.dim = item.length
@@ -108,7 +108,7 @@ class Fixer:
 
     def _fix_okay(self, pitem, prev):
         if prev.attr:
-            special = self._get_special(prev.attr[1])
+            special = self._get_special(prev.attr)
             if special:
                 for name,data in special.items():
                     if name in pitem.__dict__:
@@ -117,9 +117,9 @@ class Fixer:
                             # this means we shouldn't carry forward
                             return False
                         for d in data:
-                            if name == "dim" and self.matcher._dimensions_match(d, pitem.dim[1]):
+                            if name == "dim" and self.matcher._dimensions_match(d, pitem.dim):
                                 found = True
-                            elif name == "length" and self.matcher._lengths_equal(d, pitem.length[1]):
+                            elif name == "length" and self.matcher._lengths_equal(d, pitem.length):
                                 found = True
                             elif d == pitem.__dict__[name]:
                                 found = True
@@ -128,6 +128,80 @@ class Fixer:
                         if not found:
                             return False
         return True
+
+    def _best_match(self, values, words):
+        i = 0
+        best = [None, 0.65, None] # [ value, score, offset ]
+        while i < len(words):
+            word = words[i]
+            next = words[i+1] if i < len(words)-1 else ""
+            # by putting word in a list, it will return strings from the values list rather than the word
+            matches = fuzzy_match(values, [word], threshold=best[1]+0.00001)
+            if matches:
+                # pick best score from the list
+                best = sorted(matches.keys(), key=lambda x: -matches[x])[0]
+                best = [best, matches[best], i]
+            if next != "":
+                matches = fuzzy_match(values, [word+next], threshold=best[1]+0.00001)
+                if matches:
+                    # pick best score from the list
+                    best = sorted(matches.keys(), key=lambda x: -matches[x])[0]
+                    best = [best, matches[best], -1-i]    # neg index means delete two words
+            i += 1
+
+        if best[0] is not None:
+            if best[2] < 0:
+                best[2] = -1-best[2]
+                del words[best[2]]
+            del words[best[2]]
+
+        return best[0]
+
+    def fix_tji(self, item, prev):
+        desc = do_subs("tji", item.description.lower()).strip()
+        desc = self.matcher._cleanup(desc, False)
+        
+        # first look for a height.  It should be 9-1/2, 11-7/8, 14, 16, or 18
+        heights = self.matcher.tji_heights
+        height = self._best_match(heights, desc)
+        if height is None and item.quantity is not None:
+            height = self._best_match(heights, [item.quantity])
+            if height is not None:
+                item.quantity = ""
+        
+        # now look for a width.
+        widths = self.matcher.tji_widths
+        width = self._best_match(widths, desc)
+
+        # look for a length, which would be something that's not the width or the height
+        length = None
+        found = None
+        for i,word in enumerate(desc):
+            if self.matcher._looks_like_length(word):
+                length = word
+            elif word == "tji" and not found:
+                found = i
+            if length is not None and found is not None:
+                break
+        if found is not None:
+            del desc[found]
+
+        pitem = ParsedItem()
+        pitem.attr = "tji"
+        if width is None:
+            # see if prev looks similar
+            if prev is not None and  prev.attr == pitem.attr:
+                pitem.grade = prev.grade
+        else:
+            pitem.grade = "#" + width
+        pitem.dim = height
+        pitem.length = length
+
+        item.description  = (pitem.dim + " tji ") if pitem.dim is not None else "tji "
+        item.description += (pitem.grade + " ") if pitem.grade is not None else ""
+        item.description += " ".join(desc)
+
+        return pitem
 
     def fix_missing_specifications(self, scanned_items: List[ScannedItem], debug_item=None):
         fixed_items = []
@@ -149,13 +223,16 @@ class Fixer:
 
             save_desc = item.description
             item.description = item.description.replace('|','').replace('@','')
-            pitem = self._analyze_item(item.description)
+            if "TJI" in item.description or " TJT " in item.description:
+                pitem = self.fix_tji(item, prev)
+            else:
+                pitem = self._analyze_item(item.description)
 
-            if pitem.attr is not None and pitem.attr in self.matcher.hardware_categories:
+            if pitem.attr in self.matcher.hardware_categories:
                 prev = None
                 continue
             if pitem.hardware_terms:
-                print(f"Item {item_number}: Found hardware terms {pitem.hardware_terms} in {item}")
+                # print(f"Item {item_number}: Found hardware terms {pitem.hardware_terms} in {item}")
                 prev = None
                 continue
 
@@ -167,7 +244,7 @@ class Fixer:
                         # for repeated dimensions.
                         pitem.dim = prev.dim
                         star = save_desc.find('*')
-                        item.description = f"{save_desc[0:star]} {prev.dim[1]} {save_desc[star+1:]}".strip()
+                        item.description = f"{save_desc[0:star]} {prev.dim} {save_desc[star+1:]}".strip()
                         changed = True
 
                 if '|' in save_desc or '@' in save_desc:
@@ -180,31 +257,31 @@ class Fixer:
                             pitem.__dict__[n] = prev.__dict__[n]
                             if n == "dim": 
                                 # put the dim in front
-                                item.description = data[1] + " " + item.description
+                                item.description = data + " " + item.description
                             elif n == "length":
                                 # put it after the dim, if present
-                                item.description = self._insert_after_dim(data[1], item.description)
+                                item.description = self._insert_after_dim(data, item.description)
                             elif n == "keywords":
                                 for keyword in prev.keywords:
-                                    item.description += " " + keyword[1]
+                                    item.description += " " + keyword
                             else:
                                 # just put it at the end
-                                item.description += " " + data[1]
+                                item.description += " " + data
                             changed = True
 
                 if pitem.dim and pitem.length and pitem.attr is None:
                     if self._fix_okay(pitem, prev):
                         # for now just put the attr at the end
-                        item.description += " " + prev.attr[1]
+                        item.description += " " + prev.attr
                         if prev.grade is not None:
-                            item.description += " " + prev.grade[1]
+                            item.description += " " + prev.grade
                         changed = True
 
                 if pitem.dim is None and pitem.length and pitem.attr:
                     # it's a lumber item with a length and no dimensions.  Get those from the previous
                     if self._fix_okay(prev, pitem):     # reverse order of dimension check
                         pitem.dim = prev.dim
-                        item.description = f"{pitem.dim[1]} {item.description}"
+                        item.description = f"{pitem.dim} {item.description}"
                             
                 if pitem.length is not None and pitem.dim is None and pitem.attr is None and pitem.grade is None:
                     # All we have is length.  This is rare but let's assume that everything else carries forward
@@ -213,11 +290,12 @@ class Fixer:
                     pitem.grade = prev.grade
                     if not pitem.keywords:
                         pitem.keywords = prev.keywords
-                    item.description = f"{pitem.dim[1]} {item.description} {pitem.attr[1]}"
+                    newdesc = f"{pitem.dim} {pitem.attr}"
                     if pitem.grade:
-                        item.description += pitem.grade[1]
+                        newdesc += " " + pitem.grade
                     for keyword in pitem.keywords:
-                        item.description += " " + keyword[1]
+                        newdesc += " " + keyword
+                    item.description = f"{newdesc} {item.description}"
 
                 if changed:
                     item.description = item.description.replace('|','').replace('@','').strip()

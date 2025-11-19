@@ -1,0 +1,14 @@
+# replace x between two numbers with a space
+(\d)x(\d)`\1 \2
+
+# Sometimes see TJT instead of TJI
+\btjt\b`tjt
+\bs60\b`560
+\bs600\b`560
+\bsg0\b`560
+\bsgo\b`560
+\b2x10`210 
+\b161360\b`16 360
+\bx\b` 
+
+tji(\d)`tji \1

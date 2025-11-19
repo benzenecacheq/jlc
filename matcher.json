@@ -28,6 +28,8 @@
       "                           keywords or attrs.                                                    ",
       " implies                 - These categories imply certain things, like sizes or materials.       ",
       " special lengths         - Precut boards that are measured in inches.                            ",
+      " tji heights             - The permissible heights for TJIs.                                     ",
+      " tji widths              - The permissible widths for TJIs.                                     ",
       " substitute dimensions   - Some things, like nail penny sizes, are really dimensions even though ",
       "                           they might not appear to be dimensions to the code.                   ",
       " lumber categories       - Everything is pretty much assumed to be lumber so these are really    ",
@@ -161,6 +163,8 @@
    "special lengths": [
        "12-7/8", "14-7/16", "22-7/16","80-3/4","92-1/4","104-1/4","116-1/4"
        ],
+   "tji heights" : ["9-1/2", "11-7/8", "14", "16", "18"],
+   "tji widths" : ["110", "210", "230", "360", "560"],
    "substitute dimensions": {
       "4d" : 0.4,
       "6d" : 0.4,

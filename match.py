@@ -63,6 +63,8 @@ class RulesMatcher:
         self.sorted_skus = None
         self.skus_by_letter = None
         self.special_lengths = None
+        self.tji_heights = None
+        self.tji_widths = None
         self.scoring = None
 
         self.fuzzy_category_matching = False
@@ -96,6 +98,8 @@ class RulesMatcher:
         self.default_other = self.get_setting("default other")
         self.detractors = self.get_setting("detractors")
         self.special_lengths = set(self.get_setting("special lengths"))
+        self.tji_heights = self.get_setting("tji heights")
+        self.tji_widths = self.get_setting("tji widths")
         self.scoring = self.get_setting("scoring")
         self.category_indicators = self.get_setting("category indicators")
         self.implies = self.get_setting("implies")
@@ -164,6 +168,14 @@ class RulesMatcher:
                 entry['attr'] = name
 
                 db_components = self.parse_lumber_item(entry["Item Description"], db_attr=name)
+                if entry["Stocking Multiple"] == "LF" and "length" in db_components:
+                    # this happens with RJIs and a couple other items
+                    if "dimensions" in db_components:
+                        print(db_components)
+                        pdb.set_trace()
+                    else:
+                        db_components["dimensions"] = db_components["length"]
+                        del db_components["length"]
                 entry['components'] = db_components
                 attrs = db_components.get('attrs')
                 db_components['attrs'] = [name]
@@ -635,7 +647,23 @@ class RulesMatcher:
                         if self.debug:
                             print(f"    Added {k} {implication}")
 
+        if db_attr == "tji" or "attrs" in components and "tji" in components["attrs"]:
+            self._handle_tji(components, is_db)
+
         return components
+
+    def _handle_tji(self, components: Dict, is_db):
+        if ("length" in components and components["length"] in self.tji_heights and 
+            "dimensions" not in components):
+            components["dimensions"] = components["length"]
+            del components["length"]
+            if "other" in components and not is_db:
+                # look for a length
+                for i, o in enumerate(components["other"]):
+                    if self._looks_like_length(o):
+                        components["length"] = o
+                        del components["other"][i]
+                        break
 
     # add a found item to the list of matches
     def _add_match(self, matches: List[PartMatch], item: str, part: Dict, score: float, length: str=""):
