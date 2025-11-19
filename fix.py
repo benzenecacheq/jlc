@@ -152,8 +152,8 @@ class Fixer:
         if best[0] is not None:
             if best[2] < 0:
                 best[2] = -1-best[2]
-                del words[best[2]]
-            del words[best[2]]
+                words[best[2]+1] = "*****"
+            words[best[2]] = "*****"
 
         return best[0]
 
@@ -199,6 +199,7 @@ class Fixer:
 
         item.description  = (pitem.dim + " tji ") if pitem.dim is not None else "tji "
         item.description += (pitem.grade + " ") if pitem.grade is not None else ""
+        desc = [d for d in desc if d != "*****"]
         item.description += " ".join(desc)
 
         return pitem
