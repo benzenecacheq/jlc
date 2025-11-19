@@ -168,14 +168,6 @@ class RulesMatcher:
                 entry['attr'] = name
 
                 db_components = self.parse_lumber_item(entry["Item Description"], db_attr=name)
-                if entry["Stocking Multiple"] == "LF" and "length" in db_components:
-                    # this happens with RJIs and a couple other items
-                    if "dimensions" in db_components:
-                        print(db_components)
-                        pdb.set_trace()
-                    else:
-                        db_components["dimensions"] = db_components["length"]
-                        del db_components["length"]
                 entry['components'] = db_components
                 attrs = db_components.get('attrs')
                 db_components['attrs'] = [name]
